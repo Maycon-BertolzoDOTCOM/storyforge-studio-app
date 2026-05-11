@@ -4497,9 +4497,9 @@ function HtmlViewer({
         <div className="viewer-toolbar-actions">
           <button
             type="button"
-            className={`viewer-toggle${boardMode ? ' active' : ''}`}
+            className={`viewer-action viewer-comment-toggle${boardMode ? ' active' : ''}`}
             data-testid="board-mode-toggle"
-            title={t('fileViewer.tweaks')}
+            title="Comment"
             aria-pressed={boardMode}
             disabled={!boardAvailable}
             onClick={() => {
@@ -4512,9 +4512,8 @@ function HtmlViewer({
               activateBoard(boardTool);
             }}
           >
-            <Icon name="tweaks" size={13} />
-            <span>{t('fileViewer.tweaks')}</span>
-            <span className="switch" aria-hidden />
+            <Icon name="comment" size={13} />
+            <span>Comment</span>
           </button>
           {boardMode ? (
             <>
