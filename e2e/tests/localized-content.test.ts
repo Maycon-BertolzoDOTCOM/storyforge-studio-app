@@ -21,6 +21,12 @@ type LocalizedContentIds = {
 
 type LocalizedContentModule = {
   LOCALIZED_CONTENT_IDS: Record<string, LocalizedContentIds>;
+  localizeDesignSystemSummary: (locale: string, system: DesignSystemResource) => string;
+  localizePromptTemplateSummary: (
+    locale: string,
+    template: PromptTemplateResource,
+  ) => PromptTemplateResource;
+  localizeSkillDescription: (locale: string, skill: SkillResource) => string;
 };
 
 type SkillResource = { id: string; description: string };
@@ -38,7 +44,12 @@ if (localizedContentModule == null) {
   throw new Error('Failed to load apps/web localized content ids');
 }
 
-const { LOCALIZED_CONTENT_IDS } = localizedContentModule;
+const {
+  LOCALIZED_CONTENT_IDS,
+  localizeDesignSystemSummary,
+  localizePromptTemplateSummary,
+  localizeSkillDescription,
+} = localizedContentModule;
 const COVERAGE_LOCALES = ['de', 'fr', 'ru'] as const;
 const RESOURCE_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -298,6 +309,34 @@ describe('localized display content coverage', () => {
       uniqueSorted(promptTemplates.map((template) => template.id)),
       'Expected discovered prompt templates to be readable',
     ).not.toEqual([]);
+
+    for (const locale of COVERAGE_LOCALES) {
+      for (const skill of skills) {
+        expect(
+          normalizeText(localizeSkillDescription(locale, skill)),
+          `${locale} should display a skill description for ${skill.id}`,
+        ).not.toEqual('');
+      }
+
+      for (const system of designSystems) {
+        expect(
+          normalizeText(localizeDesignSystemSummary(locale, system)),
+          `${locale} should display a design-system summary for ${system.id}`,
+        ).not.toEqual('');
+      }
+
+      for (const template of promptTemplates) {
+        const localized = localizePromptTemplateSummary(locale, template);
+        expect(
+          normalizeText(localized.title),
+          `${locale} should display a prompt-template title for ${template.id}`,
+        ).not.toEqual('');
+        expect(
+          normalizeText(localized.summary),
+          `${locale} should display a prompt-template summary for ${template.id}`,
+        ).not.toEqual('');
+      }
+    }
   });
 
   for (const locale of COVERAGE_LOCALES) {
