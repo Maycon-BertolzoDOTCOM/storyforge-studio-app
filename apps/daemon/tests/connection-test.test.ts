@@ -1194,6 +1194,23 @@ console.log(JSON.stringify({ type: 'item.completed', item: { type: 'agent_messag
     );
   });
 
+  it('returns Claude /login guidance when auth failure stream JSON is emitted on stdout', async () => {
+    await withFakeClaude(
+      `console.log(JSON.stringify({ apiKeySource: 'none', error_status: 401 })); process.exit(1);`,
+      async () => {
+        const result = await testAgentConnection({ agentId: 'claude' });
+
+        expect(result).toMatchObject({
+          ok: false,
+          kind: 'agent_spawn_failed',
+          agentName: 'Claude Code',
+        });
+        expect(result.detail).toContain('/login');
+        expect(result.detail).toContain('CLAUDE_CONFIG_DIR');
+      },
+    );
+  });
+
   it('returns custom endpoint guidance for Claude model access failures', async () => {
     const previous = process.env.ANTHROPIC_BASE_URL;
     process.env.ANTHROPIC_BASE_URL = 'https://proxy.example.com';
