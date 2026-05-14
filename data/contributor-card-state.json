@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-14T12:14:00.134Z",
+  "generatedAt": "2026-05-14T12:19:44.685Z",
   "contributors": {
     "huyhoangnhh98": {
       "lastAnnouncedTier": "spark",
@@ -223,8 +223,9 @@
     },
     "sukumarp2022": {
       "lastAnnouncedTier": "signal",
-      "lastKnownScore": 16,
-      "lastCheckedAt": "2026-05-14T06:49:58.526Z",
+      "lastKnownScore": 104,
+      "lastCheckedAt": "2026-05-14T12:19:44.685Z",
+      "scoreVersion": "weighted-v1",
       "lastAnnouncedAt": "2026-05-12T18:28:33.063Z"
     },
     "mutoe": {
