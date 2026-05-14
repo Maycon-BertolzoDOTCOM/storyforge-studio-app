@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-14T16:46:57.435Z",
+  "generatedAt": "2026-05-14T17:13:55.058Z",
   "contributors": {
     "huyhoangnhh98": {
       "lastAnnouncedTier": "spark",
@@ -458,6 +458,12 @@
       "lastCheckedAt": "2026-05-14T15:31:37.449Z",
       "scoreVersion": "weighted-v1",
       "lastAnnouncedAt": "2026-05-14T15:31:37.449Z"
+    },
+    "yesman-coder": {
+      "lastAnnouncedTier": "spark",
+      "lastKnownScore": 2,
+      "lastCheckedAt": "2026-05-14T17:13:55.058Z",
+      "scoreVersion": "weighted-v1"
     }
   }
 }
