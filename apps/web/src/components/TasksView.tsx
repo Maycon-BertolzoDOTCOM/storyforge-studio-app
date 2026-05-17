@@ -3,7 +3,7 @@
 // the UI presents them as scheduled agent conversations.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ConnectorDetail, Routine, RoutineSchedule } from '@open-design/contracts';
+import type { ConnectorDetail, Routine, RoutineRun } from '@open-design/contracts';
 
 import { Icon, type IconName } from './Icon';
 import { navigate } from '../router';
@@ -155,8 +155,33 @@ function nextRunLabel(routine: Routine): string {
   })}`;
 }
 
-function describeScheduleForCard(schedule: RoutineSchedule): string {
-  return describeScheduleSummary(schedule);
+function formatAutomationTimestamp(ts: number | null | undefined): string {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
+function formatRunDuration(run: RoutineRun): string {
+  if (!run.completedAt) return 'In progress';
+  const seconds = Math.max(1, Math.round((run.completedAt - run.startedAt) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return remainder > 0 ? `${minutes}m ${remainder}s` : `${minutes}m`;
+}
+
+function statusLabel(status: RoutineRun['status']): string {
+  if (status === 'succeeded') return 'Succeeded';
+  if (status === 'failed') return 'Failed';
+  if (status === 'running') return 'Running';
+  if (status === 'queued') return 'Queued';
+  return 'Canceled';
+}
+
+function StatusPill({ status }: { status: RoutineRun['status'] }) {
+  return <span className={`automation-status is-${status}`}>{statusLabel(status)}</span>;
 }
 
 function templateFromSkill(skill: SkillSummary, kind: AutomationTemplateKind): AutomationTemplate {
@@ -217,6 +242,8 @@ export function TasksView({ skills = [], designTemplates = [], connectors = [] }
   const [busyId, setBusyId] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>(null);
   const [templateFilter, setTemplateFilter] = useState<TemplateFilter>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [historyTick, setHistoryTick] = useState(0);
 
   const templates = useMemo(
     () => buildAutomationTemplates(designTemplates),
@@ -286,6 +313,8 @@ export function TasksView({ skills = [], designTemplates = [], connectors = [] }
         return;
       }
       void refresh();
+      setExpandedId(id);
+      setHistoryTick((tick) => tick + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -323,6 +352,7 @@ export function TasksView({ skills = [], designTemplates = [], connectors = [] }
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || `delete failed: ${res.status}`);
       }
+      if (expandedId === id) setExpandedId(null);
       void refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -395,16 +425,13 @@ export function TasksView({ skills = [], designTemplates = [], connectors = [] }
                 r.target.mode === 'reuse'
                   ? projectsById.get(r.target.projectId) ?? r.target.projectId
                   : 'New project each run';
+              const isExpanded = expandedId === r.id;
               return (
                 <li
                   key={r.id}
                   className={`automation-row${r.enabled ? '' : ' is-paused'}`}
                 >
-                  <button
-                    type="button"
-                    className="automation-row__main"
-                    onClick={() => setModal({ kind: 'edit', routine: r })}
-                  >
+                  <div className="automation-row__main">
                     <span className="automation-row__icon">
                       <Icon name={r.skillId ? 'sparkles' : 'history'} size={15} />
                     </span>
@@ -420,8 +447,29 @@ export function TasksView({ skills = [], designTemplates = [], connectors = [] }
                       {r.prompt ? (
                         <span className="automation-row__prompt">{r.prompt}</span>
                       ) : null}
+                      {r.lastRun ? (
+                        <span className="automation-row__last-run">
+                          <StatusPill status={r.lastRun.status} />
+                          <span>Last run {formatAutomationTimestamp(r.lastRun.startedAt)}</span>
+                          <span aria-hidden="true">·</span>
+                          <button
+                            type="button"
+                            className="automation-inline-link"
+                            onClick={() =>
+                              navigate({
+                                kind: 'project',
+                                projectId: r.lastRun!.projectId,
+                                conversationId: r.lastRun!.conversationId,
+                                fileName: null,
+                              })
+                            }
+                          >
+                            Open result
+                          </button>
+                        </span>
+                      ) : null}
                     </span>
-                  </button>
+                  </div>
                   <div className="automation-row__actions">
                     <button
                       type="button"
@@ -432,6 +480,27 @@ export function TasksView({ skills = [], designTemplates = [], connectors = [] }
                     >
                       <Icon name="play" size={12} />
                       <span>Run</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="automation-row__btn"
+                      onClick={() => {
+                        setExpandedId(isExpanded ? null : r.id);
+                        if (!isExpanded) setHistoryTick((tick) => tick + 1);
+                      }}
+                      aria-expanded={isExpanded}
+                    >
+                      <Icon name="history" size={12} />
+                      <span>{isExpanded ? 'Hide history' : 'History'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="automation-row__btn"
+                      onClick={() => setModal({ kind: 'edit', routine: r })}
+                      disabled={isBusy}
+                    >
+                      <Icon name="edit" size={12} />
+                      <span>Edit</span>
                     </button>
                     <button
                       type="button"
@@ -452,6 +521,9 @@ export function TasksView({ skills = [], designTemplates = [], connectors = [] }
                       <Icon name="trash" size={12} />
                     </button>
                   </div>
+                  {isExpanded ? (
+                    <AutomationRunHistory routineId={r.id} refreshKey={historyTick} />
+                  ) : null}
                 </li>
               );
             })}
@@ -538,6 +610,88 @@ function Metric({ label, value }: { label: string; value: number }) {
     <div className="automations-metric">
       <span className="automations-metric__value">{value}</span>
       <span className="automations-metric__label">{label}</span>
+    </div>
+  );
+}
+
+function AutomationRunHistory({
+  routineId,
+  refreshKey,
+}: {
+  routineId: string;
+  refreshKey: number;
+}) {
+  const [runs, setRuns] = useState<RoutineRun[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRuns(null);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/routines/${routineId}/runs?limit=10`);
+        if (!res.ok) throw new Error(`runs: ${res.status}`);
+        const json = await res.json();
+        if (!cancelled) setRuns(json.runs ?? []);
+      } catch {
+        if (!cancelled) setRuns([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey, routineId]);
+
+  if (runs === null) {
+    return <div className="automation-history automation-history--empty">Loading run history...</div>;
+  }
+
+  if (runs.length === 0) {
+    return <div className="automation-history automation-history--empty">No runs yet.</div>;
+  }
+
+  return (
+    <div className="automation-history" aria-label="Automation run history">
+      <div className="automation-history__head">
+        <span>Run history</span>
+        <span>Latest 10</span>
+      </div>
+      <ul className="automation-history__list">
+        {runs.map((run) => (
+          <li key={run.id} className="automation-history__row">
+            <div className="automation-history__status">
+              <StatusPill status={run.status} />
+              <span>{run.trigger}</span>
+            </div>
+            <div className="automation-history__meta">
+              <span>{formatAutomationTimestamp(run.startedAt)}</span>
+              <span aria-hidden="true">·</span>
+              <span>{formatRunDuration(run)}</span>
+              <span aria-hidden="true">·</span>
+              <span>{run.agentRunId}</span>
+            </div>
+            {run.summary || run.error ? (
+              <div className={`automation-history__message${run.error ? ' is-error' : ''}`}>
+                {run.error ?? run.summary}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              className="automation-history__open"
+              onClick={() =>
+                navigate({
+                  kind: 'project',
+                  projectId: run.projectId,
+                  conversationId: run.conversationId,
+                  fileName: null,
+                })
+              }
+            >
+              Open conversation
+              <Icon name="chevron-right" size={12} />
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
