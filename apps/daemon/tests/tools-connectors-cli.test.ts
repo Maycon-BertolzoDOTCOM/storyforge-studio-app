@@ -164,6 +164,9 @@ function auditUiKitIndex(componentFiles: string[] = AUDIT_COMPONENT_FILES): stri
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Cherry Studio UI kit</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
   <link rel="stylesheet" href="../../colors_and_type.css" />
   <style>
     body { margin: 0; min-height: 100vh; font-family: var(--cherry-font-sans); background: var(--cherry-bg); color: var(--cherry-fg); }
@@ -173,7 +176,13 @@ function auditUiKitIndex(componentFiles: string[] = AUDIT_COMPONENT_FILES): stri
   </style>
 </head>
 <body>
+  <div id="root"></div>
 ${scripts}
+  <script type="text/babel">
+    const { ${componentNames[0] ?? 'App'} } = window;
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<${componentNames[0] ?? 'App'} />);
+  </script>
   <main>
     <aside><strong>Cherry Studio</strong><p>Loaded modular components: ${componentFiles.join(', ')}</p></aside>
     <section>
@@ -718,6 +727,64 @@ describe('connectors tool CLI', () => {
     expect(JSON.parse(stdoutOutput.join('')).errors).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: 'ui_kit_missing_token_stylesheet', path: 'ui_kits/app/index.html' }),
       expect.objectContaining({ code: 'ui_kit_index_missing_component_references', path: 'ui_kits/app/index.html' }),
+    ]));
+
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it('fails a design-system package audit when the UI-kit entry lists modules without rendering them', async () => {
+    const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'od-package-audit-unmounted-uikit-'));
+    process.chdir(tmpDir);
+    await mkdir(path.join(tmpDir, 'preview'), { recursive: true });
+    await mkdir(path.join(tmpDir, 'ui_kits/app/components'), { recursive: true });
+    await mkdir(path.join(tmpDir, 'context/local-code/cherry/files/src/components'), { recursive: true });
+    await writeFile(path.join(tmpDir, 'DESIGN.md'), AUDIT_DESIGN_MD);
+    await writeFile(path.join(tmpDir, 'README.md'), AUDIT_README);
+    await writeFile(path.join(tmpDir, 'SKILL.md'), AUDIT_SKILL);
+    await writeFile(path.join(tmpDir, 'colors_and_type.css'), AUDIT_TOKENS_CSS);
+    for (const fileName of [
+      'colors-primary.html',
+      'colors-theme-light.html',
+      'typography-specimens.html',
+      'spacing-tokens.html',
+      'components-buttons.html',
+      'brand-assets.html',
+    ]) {
+      await writeFile(path.join(tmpDir, 'preview', fileName), auditHtml(fileName));
+    }
+    await writeFile(path.join(tmpDir, 'ui_kits/app/index.html'), [
+      '<!doctype html><html><head>',
+      '<link rel="stylesheet" href="../../colors_and_type.css" />',
+      '</head><body><main><h1>Disconnected module list</h1></main>',
+      '<script type="text/babel" src="components/Foundation.jsx"></script>',
+      '<script type="text/babel" src="components/Navigation.jsx"></script>',
+      '<script type="text/babel" src="components/Workspace.jsx"></script>',
+      '</body></html>',
+    ].join('\n'));
+    await writeFile(path.join(tmpDir, 'ui_kits/app/README.md'), '# UI kit\n');
+    for (const componentName of ['Foundation.jsx', 'Navigation.jsx', 'Workspace.jsx']) {
+      await writeFile(
+        path.join(tmpDir, 'ui_kits/app/components', componentName),
+        auditComponent(componentName.replace(/\.jsx$/u, '')),
+      );
+    }
+    await writeFile(path.join(tmpDir, 'context/source-context.md'), '# Design System Source Context\n\n## Local Code\n\n- /tmp/cherry\n');
+    await writeFile(path.join(tmpDir, 'context/local-code/cherry.md'), [
+      '# Local Design Evidence: cherry',
+      '',
+      'Snapshot files written: 1',
+      '',
+      '### Reusable components',
+      '- src/components/Button.tsx -> `context/local-code/cherry/files/src/components/Button.tsx` (source)',
+    ].join('\n'));
+    await writeFile(path.join(tmpDir, 'context/local-code/cherry/files/src/components/Button.tsx'), 'export function Button(){ return <button />; }');
+
+    const result = await runConnectorsToolCli(['design-system-package-audit', '--path', tmpDir]);
+
+    expect(result.exitCode).toBe(1);
+    expect(JSON.parse(stdoutOutput.join('')).errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'ui_kit_index_missing_runtime_bootstrap', path: 'ui_kits/app/index.html' }),
+      expect.objectContaining({ code: 'ui_kit_index_missing_component_composition', path: 'ui_kits/app/index.html' }),
     ]));
 
     await rm(tmpDir, { recursive: true, force: true });

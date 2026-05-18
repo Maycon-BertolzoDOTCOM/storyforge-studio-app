@@ -1590,6 +1590,7 @@ async function auditDesignSystemPackage(
   const hasChatUiEvidence = evidenceHasChatInterface(evidenceText)
     || files.some((filePath) => /^context\/(github|local-code)\/.+\/files\/.+(?:pages\/home|components\/app|inputbar|messages?|chat|assistants?|sidebar).*\.(tsx|ts|jsx|js|css|scss|less)$/iu.test(filePath));
   const uiKitComponentFiles = files.filter((filePath) => /^ui_kits\/app\/components\/.+\.(jsx|tsx|js|ts|css|html)$/iu.test(filePath));
+  const uiKitScriptComponentFiles = uiKitComponentFiles.filter((filePath) => /\.(jsx|tsx|js|ts)$/iu.test(filePath));
   const uiKitIndexText = await readAuditText(projectPath, 'ui_kits/app/index.html');
   if (fileSet.has('colors_and_type.css') && uiKitIndexText !== undefined && !/colors_and_type\.css/iu.test(uiKitIndexText)) {
     addIssue(
@@ -1609,6 +1610,25 @@ async function auditDesignSystemPackage(
         'error',
         'ui_kit_index_missing_component_references',
         `ui_kits/app/index.html must load or import at least ${requiredReferences} modular UI-kit component file(s) from ui_kits/app/components/. Found ${referencedComponents.length}.`,
+        'ui_kits/app/index.html',
+      );
+    }
+  }
+  if (uiKitScriptComponentFiles.length >= 3 && uiKitIndexText !== undefined) {
+    if (!uiKitIndexHasRuntimeBootstrap(uiKitIndexText)) {
+      addIssue(
+        'error',
+        'ui_kit_index_missing_runtime_bootstrap',
+        'ui_kits/app/index.html must mount or render the applied UI kit so reviewers see a real composed interface, not only disconnected component files.',
+        'ui_kits/app/index.html',
+      );
+    }
+    const composedComponents = componentNamesComposedInUiKitIndex(uiKitIndexText, uiKitScriptComponentFiles);
+    if (composedComponents.length === 0) {
+      addIssue(
+        'error',
+        'ui_kit_index_missing_component_composition',
+        'ui_kits/app/index.html must compose at least one modular UI-kit component in the rendered entry surface, not only list component filenames.',
         'ui_kits/app/index.html',
       );
     }
@@ -1825,6 +1845,26 @@ async function sourceComponentAnchorsInVisualArtifacts(
 
 function normalizeAnchorText(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/gu, '');
+}
+
+function uiKitIndexHasRuntimeBootstrap(text: string): boolean {
+  return /ReactDOM\.createRoot\s*\(|\bcreateRoot\s*\(|ReactDOM\.render\s*\(|\broot\.render\s*\(|\brender\s*\(\s*<|customElements\.define\s*\(|\bmount\s*\(|document\.(?:getElementById|querySelector)\([^)]*\)\.(?:append|appendChild|replaceChildren)\s*\(|document\.(?:getElementById|querySelector)\([^)]*\)\.innerHTML\s*=/iu.test(text);
+}
+
+function componentNamesComposedInUiKitIndex(text: string, componentFiles: string[]): string[] {
+  const textWithoutExternalComponentRefs = text
+    .replace(/<script\b[^>]*\bsrc=["'][^"']*components\/[^"']+["'][^>]*>\s*<\/script>/giu, ' ')
+    .replace(/components\/[a-z0-9_.-]+/giu, ' ');
+  const componentNames = componentFiles
+    .map((filePath) => path.basename(filePath).replace(/\.(jsx|tsx|js|ts)$/iu, ''))
+    .filter((componentName) => componentName.length > 0);
+  return componentNames.filter((componentName) =>
+    new RegExp(`\\b${escapeRegExp(componentName)}\\b`, 'u').test(textWithoutExternalComponentRefs),
+  );
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
 function stalePackageReferences(text: string): string[] {
