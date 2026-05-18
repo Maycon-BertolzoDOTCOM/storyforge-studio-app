@@ -256,6 +256,74 @@ describe('connectors tool CLI', () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
 
+  it('continues bounded GitHub intake when repository metadata is too large', async () => {
+    const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'od-connectors-cli-'));
+    process.chdir(tmpDir);
+    process.env.OD_DAEMON_URL = 'http://127.0.0.1:7456';
+    process.env.OD_TOOL_TOKEN = 'agent-run-token';
+
+    const encode = (value: string) => Buffer.from(value, 'utf8').toString('base64');
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        connectors: [{
+          id: 'github',
+          name: 'GitHub',
+          provider: 'composio',
+          category: 'Developer',
+          status: 'connected',
+          tools: [{ name: 'github.github_get_repository_content' }],
+        }],
+      }), { headers: { 'Content-Type': 'application/json' }, status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: { code: 'CONNECTOR_OUTPUT_TOO_LARGE', message: 'connector output exceeds max serialized size' },
+      }), { headers: { 'Content-Type': 'application/json' }, status: 502 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ok: true,
+        output: { data: { path: 'README.md', encoding: 'base64', content: encode('# Huge Repo UI') } },
+      }), { headers: { 'Content-Type': 'application/json' }, status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: { code: 'CONNECTOR_OUTPUT_TOO_LARGE', message: 'connector output exceeds max serialized size' },
+      }), { headers: { 'Content-Type': 'application/json' }, status: 502 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ok: true,
+        output: { data: { content: [
+          { path: 'package.json', type: 'file' },
+          { path: 'src', type: 'dir' },
+        ] } },
+      }), { headers: { 'Content-Type': 'application/json' }, status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ok: true,
+        output: { data: { content: [
+          { path: 'src/styles.css', type: 'file' },
+        ] } },
+      }), { headers: { 'Content-Type': 'application/json' }, status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ok: true,
+        output: { data: '{"dependencies":{"@radix-ui/react-slot":"latest"}}' },
+      }), { headers: { 'Content-Type': 'application/json' }, status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ok: true,
+        output: { data: ':root { --color-brand: #ff5500; }' },
+      }), { headers: { 'Content-Type': 'application/json' }, status: 200 }));
+
+    const result = await runConnectorsToolCli(['github-design-context', '--repo', 'acme/huge-ui', '--max-files', '2', '--require-connector']);
+
+    expect(result.exitCode).toBe(0);
+    const stdout = JSON.parse(stdoutOutput.join(''));
+    expect(stdout).toEqual(expect.objectContaining({
+      ok: true,
+      method: 'connector',
+      warnings: expect.arrayContaining([
+        expect.stringContaining('Repository metadata connector read failed'),
+        expect.stringContaining('Recursive tree connector read failed'),
+      ]),
+    }));
+    await expect(readFile(path.join(tmpDir, 'context/github/acme-huge-ui.md'), 'utf8')).resolves.toContain('Huge Repo UI');
+    await expect(readFile(path.join(tmpDir, 'context/github/acme-huge-ui/files/src/styles.css'), 'utf8')).resolves.toContain('--color-brand');
+
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
   it('fails instead of using public fallback when GitHub connector intake is required', async () => {
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'od-connectors-cli-'));
     process.chdir(tmpDir);
@@ -282,7 +350,7 @@ describe('connectors tool CLI', () => {
     expect(stderrOutput.join('')).toContain('GitHub connector intake is required and could not read the repository');
     expect(stderrOutput.join('')).toContain('repository access denied');
     await expect(readFile(path.join(tmpDir, 'context/github/acme-private-ui.md'), 'utf8')).rejects.toThrow();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
 
     await rm(tmpDir, { recursive: true, force: true });
   });

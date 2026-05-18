@@ -515,9 +515,7 @@ async function collectGithubTreePathsFromDirectoryListings(
       });
       entries = extractDirectoryEntries(payload);
     } catch (error) {
-      if (currentDir) {
-        warnings.push(`Skipped directory ${currentDir}: ${error instanceof Error ? error.message : String(error)}`);
-      }
+      warnings.push(`Skipped directory ${currentDir || '.'}: ${error instanceof Error ? error.message : String(error)}`);
       continue;
     }
 
@@ -548,10 +546,19 @@ async function collectGithubEvidenceWithConnector(
 ): Promise<GithubDesignEvidence> {
   await assertGithubConnectorIsListable(baseUrl, token);
   const warnings: string[] = [];
-  const metadata = await executeConnectorReadTool(baseUrl, token, GITHUB_GET_REPOSITORY_TOOL, {
-    owner: repo.owner,
-    repo: repo.repo,
-  });
+  let metadata: unknown;
+  try {
+    metadata = await executeConnectorReadTool(baseUrl, token, GITHUB_GET_REPOSITORY_TOOL, {
+      owner: repo.owner,
+      repo: repo.repo,
+    });
+  } catch (error) {
+    warnings.push(
+      `Repository metadata connector read failed; continuing with ${
+        options.ref ?? 'main'
+      } as the ref: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
   const resolvedRef = options.ref ?? getDefaultBranch(metadata) ?? 'main';
 
   let readme: GithubDesignEvidence['readme'];
@@ -598,6 +605,15 @@ async function collectGithubEvidenceWithConnector(
     } catch (error) {
       warnings.push(`Skipped ${repoPath}: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  if (!readme && files.length === 0) {
+    throw new Error(
+      [
+        'GitHub connector did not produce readable repository evidence through bounded intake.',
+        warnings.length ? `Warnings: ${warnings.join(' | ')}` : '',
+      ].filter(Boolean).join(' '),
+    );
   }
 
   const metadataObject = metadata && typeof metadata === 'object' && !Array.isArray(metadata)
