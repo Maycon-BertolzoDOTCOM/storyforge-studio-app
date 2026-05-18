@@ -1769,6 +1769,14 @@ export async function auditDesignSystemPackage(
         'README.md',
       );
     }
+    if (readmeText !== undefined && !readmeHasPackageReuseGuide(readmeText)) {
+      addIssue(
+        'warning',
+        'readme_missing_package_reuse_guide',
+        'README.md should work as a Claude Design package guide: list source/context references, package contents, preview cards, preserved assets/fonts/build artifacts, ui_kits/app, and a concrete reuse or review workflow.',
+        'README.md',
+      );
+    }
   }
   for (const docPath of ['DESIGN.md', 'README.md', 'SKILL.md', 'ui_kits/app/README.md']) {
     if (!fileSet.has(docPath)) continue;
@@ -2214,6 +2222,22 @@ function readmeHasProductOverview(text: string): boolean {
   return body.length >= 180
     && /\b(product|app|application|workspace|client|platform|tool|service)\b/iu.test(body)
     && /\b(supports?|provides?|features?|includes?|built|designed|helps?|enables?|offers?)\b/iu.test(body);
+}
+
+function readmeHasPackageReuseGuide(text: string): boolean {
+  const hasPackageContents = /##\s+(?:Package Contents|What's inside|Contents|Files)\b/iu.test(text)
+    && /\bDESIGN\.md\b/iu.test(text)
+    && /\bcolors_and_type\.css\b/iu.test(text)
+    && /\bpreview\//iu.test(text)
+    && /\bui_kits\/app\/?\b/iu.test(text);
+  const hasSourceContext = /##\s+(?:Source Context|Source Evidence|Sources?|Product Overview|Product Context)\b/iu.test(text)
+    && /\b(?:GitHub|repository|source|evidence|context\/|local folder)\b/iu.test(text);
+  const hasPreservedArtifacts = /\b(?:assets\/|build\/|fonts\/|source_examples\/)\b/iu.test(text)
+    && /\b(?:preserv|source-backed|captured|runtime|brand|font|component)\b/iu.test(text);
+  const hasReuseWorkflow = /##\s+(?:Review Workflow|Reuse Workflow|Usage|How to use|Workflow)\b/iu.test(text)
+    && /\b(?:reuse|review|inspect|copy|load|compose|start with|open)\b/iu.test(text)
+    && /\b(?:preview|DESIGN\.md|colors_and_type\.css|ui_kits\/app|assets\/|fonts\/)\b/iu.test(text);
+  return hasPackageContents && hasSourceContext && hasPreservedArtifacts && hasReuseWorkflow;
 }
 
 function uiKitReadmeHasReuseGuide(text: string): boolean {

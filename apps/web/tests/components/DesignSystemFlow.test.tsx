@@ -125,6 +125,9 @@ describe('design system package audit helpers', () => {
       'preserve representative originals under root `build/`',
     );
     expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
+      'copy them byte-for-byte from captured context snapshots',
+    );
+    expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
       'copy substantive original component snapshots into `source_examples/`',
     );
     expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
@@ -471,6 +474,12 @@ describe('DesignSystemCreationFlow', () => {
       project.id,
       expect.objectContaining({
         pendingPrompt: expect.stringContaining('copy representative runtime assets there with their original filenames'),
+      }),
+    );
+    expect(mocks.patchProject).toHaveBeenCalledWith(
+      project.id,
+      expect.objectContaining({
+        pendingPrompt: expect.stringContaining('Copy those runtime assets byte-for-byte from the captured `context/.../files/...` snapshots.'),
       }),
     );
     expect(mocks.patchProject).toHaveBeenCalledWith(
@@ -1517,6 +1526,11 @@ describe('DesignSystemCreationFlow', () => {
       project.id,
       'context/source-context.md',
       expect.stringContaining('copy representative runtime assets there with their original filenames'),
+    );
+    expect(mocks.writeProjectTextFile).toHaveBeenCalledWith(
+      project.id,
+      'context/source-context.md',
+      expect.stringContaining('Copy those runtime assets byte-for-byte from the captured `context/.../files/...` snapshots.'),
     );
     expect(mocks.writeProjectTextFile).toHaveBeenCalledWith(
       project.id,

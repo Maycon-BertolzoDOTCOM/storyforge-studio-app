@@ -91,6 +91,17 @@ Company/product context: https://github.com/cherryhq/cherry-studio
 GitHub/code links: https://github.com/cherryhq/cherry-studio
 `;
 
+const README_WITHOUT_PACKAGE_REUSE_GUIDE = `# Cherry Studio Design System
+
+## Product Overview
+
+Cherry Studio is a desktop AI chat workspace for multi-model assistant workflows. The source product provides assistant navigation, topic and message review, model selection, file-aware composer controls, settings panels, and compact cross-platform app chrome for Windows, macOS, and Linux. Use this package to preserve that dense productivity surface rather than turning the system into a generic landing page.
+
+## Visual Direction
+
+The system uses compact app-shell layouts, source-backed green accents, neutral surfaces, preserved typography, and workflow-oriented copy. Keep future outputs dense, product-like, and grounded in captured evidence.
+`;
+
 const MARKDOWN_ONLY_AUDIT_SKILL = `# Cherry Studio Design System
 
 Use this skill when creating Open Design artifacts that should match the Cherry Studio desktop AI chat workspace.
@@ -1031,6 +1042,48 @@ describe('connectors tool CLI', () => {
         code: 'readme_missing_product_overview',
         path: 'README.md',
         message: expect.stringContaining('Product Overview'),
+      }),
+    ]));
+
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it('warns when README.md lacks a Claude-style package reuse guide', async () => {
+    const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'od-package-audit-readme-package-guide-'));
+    process.chdir(tmpDir);
+    await mkdir(path.join(tmpDir, 'preview'), { recursive: true });
+    await mkdir(path.join(tmpDir, 'ui_kits/app/components'), { recursive: true });
+    await writeFile(path.join(tmpDir, 'DESIGN.md'), AUDIT_DESIGN_MD);
+    await writeFile(path.join(tmpDir, 'README.md'), README_WITHOUT_PACKAGE_REUSE_GUIDE);
+    await writeFile(path.join(tmpDir, 'SKILL.md'), AUDIT_SKILL);
+    await writeFile(path.join(tmpDir, 'colors_and_type.css'), AUDIT_TOKENS_CSS);
+    for (const fileName of [
+      'colors-primary.html',
+      'colors-theme-light.html',
+      'typography-specimens.html',
+      'spacing-tokens.html',
+      'components-buttons.html',
+      'brand-assets.html',
+    ]) {
+      await writeFile(path.join(tmpDir, 'preview', fileName), auditHtml(fileName));
+    }
+    await writeFile(path.join(tmpDir, 'ui_kits/app/index.html'), auditUiKitIndex());
+    await writeFile(path.join(tmpDir, 'ui_kits/app/README.md'), AUDIT_UI_KIT_README);
+    for (const componentName of AUDIT_COMPONENT_FILES) {
+      await writeFile(
+        path.join(tmpDir, 'ui_kits/app/components', componentName),
+        auditUiKitComponent(componentName),
+      );
+    }
+
+    const result = await runConnectorsToolCli(['design-system-package-audit', '--path', tmpDir]);
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(stdoutOutput.join('')).warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'readme_missing_package_reuse_guide',
+        path: 'README.md',
+        message: expect.stringContaining('Claude Design package guide'),
       }),
     ]));
 
