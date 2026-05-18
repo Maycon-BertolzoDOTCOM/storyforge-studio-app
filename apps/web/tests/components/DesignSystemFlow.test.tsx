@@ -109,11 +109,21 @@ describe('design system package audit helpers', () => {
         code: 'missing_build_assets',
         message: 'Preserve runtime icons under build/.',
         path: 'build/',
+      }, {
+        severity: 'warning' as const,
+        code: 'readme_missing_package_reuse_guide',
+        message: 'README.md should work as a Claude Design package guide.',
+        path: 'README.md',
+      }, {
+        severity: 'warning' as const,
+        code: 'missing_skill_frontmatter',
+        message: 'SKILL.md should include YAML frontmatter.',
+        path: 'SKILL.md',
       }],
     };
 
     expect(summarizeDesignSystemPackageAudit(failingAudit)).toContain(
-      'Package audit found 1 error and 2 warnings',
+      'Package audit found 1 error and 4 warnings',
     );
     expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
       'tools connectors design-system-package-audit --path . --fail-on-warnings',
@@ -129,6 +139,21 @@ describe('design system package audit helpers', () => {
     );
     expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
       'copy substantive original component snapshots into `source_examples/`',
+    );
+    expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
+      'Targeted repair actions:',
+    );
+    expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
+      'Rebuild `ui_kits/app/index.html` as a runnable UI-kit entry',
+    );
+    expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
+      'Rewrite `SKILL.md` as a discoverable skill package',
+    );
+    expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
+      'Rewrite `README.md` as a Claude Design package guide',
+    );
+    expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
+      'copying originals from `context/.../files/build/...` into root `build/` byte-for-byte',
     );
     expect(buildDesignSystemPackageAuditRepairPrompt(failingAudit)).toContain(
       '[warning] missing_source_component_examples source_examples/',
