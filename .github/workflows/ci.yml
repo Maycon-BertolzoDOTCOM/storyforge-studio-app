@@ -436,11 +436,21 @@ jobs:
         run: pnpm --filter @open-design/e2e test
 
   ui_e2e_critical:
-    name: Playwright critical
+    name: Playwright critical (${{ matrix.group }})
     needs: [change_scopes]
     if: ${{ needs.change_scopes.outputs.workspace_validation_required == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: core
+            grep_flag: --grep-invert
+            grep_pattern: home starters|home hero
+          - group: starters
+            grep_flag: --grep
+            grep_pattern: home starters|home hero
 
     steps:
       - name: Checkout
@@ -498,7 +508,7 @@ jobs:
       - name: Playwright critical
         run: |
           pnpm -C e2e exec tsx scripts/playwright.ts clean
-          pnpm --filter @open-design/e2e run test:ui:critical
+          pnpm -C e2e exec playwright test -c playwright.config.ts ${{ matrix.grep_flag }} '${{ matrix.grep_pattern }}' ui/critical-smoke.test.ts ui/entry-chrome-flows.test.ts
 
   build_workspaces:
     name: Build workspaces
