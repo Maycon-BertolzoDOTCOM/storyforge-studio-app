@@ -199,7 +199,9 @@ export function PetOverlay({
     (task) => !acknowledgedRecentKeys.has(recentTaskKey(task)),
   );
   const visibleRecentTasks = bubbleOpen
-    ? taskCenter.recent.filter((task) => viewingRecentKeys.has(recentTaskKey(task)))
+    ? persistentBubble && viewingRecentKeys.size === 0
+      ? unacknowledgedRecentTasks
+      : taskCenter.recent.filter((task) => viewingRecentKeys.has(recentTaskKey(task)))
     : unacknowledgedRecentTasks;
   const activeTaskCount = activeTasks.reduce((sum, task) => sum + task.count, 0);
   const recentTaskCount = visibleRecentTasks.length;

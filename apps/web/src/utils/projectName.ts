@@ -1,3 +1,5 @@
+import type { Project } from '../types';
+
 const MAX_CJK_TITLE_LENGTH = 18;
 const MAX_LATIN_WORDS = 6;
 
@@ -78,4 +80,10 @@ export function summarizeProjectNameFromPrompt(prompt: string): string {
   const firstClause = cleaned.split(/[\n\r。！？!?]/)[0]?.trim() ?? cleaned;
   if (CJK_PATTERN.test(firstClause)) return trimCjkTitle(firstClause);
   return trimLatinTitle(firstClause);
+}
+
+export function canAutoRenameProjectFromPrompt(
+  project: Pick<Project, 'metadata'>,
+): boolean {
+  return project.metadata?.nameSource === 'generated';
 }

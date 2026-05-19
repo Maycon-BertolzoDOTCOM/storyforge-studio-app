@@ -57,6 +57,16 @@ afterEach(() => {
 });
 
 describe('PetOverlay recent task acknowledgement', () => {
+  it('shows recent completions immediately in persistent bubble mode', () => {
+    const { container } = render(
+      <PetOverlay pet={pet} taskCenter={recentOnly} persistentBubble />,
+    );
+
+    expect(container.querySelector('.pet-sprite-status')?.textContent).toBe('1');
+    expect(screen.getByText('Recently completed')).not.toBeNull();
+    expect(screen.getByText('Web Prototype')).not.toBeNull();
+  });
+
   it('clears the recent completion badge after the user opens it and hides it after closing', () => {
     const { container } = render(<PetOverlay pet={pet} taskCenter={recentOnly} />);
 

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { summarizeProjectNameFromPrompt } from '../../src/utils/projectName';
+import {
+  canAutoRenameProjectFromPrompt,
+  summarizeProjectNameFromPrompt,
+} from '../../src/utils/projectName';
 
 describe('summarizeProjectNameFromPrompt', () => {
   it('summarizes Chinese first prompts into concise project names', () => {
@@ -19,5 +22,19 @@ describe('summarizeProjectNameFromPrompt', () => {
     expect(
       summarizeProjectNameFromPrompt('Create a dashboard for https://example.com\n```ts\nconst x = 1\n```'),
     ).toBe('Dashboard');
+  });
+
+  it('only allows first-prompt renaming for generated project names', () => {
+    expect(
+      canAutoRenameProjectFromPrompt({
+        metadata: { kind: 'prototype', nameSource: 'generated' },
+      }),
+    ).toBe(true);
+    expect(
+      canAutoRenameProjectFromPrompt({
+        metadata: { kind: 'prototype', nameSource: 'user' },
+      }),
+    ).toBe(false);
+    expect(canAutoRenameProjectFromPrompt({ metadata: undefined })).toBe(false);
   });
 });
