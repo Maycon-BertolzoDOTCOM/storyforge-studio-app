@@ -21114,21 +21114,64 @@ body.desktop-pet-shell .pet-task-item {
 .library-install-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   padding: 10px;
   margin-top: 8px;
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   background: var(--bg-primary);
 }
-.library-install-form .seg-control {
+
+.library-import-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.library-install-form .library-import-source-control,
+.library-install-form .library-import-mode-control {
   width: fit-content;
+  min-height: 30px;
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.library-install-form .library-import-source-control {
+  grid-template-columns: repeat(2, auto);
+}
+
+.library-install-form .library-import-mode-control {
+  grid-template-columns: repeat(3, auto);
+}
+
+.library-install-form .library-import-source-control button,
+.library-install-form .library-import-mode-control button {
+  min-height: 24px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.library-install-form .library-import-source-control button.active,
+.library-install-form .library-import-mode-control button.active {
+  border-color: var(--border-subtle);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-xs);
 }
 
 .library-import-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 16px;
+  gap: 8px 14px;
   align-items: center;
 }
 
@@ -21144,15 +21187,16 @@ body.desktop-pet-shell .pet-task-item {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
 }
 
-.library-import-mode-control button {
-  font-size: 11px;
+.library-import-mode-control {
+  --seg-cols: 3;
 }
 
 .library-import-checkbox {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
   gap: 5px;
   color: var(--text-secondary);
