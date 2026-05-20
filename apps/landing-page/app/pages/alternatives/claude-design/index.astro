@@ -12,10 +12,15 @@
  * migration / first run, and a visible FAQ that matches FAQPage JSON-LD.
  */
 import Layout from '../../../_components/sub-page-layout.astro';
+import { localeFromPath, localizedHref } from '../../../i18n';
 
-const SITE = 'https://open-design.ai/';
+// Derive SITE from Astro.site so preview/staging JSON-LD matches the
+// layout's canonical link. Falls back to the production origin.
+const SITE = Astro.site?.toString() ?? 'https://open-design.ai/';
 const REPO = 'https://github.com/nexu-io/open-design';
 const REPO_RELEASES = `${REPO}/releases`;
+const locale = localeFromPath(Astro.url.pathname);
+const href = (path: string) => localizedHref(path, locale);
 
 const title = 'Open-source Claude Design alternative — Open Design (BYOK, local-first)';
 const description =
@@ -63,12 +68,16 @@ const faq = [
 
 const jsonLd = [
   {
+    // Two-level breadcrumb only. There is no real `/alternatives/`
+    // index page today, so we don't fabricate a middle node — both
+    // the JSON-LD and the visible nav point straight from the home
+    // surface to this leaf. Mirror this if/when `/alternatives/`
+    // becomes a real index page.
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Open Design', item: SITE },
-      { '@type': 'ListItem', position: 2, name: 'Alternatives', item: `${SITE}alternatives/claude-design/` },
-      { '@type': 'ListItem', position: 3, name: 'Claude Design', item: `${SITE}alternatives/claude-design/` },
+      { '@type': 'ListItem', position: 2, name: 'Open-source Claude Design alternative', item: `${SITE}alternatives/claude-design/` },
     ],
   },
   {
@@ -93,11 +102,9 @@ const jsonLd = [
 
 <Layout title={title} description={description} active="home" jsonLd={jsonLd}>
   <nav class="breadcrumb" aria-label="Breadcrumb">
-    <a href="/">Open Design</a>
+    <a href={href('/')}>Open Design</a>
     <span>/</span>
-    <a href="/compare/">Alternatives</a>
-    <span>/</span>
-    <span aria-current="page">Claude Design</span>
+    <span aria-current="page">Open-source Claude Design alternative</span>
   </nav>
 
   <article class="info-page">
@@ -211,10 +218,10 @@ const jsonLd = [
         recommend a one-time brand-extraction run:
       </p>
       <ol>
-        <li>Install Open Design — see <a class="inline-link" href="/quickstart/">/quickstart/</a> (three commands).</li>
+        <li>Install Open Design — see <a class="inline-link" href={href('/quickstart/')}>/quickstart/</a> (three commands).</li>
         <li>Open the web UI, point your agent at one Claude Design artifact you like, and ask it to extract the brand into a <code>DESIGN.md</code> file.</li>
         <li>Save that <code>DESIGN.md</code> into your repo under <code>design-systems/&lt;your-brand&gt;/</code>.</li>
-        <li>Pick a skill from <a class="inline-link" href="/skills/">/skills/</a> and render it against your new brand — the agent uses the saved <code>DESIGN.md</code> as the brand contract.</li>
+        <li>Pick a skill from <a class="inline-link" href={href('/skills/')}>/skills/</a> and render it against your new brand — the agent uses the saved <code>DESIGN.md</code> as the brand contract.</li>
       </ol>
       <p>
         From then on, every skill renders in your brand without
@@ -240,6 +247,27 @@ const jsonLd = [
           </li>
         ))}
       </ol>
+    </section>
+
+    <section class="info-cta" aria-label="Open Design call to action">
+      <div>
+        <h2>Switch in <em>three commands</em>.</h2>
+        <p>
+          Star the repo, grab the desktop build, or run the install in
+          your terminal. Your DESIGN.md system stays in your repo from
+          the first render onward.
+        </p>
+      </div>
+      <div class="info-cta-actions">
+        <a class="btn btn-primary" href={REPO} target="_blank" rel="noreferrer noopener">Star on GitHub</a>
+        <a class="btn btn-ghost" href={href('/quickstart/')}>Quickstart</a>
+        <a class="btn btn-ghost" href={REPO_RELEASES} target="_blank" rel="noreferrer noopener">Download desktop</a>
+      </div>
+      <div class="info-cta-meta">
+        <span class="stamp">● Apache-2.0</span>
+        <span>Local-first · BYOK</span>
+        <span>macOS · Windows · Linux</span>
+      </div>
     </section>
   </article>
 </Layout>

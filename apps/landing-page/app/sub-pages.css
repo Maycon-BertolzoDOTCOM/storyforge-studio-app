@@ -18,12 +18,20 @@ body.sub-page {
 }
 
 .sub-main {
-  padding: 140px 0 96px;
+  /* Only set vertical padding here. The element also has the `.container`
+   * class which provides the responsive horizontal gutter; using the
+   * `padding` shorthand instead would zero out left/right and let
+   * content touch the screen edge on mobile (issue #review-fix-8). */
+  padding-top: 140px;
+  padding-bottom: 96px;
   min-height: 60vh;
 }
 
 @media (max-width: 720px) {
-  .sub-main { padding: 120px 0 72px; }
+  .sub-main {
+    padding-top: 120px;
+    padding-bottom: 72px;
+  }
 }
 
 /* ---------- nav active state ---------- */
@@ -1166,6 +1174,74 @@ body.sub-page {
   transition: border-color 0.16s ease;
 }
 .info-toc a:hover { border-bottom-color: var(--coral); }
+
+/* Closing CTA strip — used at the bottom of /quickstart/, /agents/,
+ * /alternatives/claude-design/. Gives the documentation-heavy SEO
+ * pages a concrete exit point: Star · Download · Discord. */
+.info-cta {
+  margin-top: 56px;
+  padding: 36px 0 28px;
+  border-top: 1px solid var(--ink);
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 32px;
+  align-items: end;
+}
+.info-cta h2 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(26px, 3.4vw, 36px);
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+.info-cta h2 em {
+  font-style: italic;
+  color: var(--coral);
+}
+.info-cta p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.info-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.info-cta-actions .btn {
+  white-space: nowrap;
+}
+.info-cta-meta {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding-top: 18px;
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.info-cta-meta .stamp {
+  color: var(--coral);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .info-cta {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .info-cta-actions {
+    justify-content: flex-start;
+  }
+}
 
 /* TL;DR / Summary card. */
 .tldr-card {

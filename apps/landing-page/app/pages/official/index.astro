@@ -14,10 +14,15 @@
  */
 import Layout from '../../_components/sub-page-layout.astro';
 import { getGithubRepoMeta } from '../../_lib/github';
+import { localeFromPath, localizedHref } from '../../i18n';
 
 const github = await getGithubRepoMeta();
+const locale = localeFromPath(Astro.url.pathname);
+const href = (path: string) => localizedHref(path, locale);
 
-const SITE = 'https://open-design.ai/';
+// Derive SITE from Astro.site so preview/staging JSON-LD matches the
+// layout's canonical link. Falls back to the production origin.
+const SITE = Astro.site?.toString() ?? 'https://open-design.ai/';
 const REPO = 'https://github.com/nexu-io/open-design';
 const REPO_RELEASES = `${REPO}/releases`;
 const REPO_ISSUES = `${REPO}/issues`;
@@ -37,9 +42,9 @@ const sources = [
   { label: 'Community', name: 'Discord', href: DISCORD },
   { label: 'Documentation', name: 'GitHub README', href: DOCS },
   { label: 'License', name: 'Apache-2.0', href: REPO_LICENSE },
-  { label: 'Skills catalog', name: '/skills/', href: '/skills/' },
-  { label: 'Systems catalog', name: '/systems/', href: '/systems/' },
-  { label: 'Templates catalog', name: '/templates/', href: '/templates/' },
+  { label: 'Skills catalog', name: '/skills/', href: href('/skills/') },
+  { label: 'Systems catalog', name: '/systems/', href: href('/systems/') },
+  { label: 'Templates catalog', name: '/templates/', href: href('/templates/') },
 ];
 
 const jsonLd = [
@@ -48,25 +53,31 @@ const jsonLd = [
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Open Design', item: SITE },
-      { '@type': 'ListItem', position: 2, name: 'Official', item: `${SITE}official/` },
+      { '@type': 'ListItem', position: 2, name: 'Official source page', item: `${SITE}official/` },
     ],
   },
   {
+    // The Organization entity is fully defined on `/` with the canonical
+    // `@id: '<site>#organization'`. Schema.org `@id`s should be unique,
+    // so we only REFERENCE the entity here (this WebPage is "about"
+    // that Organization), not redefine it. Google merges the two
+    // mentions through the shared `@id`.
     '@context': 'https://schema.org',
-    '@type': 'Organization',
-    '@id': `${SITE}#organization`,
-    name: 'Open Design',
-    alternateName: ['OpenDesign', 'open-design', 'opendesign', 'Open Design AI', 'OD', 'nexu-io/open-design'],
-    url: SITE,
-    logo: `${SITE}android-chrome-512x512.png`,
-    sameAs: [REPO, DISCORD],
+    '@type': 'WebPage',
+    '@id': `${SITE}official/#webpage`,
+    name: title,
+    description,
+    url: `${SITE}official/`,
+    isPartOf: { '@id': `${SITE}#website` },
+    about: { '@id': `${SITE}#organization` },
+    mainEntity: { '@id': `${SITE}#organization` },
   },
 ];
 ---
 
 <Layout title={title} description={description} active="home" jsonLd={jsonLd}>
   <nav class="breadcrumb" aria-label="Breadcrumb">
-    <a href="/">Open Design</a>
+    <a href={href('/')}>Open Design</a>
     <span>/</span>
     <span aria-current="page">Official</span>
   </nav>
@@ -90,7 +101,7 @@ const jsonLd = [
     <section class="info-section">
       <h2>Canonical surfaces</h2>
       <p>
-        Bookmark <a class="inline-link" href="/">open-design.ai</a> and the
+        Bookmark <a class="inline-link" href={href('/')}>open-design.ai</a> and the
         GitHub repo. Everything else points back to one of these two.
       </p>
       <div class="source-card">
@@ -122,7 +133,7 @@ const jsonLd = [
       </ul>
       <p>
         All six names refer to this same project. The canonical URL is
-        always <a class="inline-link" href="/">open-design.ai</a>.
+        always <a class="inline-link" href={href('/')}>open-design.ai</a>.
       </p>
     </section>
 
@@ -154,11 +165,11 @@ const jsonLd = [
     <section class="info-section">
       <h2>Where to go next</h2>
       <ul>
-        <li><a class="inline-link" href="/quickstart/">Quickstart</a> — install in three commands.</li>
-        <li><a class="inline-link" href="/agents/">Agents</a> — Claude Code, Codex, Cursor, Gemini, OpenCode, Qwen.</li>
-        <li><a class="inline-link" href="/alternatives/claude-design/">Claude Design alternative</a> — comparison and migration.</li>
-        <li><a class="inline-link" href="/skills/">Skills catalog</a> — every shippable design skill.</li>
-        <li><a class="inline-link" href="/systems/">Systems catalog</a> — every portable DESIGN.md brand system.</li>
+        <li><a class="inline-link" href={href('/quickstart/')}>Quickstart</a> — install in three commands.</li>
+        <li><a class="inline-link" href={href('/agents/')}>Agents</a> — Claude Code, Codex, Cursor, Gemini, OpenCode, Qwen.</li>
+        <li><a class="inline-link" href={href('/alternatives/claude-design/')}>Claude Design alternative</a> — comparison and migration.</li>
+        <li><a class="inline-link" href={href('/skills/')}>Skills catalog</a> — every shippable design skill.</li>
+        <li><a class="inline-link" href={href('/systems/')}>Systems catalog</a> — every portable DESIGN.md brand system.</li>
       </ul>
     </section>
   </article>

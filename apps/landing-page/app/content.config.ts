@@ -7,11 +7,34 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
+const localizedContentSchema = z
+  .record(
+    z.string(),
+    z
+      .object({
+        name: z.string().optional(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        summary: z.string().optional(),
+        category: z.string().optional(),
+        tagline: z.string().optional(),
+        atmosphere: z.string().optional(),
+        body: z.string().optional(),
+        bodyHtml: z.string().optional(),
+        triggers: z.array(z.string()).optional(),
+        examplePrompt: z.string().optional(),
+        example_prompt: z.string().optional(),
+      })
+      .passthrough(),
+  )
+  .optional();
+
 const skillSchema = z
   .object({
     name: z.string().optional(),
     description: z.string().optional(),
     triggers: z.array(z.string()).optional(),
+    i18n: localizedContentSchema,
     od: z
       .object({
         mode: z.string().optional(),
@@ -45,7 +68,7 @@ const systems = defineCollection({
     base: '../../design-systems',
     pattern: '*/DESIGN.md',
   }),
-  schema: z.object({}).passthrough(),
+  schema: z.object({ i18n: localizedContentSchema }).passthrough(),
 });
 
 const craft = defineCollection({
@@ -53,7 +76,7 @@ const craft = defineCollection({
     base: '../../craft',
     pattern: '*.md',
   }),
-  schema: z.object({}).passthrough(),
+  schema: z.object({ i18n: localizedContentSchema }).passthrough(),
 });
 
 // `templates/live-artifacts/<slug>/README.md` — Live Artifact bundles.
@@ -64,7 +87,7 @@ const templates = defineCollection({
     base: '../../templates/live-artifacts',
     pattern: '*/README.md',
   }),
-  schema: z.object({}).passthrough(),
+  schema: z.object({ i18n: localizedContentSchema }).passthrough(),
 });
 
 // Blog posts live in `app/content/blog/*.md`. Each post must declare a typed
@@ -78,13 +101,29 @@ const blog = defineCollection({
     pattern: ['*.md', '!_*.md'],
     base: './app/content/blog',
   }),
-  schema: z.object({
-    title: z.string(),
-    date: z.coerce.date(),
-    category: z.enum(['Product', 'Guides', 'Use cases', 'Community']),
-    readingTime: z.number().int().positive(),
-    summary: z.string(),
-  }),
+  schema: z
+    .object({
+      title: z.string(),
+      date: z.coerce.date(),
+      category: z.enum(['Product', 'Guides', 'Use cases', 'Community']),
+      readingTime: z.number().int().positive(),
+      summary: z.string(),
+      i18n: z
+        .record(
+          z.string(),
+          z
+            .object({
+              title: z.string().optional(),
+              summary: z.string().optional(),
+              category: z.string().optional(),
+              body: z.string().optional(),
+              bodyHtml: z.string().optional(),
+            })
+            .passthrough(),
+        )
+        .optional(),
+    })
+    .passthrough(),
 });
 
 export const collections = { skills, systems, craft, templates, blog };

@@ -4,6 +4,8 @@ import {
   LANDING_LOCALES,
   getCommonCopy,
   isLandingLocale,
+  localePath,
+  stripLocaleFromPath,
 } from '../i18n';
 
 const REPO = 'https://github.com/nexu-io/open-design';
@@ -12,11 +14,17 @@ const ext = {
   target: '_blank',
   rel: 'noreferrer noopener',
 } as const;
-const NBSP = '\u00A0';
+const NBSP = ' ';
 const { github = { versionLabel: 'v0.3.0' }, locale: rawLocale = DEFAULT_LOCALE } =
   Astro.props;
 const locale = isLandingLocale(rawLocale) ? rawLocale : DEFAULT_LOCALE;
 const copy = getCommonCopy(locale).topbar;
+const { pathname: basePath } = stripLocaleFromPath(Astro.url.pathname);
+const localeOptions = LANDING_LOCALES.map((entry) => ({
+  ...entry,
+  href: localePath(entry.code, basePath),
+}));
+const currentCode = locale.toUpperCase();
 ---
 
 <div class='topbar' data-od-id='topbar'>
@@ -35,20 +43,46 @@ const copy = getCommonCopy(locale).topbar;
         <span class='pulse'></span>
         {copy.live} · <span data-github-version>{github.versionLabel}</span>
       </a>
-      <label class='locale-switch'>
-        <span class='sr-only'>{copy.languageSwitcherLabel}</span>
-        <select
-          class='locale-select'
-          data-locale-select
-          aria-label={copy.languageSwitcherLabel}
-        >
-          {LANDING_LOCALES.map((entry) => (
-            <option value={entry.code} selected={entry.code === locale}>
-              {entry.label}
-            </option>
+      <details class='locale-switch' data-locale-switch>
+        <summary class='locale-trigger' aria-label={copy.languageSwitcherLabel}>
+          <span class='locale-trigger-prefix' aria-hidden='true'>Lang</span>
+          <span class='locale-trigger-sep' aria-hidden='true'>·</span>
+          <span class='locale-trigger-code'>{currentCode}</span>
+          <svg
+            class='locale-trigger-caret'
+            viewBox='0 0 8 5'
+            aria-hidden='true'
+            focusable='false'
+          >
+            <path
+              d='M0.5 0.75 L4 4 L7.5 0.75'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='1'
+              stroke-linecap='square'
+            />
+          </svg>
+        </summary>
+        <div class='locale-menu' role='menu'>
+          {localeOptions.map((entry) => (
+            <a
+              class:list={[
+                'locale-menu-item',
+                { 'is-active': entry.code === locale },
+              ]}
+              role='menuitem'
+              data-locale-link
+              data-locale-code={entry.code}
+              href={entry.href}
+              lang={entry.htmlLang}
+              aria-current={entry.code === locale ? 'true' : undefined}
+            >
+              <span class='locale-menu-code'>{entry.code.toUpperCase()}</span>
+              <span class='locale-menu-label'>{entry.label}</span>
+            </a>
           ))}
-        </select>
-      </label>
+        </div>
+      </details>
     </span>
   </div>
 </div>

@@ -49,28 +49,62 @@ const script = `
     return \`\${nextPath}\${window.location.search}\${window.location.hash}\`;
   };
 
+  const persistLocale = (locale) => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, locale);
+    } catch {}
+  };
+
   const selectLocale = (locale, persist) => {
     const next = normalizeLocale(locale) ?? DEFAULT_LOCALE;
-    if (persist) {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, next);
-      } catch {}
-    }
+    if (persist) persistLocale(next);
     const target = targetFor(next);
     const current = \`\${window.location.pathname}\${window.location.search}\${window.location.hash}\`;
     if (current !== target) window.location.assign(target);
   };
 
   const bindSwitchers = () => {
-    const current = currentFromPath();
-    for (const select of document.querySelectorAll('[data-locale-select]')) {
-      select.value = current;
-      select.addEventListener('change', () => selectLocale(select.value, true));
+    // Each locale entry is a real <a> link with a server-computed href, so
+    // navigation happens for free (and survives right-click → "open in new
+    // tab"). The click handler's only job is to persist the user's choice
+    // so future visits to '/' auto-route to it.
+    for (const link of document.querySelectorAll('[data-locale-link]')) {
+      if (link.dataset.localeBound === 'true') continue;
+      link.dataset.localeBound = 'true';
+      link.addEventListener('click', (event) => {
+        if (event.defaultPrevented) return;
+        if (event.button !== 0) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        const code = link.dataset.localeCode;
+        if (!code) return;
+        persistLocale(code);
+        const details = link.closest('[data-locale-switch]');
+        if (details && details.open) details.open = false;
+      });
     }
+
+    // Native <details> stays open until the summary is clicked again. Add
+    // outside-click + Escape close so it behaves like a real menu.
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      for (const details of document.querySelectorAll('[data-locale-switch][open]')) {
+        if (target instanceof Node && details.contains(target)) continue;
+        details.open = false;
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      for (const details of document.querySelectorAll('[data-locale-switch][open]')) {
+        details.open = false;
+        const summary = details.querySelector('summary');
+        if (summary instanceof HTMLElement) summary.focus();
+      }
+    });
   };
 
   const autoAdapt = () => {
-    if (currentFromPath() !== DEFAULT_LOCALE || window.location.pathname !== '/') return;
+    if (currentFromPath() !== DEFAULT_LOCALE) return;
     let saved = null;
     try {
       saved = normalizeLocale(window.localStorage.getItem(STORAGE_KEY) ?? '');

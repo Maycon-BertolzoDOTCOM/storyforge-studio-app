@@ -1,6 +1,12 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  DEFAULT_LOCALE,
+  getLandingUiCopy,
+  getLocalizedString,
+  type LandingLocaleCode,
+} from './i18n';
 
 type TrustTier = 'official' | 'trusted' | 'restricted';
 
@@ -188,32 +194,33 @@ const sourceUrlFromSource = (source: string): string | undefined => {
 const registryUrlFor = (registryId: string) =>
   `${RAW_REPO}/plugins/registry/${registryId}/open-design-marketplace.json`;
 
-const previewLabelFor = (type: string | undefined) => {
-  if (type === 'image') return 'Image preview';
-  if (type === 'video') return 'Video poster';
-  return 'Live HTML preview';
+const previewLabelFor = (
+  type: string | undefined,
+  locale: LandingLocaleCode = DEFAULT_LOCALE,
+) => {
+  const copy = getLandingUiCopy(locale).plugins;
+  if (type === 'image') return copy.imagePreview;
+  if (type === 'video') return copy.videoPoster;
+  return copy.liveHtmlPreview;
 };
 
-const localizedString = (value: unknown): string | undefined => {
-  const text = asString(value);
-  if (text) {
-    return text;
-  }
-
-  const record = asRecord(value);
-  return (
-    asString(record?.en) ??
-    asString(record?.['zh-CN']) ??
-    asString(record?.['zh']) ??
-    Object.values(record ?? {})
-      .map((item) => asString(item))
-      .find(Boolean)
+const localizedString = (
+  value: unknown,
+  locale: LandingLocaleCode = DEFAULT_LOCALE,
+): string | undefined => {
+  const text = getLocalizedString(
+    value as Parameters<typeof getLocalizedString>[0],
+    locale,
   );
+  return text || undefined;
 };
 
-const useCaseQuery = (value: unknown): string | undefined => {
+const useCaseQuery = (
+  value: unknown,
+  locale: LandingLocaleCode = DEFAULT_LOCALE,
+): string | undefined => {
   const record = asRecord(value);
-  return localizedString(record?.query);
+  return localizedString(record?.query, locale);
 };
 
 const localPluginPath = (pluginDir: string, entry: string): string | undefined => {
@@ -238,6 +245,7 @@ const previewFrom = (
   pluginDir: string | undefined,
   id: string,
   rawPreview: unknown,
+  locale: LandingLocaleCode = DEFAULT_LOCALE,
 ): PublicPluginPreview | undefined => {
   const preview = asRecord(rawPreview);
   const rawType = asString(preview?.type);
@@ -248,7 +256,7 @@ const previewFrom = (
   if (rawType === 'image' || (!rawType && poster)) {
     return {
       type: 'image',
-      label: previewLabelFor('image'),
+      label: previewLabelFor('image', locale),
       poster,
       frameHref: undefined,
       localHtmlPath: undefined,
@@ -258,7 +266,7 @@ const previewFrom = (
   if (rawType === 'video') {
     return {
       type: 'video',
-      label: previewLabelFor('video'),
+      label: previewLabelFor('video', locale),
       poster,
       frameHref: undefined,
       localHtmlPath: undefined,
@@ -274,7 +282,7 @@ const previewFrom = (
         : undefined;
       return {
         type: 'html',
-        label: previewLabelFor('html'),
+        label: previewLabelFor('html', locale),
         poster,
         frameHref,
         localHtmlPath: frameHref ? localHtmlPath : undefined,
@@ -285,7 +293,7 @@ const previewFrom = (
   if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
     return {
       type: 'html',
-      label: previewLabelFor('html'),
+      label: previewLabelFor('html', locale),
       poster,
       frameHref: url,
       localHtmlPath: undefined,
@@ -361,6 +369,7 @@ const entryFromMarketplace = (
   registryName: string,
   registryTrust: TrustTier,
   rawEntry: RawPluginEntry,
+  locale: LandingLocaleCode,
 ): PublicPluginEntry | undefined => {
   const id = asString(rawEntry.name);
   const source = asString(rawEntry.source ?? rawEntry.dist);
@@ -369,19 +378,19 @@ const entryFromMarketplace = (
   }
 
   const trust = registryTrust;
-  const title = asString(rawEntry.title) ?? titleize(id.split('/').at(-1) ?? id);
+  const title = localizedString(rawEntry.title, locale) ?? titleize(id.split('/').at(-1) ?? id);
   const description =
-    asString(rawEntry.description) ??
+    localizedString(rawEntry.description, locale) ??
     'Agent-native Open Design workflow packaged as a portable plugin.';
   const tags = asStringArray(rawEntry.tags);
   const capabilities = asStringArray(rawEntry.capabilitiesSummary);
   const version = asString(rawEntry.version) ?? '0.1.0';
-  const publisher = publisherLabel(rawEntry.publisher);
+  const publisher = publisherLabel(rawEntry.publisher, locale);
   const detailHref = detailHrefFor(id);
   const mode = asString(rawEntry.mode);
   const taskKind = asString(rawEntry.taskKind);
   const surface = undefined;
-  const preview = previewFrom(undefined, id, rawEntry.preview);
+  const preview = previewFrom(undefined, id, rawEntry.preview, locale);
 
   return {
     id,
@@ -430,8 +439,11 @@ const entryFromMarketplace = (
   };
 };
 
-const publisherLabel = (publisher: unknown): string | undefined => {
-  const text = asString(publisher);
+const publisherLabel = (
+  publisher: unknown,
+  locale: LandingLocaleCode = DEFAULT_LOCALE,
+): string | undefined => {
+  const text = localizedString(publisher, locale);
   if (text) {
     return text;
   }
@@ -439,7 +451,9 @@ const publisherLabel = (publisher: unknown): string | undefined => {
   return asString(record?.name) ?? asString(record?.id) ?? asString(record?.github);
 };
 
-const loadRegistryEntries = (): PublicPluginEntry[] => {
+const loadRegistryEntries = (
+  locale: LandingLocaleCode = DEFAULT_LOCALE,
+): PublicPluginEntry[] => {
   if (!existsSync(REGISTRY_ROOT)) {
     return [];
   }
@@ -454,7 +468,10 @@ const loadRegistryEntries = (): PublicPluginEntry[] => {
     const manifestPath = path.join(REGISTRY_ROOT, registryId, 'open-design-marketplace.json');
     const manifest = readJson<RawMarketplace>(manifestPath);
     const rawPlugins = Array.isArray(manifest?.plugins) ? manifest.plugins : [];
-    const registryName = asString(manifest?.name) ?? titleize(registryId);
+    const registryName =
+      registryId === 'official'
+        ? getLandingUiCopy(locale).plugins.official
+        : localizedString(manifest?.name, locale) ?? titleize(registryId);
     const registryTrust = normalizeTrust(
       manifest?.trust,
       registryTrustFallback(registryId),
@@ -470,6 +487,7 @@ const loadRegistryEntries = (): PublicPluginEntry[] => {
         registryName,
         registryTrust,
         rawEntry,
+        locale,
       );
       if (entry) {
         entries.push(entry);
@@ -480,7 +498,11 @@ const loadRegistryEntries = (): PublicPluginEntry[] => {
   return entries;
 };
 
-const officialEntryFromManifest = (manifestPath: string): PublicPluginEntry | undefined => {
+const officialEntryFromManifest = (
+  manifestPath: string,
+  locale: LandingLocaleCode = DEFAULT_LOCALE,
+): PublicPluginEntry | undefined => {
+  const copy = getLandingUiCopy(locale).plugins;
   const manifest = readJson<RawPluginManifest>(manifestPath);
   const pluginName = asString(manifest?.name) ?? path.basename(path.dirname(manifestPath));
   const id = `open-design/${pluginName}`;
@@ -490,16 +512,16 @@ const officialEntryFromManifest = (manifestPath: string): PublicPluginEntry | un
   const od = asRecord(manifest?.od) as RawOdMetadata | undefined;
   const capabilities = asStringArray(od?.capabilities);
   const tags = asStringArray(manifest?.tags);
-  const title = asString(manifest?.title) ?? titleize(pluginName);
+  const title = localizedString(manifest?.title, locale) ?? titleize(pluginName);
   const description =
-    asString(manifest?.description) ??
+    localizedString(manifest?.description, locale) ??
     'First-party Open Design workflow packaged as a portable plugin.';
   const detailHref = detailHrefFor(id);
   const mode = asString(od?.mode);
   const taskKind = asString(od?.taskKind);
   const surface = asString(od?.surface);
-  const preview = previewFrom(pluginDir, id, od?.preview);
-  const exampleQuery = useCaseQuery(od?.useCase);
+  const preview = previewFrom(pluginDir, id, od?.preview, locale);
+  const exampleQuery = useCaseQuery(od?.useCase, locale);
 
   return {
     id,
@@ -508,7 +530,7 @@ const officialEntryFromManifest = (manifestPath: string): PublicPluginEntry | un
     description,
     version: asString(manifest?.version) ?? '0.1.0',
     registryId: 'official',
-    registryName: 'Official',
+    registryName: copy.official,
     trust: 'official',
     source,
     sourceUrl: `${REPO}/tree/main/${repoPath}`,
@@ -534,8 +556,8 @@ const officialEntryFromManifest = (manifestPath: string): PublicPluginEntry | un
       id,
       title,
       description,
-      'Official',
-      'official',
+      copy.official,
+      copy.trustLabels.official,
       mode,
       taskKind,
       surface,
@@ -549,19 +571,23 @@ const officialEntryFromManifest = (manifestPath: string): PublicPluginEntry | un
   };
 };
 
-const loadBundledOfficialEntries = (): PublicPluginEntry[] =>
+const loadBundledOfficialEntries = (
+  locale: LandingLocaleCode = DEFAULT_LOCALE,
+): PublicPluginEntry[] =>
   findManifestFiles(OFFICIAL_PLUGINS_ROOT)
-    .map(officialEntryFromManifest)
+    .map((manifestPath) => officialEntryFromManifest(manifestPath, locale))
     .filter((entry): entry is PublicPluginEntry => Boolean(entry));
 
-export const getPublicPlugins = (): PublicPluginEntry[] => {
+export const getPublicPlugins = (
+  locale: LandingLocaleCode = DEFAULT_LOCALE,
+): PublicPluginEntry[] => {
   const byId = new Map<string, PublicPluginEntry>();
 
-  for (const entry of loadRegistryEntries()) {
+  for (const entry of loadRegistryEntries(locale)) {
     byId.set(entry.id, entry);
   }
 
-  for (const entry of loadBundledOfficialEntries()) {
+  for (const entry of loadBundledOfficialEntries(locale)) {
     const existing = byId.get(entry.id);
     if (existing) {
       const preview = existing.preview ?? entry.preview;
@@ -602,7 +628,7 @@ export const getPublicPlugins = (): PublicPluginEntry[] => {
     if (order !== 0) {
       return order;
     }
-    return left.title.localeCompare(right.title, 'en');
+    return left.title.localeCompare(right.title, locale);
   });
 };
 

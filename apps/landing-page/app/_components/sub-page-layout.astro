@@ -28,6 +28,7 @@ import SiteFooter from './site-footer.astro';
 import Topbar from './topbar.astro';
 import { heroImage } from '../image-assets';
 import {
+  LANDING_LOCALES,
   alternateLinksForPath,
   getLocaleDefinition,
   localeFromPath,
@@ -51,7 +52,7 @@ const alternateLinks = alternateLinksForPath(Astro.url.pathname).map((entry) => 
   ...entry,
   href: new URL(entry.hrefPath, Astro.site).toString(),
 }));
-const xDefaultHref = new URL(alternateLinksForPath(Astro.url.pathname)[0]!.hrefPath, Astro.site).toString();
+const xDefaultHref = new URL(alternateLinks[0]!.hrefPath, Astro.site).toString();
 const og = ogImage ?? heroImage;
 const counts = await getCatalogCounts();
 const github = await getGithubRepoMeta();
@@ -86,6 +87,9 @@ const ldArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={og} />
     <meta property="og:locale" content={localeDef.ogLocale} />
+    {LANDING_LOCALES.filter((entry) => entry.code !== locale).map((entry) => (
+      <meta property="og:locale:alternate" content={entry.ogLocale} />
+    ))}
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />

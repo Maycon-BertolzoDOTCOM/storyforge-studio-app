@@ -3,6 +3,7 @@ import type { HeaderProps } from './header';
 import {
   DEFAULT_LOCALE,
   getCommonCopy,
+  getLandingUiCopy,
   isLandingLocale,
   localizedHref,
 } from '../i18n';
@@ -15,6 +16,7 @@ interface Props {
 const { counts, locale: rawLocale = DEFAULT_LOCALE } = Astro.props as Props;
 const locale = isLandingLocale(rawLocale) ? rawLocale : DEFAULT_LOCALE;
 const copy = getCommonCopy(locale).header;
+const ui = getLandingUiCopy(locale);
 const href = (path: string) => localizedHref(path, locale);
 const REPO = 'https://github.com/nexu-io/open-design';
 const DISCORD = 'https://discord.gg/9ptkbbqRu';
@@ -31,12 +33,11 @@ const DISCORD = 'https://discord.gg/9ptkbbqRu';
           <span>Open Design</span>
         </a>
         <p>
-          The official open-source, local-first alternative to Claude
-          Design. Apache-2.0, BYOK at every layer.
+          {ui.footer.summary}
         </p>
       </div>
       <div class='sub-footer-col'>
-        <h5>Catalog</h5>
+        <h5>{ui.footer.catalog}</h5>
         <ul>
           <li><a href={href('/skills/')}>{counts.skills} {copy.nav.skills}</a></li>
           <li><a href={href('/systems/')}>{counts.systems} {copy.nav.systems}</a></li>
@@ -45,17 +46,17 @@ const DISCORD = 'https://discord.gg/9ptkbbqRu';
         </ul>
       </div>
       <div class='sub-footer-col'>
-        <h5>Open Design</h5>
+        <h5>{ui.footer.openDesign}</h5>
         <ul>
-          <li><a href={href('/official/')}>Official source page</a></li>
-          <li><a href={href('/quickstart/')}>Quickstart</a></li>
-          <li><a href={href('/agents/')}>Agents</a></li>
-          <li><a href={href('/compare/')}>Compare</a></li>
-          <li><a href={href('/alternatives/claude-design/')}>Claude Design alternative</a></li>
+          <li><a href={href('/official/')}>{ui.footer.official}</a></li>
+          <li><a href={href('/quickstart/')}>{ui.footer.quickstart}</a></li>
+          <li><a href={href('/agents/')}>{ui.footer.agents}</a></li>
+          <li><a href={href('/compare/')}>{ui.footer.compare}</a></li>
+          <li><a href={href('/alternatives/claude-design/')}>{ui.footer.claudeAlternative}</a></li>
         </ul>
       </div>
       <div class='sub-footer-col'>
-        <h5>Connect</h5>
+        <h5>{ui.footer.connect}</h5>
         <ul>
           <li><a href={REPO} target='_blank' rel='noopener'>GitHub</a></li>
           <li><a href={`${REPO}/issues`} target='_blank' rel='noopener'>Issues</a></li>
@@ -67,8 +68,8 @@ const DISCORD = 'https://discord.gg/9ptkbbqRu';
       </div>
     </div>
     <div class='sub-footer-bottom'>
-      <span>● Open Design · Apache-2.0 · 2026 / Volume 01 / Issue Nº 26</span>
-      <span>Berlin / Open / Earth · 52.5200° N · 13.4050° E</span>
+      <span>{ui.footer.bottomLeft}</span>
+      <span>{ui.footer.bottomRight}</span>
     </div>
   </div>
 </footer>

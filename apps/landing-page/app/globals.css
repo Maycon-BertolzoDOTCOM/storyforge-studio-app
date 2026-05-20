@@ -167,36 +167,136 @@ body::before {
   transition: color 160ms ease, border-color 160ms ease;
 }
 .topbar-link:hover { color: var(--coral); border-bottom-color: var(--coral); }
+/*
+ * Editorial language switcher. The trigger reads as part of the
+ * masthead line ("● LIVE · V0.7.0 / LANG · ZH-TW") — uppercase
+ * tracked text, no pill, no border. The dropdown is a small
+ * floating panel that mirrors the topbar's paper/ink palette but
+ * drops the tracking so native scripts (中文 / 한국어 / العربية)
+ * read at their intended rhythm.
+ */
 .locale-switch {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
   position: relative;
 }
-.locale-select {
-  max-width: 168px;
-  min-width: 116px;
-  height: 28px;
-  border: 1px solid rgba(21, 20, 15, 0.18);
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--paper), white 28%);
-  color: var(--ink);
-  font: inherit;
-  letter-spacing: 0.04em;
-  text-transform: none;
-  padding: 0 28px 0 10px;
-  outline: none;
+.locale-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+  color: inherit;
+  list-style: none;
+  border-bottom: 1px solid transparent;
+  transition: color 160ms ease, border-color 160ms ease;
+  user-select: none;
+  outline: none;
+  padding: 0;
 }
-.locale-select:hover,
-.locale-select:focus-visible {
-  border-color: var(--coral);
-  background: var(--paper);
+.locale-trigger::-webkit-details-marker { display: none; }
+.locale-trigger:hover,
+.locale-switch[open] > .locale-trigger,
+.locale-trigger:focus-visible {
+  color: var(--coral);
+  border-bottom-color: var(--coral);
+}
+.locale-trigger-prefix {
+  color: var(--ink-faint);
+}
+.locale-trigger:hover .locale-trigger-prefix,
+.locale-switch[open] > .locale-trigger .locale-trigger-prefix,
+.locale-trigger:focus-visible .locale-trigger-prefix {
   color: var(--coral);
 }
-.locale-select option {
+.locale-trigger-sep {
+  opacity: 0.55;
+}
+.locale-trigger-code {
+  font: inherit;
+  letter-spacing: inherit;
   color: var(--ink);
+  font-weight: 600;
+}
+.locale-trigger:hover .locale-trigger-code,
+.locale-switch[open] > .locale-trigger .locale-trigger-code,
+.locale-trigger:focus-visible .locale-trigger-code {
+  color: var(--coral);
+}
+.locale-trigger-caret {
+  width: 8px;
+  height: 5px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+.locale-switch[open] > .locale-trigger .locale-trigger-caret {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+.locale-menu {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  z-index: 60;
+  min-width: 232px;
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+  padding: 6px;
   background: var(--paper);
+  border: 1px solid rgba(21, 20, 15, 0.14);
+  box-shadow:
+    0 1px 0 rgba(21, 20, 15, 0.04),
+    0 22px 48px -28px rgba(21, 20, 15, 0.32);
+  font-family: var(--sans);
+  letter-spacing: normal;
+  text-transform: none;
+  /* Subtle entrance — matches the rest of the site's 200ms ease-out */
+  animation: locale-menu-in 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes locale-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.locale-menu-item {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 9px 12px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.2;
+  transition: background 140ms ease, color 140ms ease;
+}
+.locale-menu-item + .locale-menu-item {
+  border-top: 1px solid rgba(21, 20, 15, 0.05);
+}
+.locale-menu-item:hover {
+  background: color-mix(in oklab, var(--paper), var(--ink) 6%);
+  color: var(--coral);
+}
+.locale-menu-item:hover .locale-menu-code { color: var(--coral); }
+.locale-menu-item.is-active {
+  color: var(--coral);
+}
+.locale-menu-item.is-active .locale-menu-code {
+  color: var(--coral);
+}
+.locale-menu-code {
+  flex-shrink: 0;
+  min-width: 52px;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  transition: color 140ms ease;
+}
+.locale-menu-label {
+  flex: 1;
+  min-width: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .locale-menu { animation: none; }
+  .locale-trigger-caret { transition: none; }
 }
 .topbar .pulse {
   width: 6px; height: 6px;
@@ -1725,6 +1825,94 @@ section.tight { padding: 90px 0; }
   transform: rotate(180deg);
 }
 
+/* ---------- OFFICIAL SOURCE STRIP ----------
+ *
+ * Slim attestation band that sits between the hero/wire and About.
+ * Reinforces the canonical surfaces — official site, GitHub repo,
+ * releases, download, docs, Discord — for both Google entity merge
+ * and human verification. Minimal chrome on purpose.
+ */
+.official-strip {
+  padding: 38px 0 18px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+.official-strip-inner {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) 1fr;
+  gap: 28px;
+  align-items: center;
+}
+.official-strip-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.official-strip-label .ix {
+  color: var(--coral);
+  margin-left: 6px;
+}
+.official-strip-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 18px 24px;
+  padding: 0;
+  margin: 0;
+}
+.official-strip-list li {
+  display: flex;
+  min-width: 0;
+}
+.official-strip-list a {
+  display: grid;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid transparent;
+  text-decoration: none;
+  color: var(--ink);
+  font-family: var(--sans);
+  min-width: 0;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.official-strip-list a:hover {
+  border-bottom-color: var(--coral);
+  color: var(--coral);
+}
+.official-strip-list .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.official-strip-list .value {
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 980px) {
+  .official-strip-inner {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .official-strip-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .official-strip-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 18px;
+  }
+}
+
 /* ---------- FAQ ---------- */
 .faq-head {
   max-width: 880px;
@@ -2171,7 +2359,6 @@ footer {
 @media (max-width: 640px) {
   .topbar-inner { gap: 14px; }
   .topbar-inner .right { gap: 12px; }
-  .locale-select { max-width: 132px; min-width: 104px; }
   .hero-actions .btn { padding: 12px 18px; font-size: 13px; }
   .work-card h3 { font-size: clamp(24px, 6vw, 30px); }
   .foot-mega .word { font-size: clamp(54px, 18vw, 120px); }
@@ -2195,12 +2382,10 @@ footer {
   section { padding: 80px 0; }
   .topbar-inner { font-size: 9px; gap: 10px; }
   .topbar-inner .right { gap: 10px; }
-  .locale-select {
-    max-width: 112px;
-    min-width: 92px;
-    height: 26px;
-    padding-left: 8px;
-  }
+  .locale-trigger { gap: 4px; }
+  .locale-trigger-prefix { display: none; }
+  .locale-trigger-sep { display: none; }
+  .locale-menu { min-width: 208px; }
   .partners { grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .foot-grid { grid-template-columns: 1fr; gap: 24px; }
   .work { margin: 0 8px; padding: 48px 20px; border-radius: 20px; }
@@ -2223,7 +2408,7 @@ footer {
     align-items: flex-end;
     gap: 6px;
   }
-  .locale-select { max-width: 104px; min-width: 88px; }
+  .locale-menu { min-width: 192px; }
   .hero-stats { gap: 10px 16px; }
   .hero-stats .stat { font-size: 11px; }
   .hero-foot { font-size: 9.5px; }

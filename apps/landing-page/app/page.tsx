@@ -74,6 +74,7 @@ const REPO_CONTRIBUTORS = `${REPO}/graphs/contributors`;
 const REPO_DAEMON = `${REPO}/tree/main/apps/daemon`;
 const REPO_SKILLS = `${REPO}/tree/main/skills`;
 const REPO_DESIGN_SYSTEMS = `${REPO}/tree/main/design-systems`;
+const REPO_DOCS = `${REPO}#readme`;
 const DISCORD = 'https://discord.gg/9ptkbbqRu';
 
 // Lineage / inspiration projects — make every brand mention clickable.
@@ -372,6 +373,70 @@ export default function Page({
          * row is passed through as static data.
          */}
         <Wire cities={WIRE_CITIES} />
+
+        {/* ====== OFFICIAL SOURCE STRIP ======
+         *
+         * Thin attestation band that reinforces the canonical surfaces:
+         * official site, GitHub repo, releases, download, docs, Discord.
+         * Mirrors the Organization.sameAs + SoftwareApplication signals
+         * emitted in `pages/index.astro` so both Google entity-merge and
+         * human verification see the same six links in the same order.
+         * Keep this small (one line of icons + labels); the editorial
+         * sections below carry the heavy explanation.
+         */}
+        <section
+          className='official-strip'
+          data-od-id='official-strip'
+          aria-label='Official Open Design sources'
+        >
+          <div className='container'>
+            <div className='official-strip-inner' data-reveal>
+              <span className='official-strip-label'>
+                Official source <span className='ix'>· Nº 00</span>
+              </span>
+              <ul className='official-strip-list'>
+                <li>
+                  <a href='/official/'>
+                    <span className='label'>Official site</span>
+                    <span className='value'>open-design.ai</span>
+                  </a>
+                </li>
+                <li>
+                  <a href={REPO} {...ext}>
+                    <span className='label'>Source</span>
+                    <span className='value'>nexu-io/open-design</span>
+                  </a>
+                </li>
+                <li>
+                  <a href={REPO_RELEASES} {...ext}>
+                    <span className='label'>Releases</span>
+                    <span className='value' data-github-version>
+                      {github.versionLabel}
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a href={REPO_RELEASES} {...ext}>
+                    <span className='label'>Download</span>
+                    <span className='value'>Desktop · macOS · Win · Linux</span>
+                  </a>
+                </li>
+                <li>
+                  <a href={REPO_DOCS} {...ext}>
+                    <span className='label'>Docs</span>
+                    <span className='value'>README + /quickstart/</span>
+                  </a>
+                </li>
+                <li>
+                  <a href={DISCORD} {...ext}>
+                    <span className='label'>Community</span>
+                    <span className='value'>Discord</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
         {/* ====== ABOUT ====== */}
         <section className='about' data-od-id='about'>

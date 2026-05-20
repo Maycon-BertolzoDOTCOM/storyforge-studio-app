@@ -12,17 +12,51 @@
  * adversarial and tank trust.
  */
 import Layout from '../../_components/sub-page-layout.astro';
+import { localeFromPath, localizedHref } from '../../i18n';
 
-const SITE = 'https://open-design.ai/';
+// Derive SITE from Astro.site so preview/staging deploys produce JSON-LD
+// that matches the layout's `canonical` link. Falls back to the
+// production origin so a missing `site` config never emits a broken URL.
+const SITE = Astro.site?.toString() ?? 'https://open-design.ai/';
+const locale = localeFromPath(Astro.url.pathname);
+const href = (path: string) => localizedHref(path, locale);
 
 const title = 'Open Design vs Claude Design, Figma Make, v0, Lovable — honest comparison';
 const description =
   'Compare Open Design to the major AI design tools. Hosted vs local-first, BYOK vs vendor-locked, single-shot generation vs portable DESIGN.md systems. Includes an honest limitations section.';
 
+// Honest-limits FAQ — visible at the bottom of the page AND emitted as
+// FAQPage JSON-LD. Google requires schema entries to mirror visible
+// content; converting our "what we don't do" prose into question form
+// gives us a shot at the People Also Ask rich result on comparison
+// queries.
+const limitsFaq = [
+  {
+    q: 'Does Open Design offer a hosted web sandbox?',
+    a: 'No. Open Design is local-first by design — the daemon, web UI, and skill runtime all run on your machine. If you need a one-click hosted sandbox with zero local install, the hosted competitors on this page are a better fit for that use case.',
+  },
+  {
+    q: 'Can I use Open Design without installing anything?',
+    a: 'Not today. The minimum is a local daemon plus a coding agent (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, Grok, Hermes, Kimi, Pi, Devin, OpenCode, Qwen, DeepSeek, Vibe, Kiro, Kilo, or Qoder). Open Design embraces the local install on purpose; design artifacts live as files in your project, not documents in a vendor cloud.',
+  },
+  {
+    q: 'Is Open Design a v0 / Lovable / Bolt replacement?',
+    a: 'It depends on your use case. v0, Lovable, and Bolt focus on prompt-to-app on a hosted sandbox. Open Design focuses on prompt-to-design-artifact (decks, dashboards, landing pages, brand systems, prototypes) via a skill protocol you can fork. Many teams use both: hosted full-app generators for prototyping, Open Design for design system + artifact production.',
+  },
+  {
+    q: 'Does Open Design send my data to Anthropic, OpenAI, or Google?',
+    a: 'Only your prompt + skill context goes to the provider whose key you brought (BYOK). No design output is forwarded to any Open Design server — there isn\'t one. The same applies to every supported agent: the daemon talks to your chosen provider with your credentials.',
+  },
+  {
+    q: 'Can I self-host Open Design on my own infrastructure?',
+    a: 'Yes. Apache-2.0 license, Node 24 daemon, no required SaaS. Run the daemon on your own machine, your own server, or your team\'s shared host; ship the desktop app as-is or fork the repo and rebrand it for your studio.',
+  },
+];
+
 const comparisons = [
   {
     competitor: 'Claude Design',
-    href: '/alternatives/claude-design/',
+    href: href('/alternatives/claude-design/'),
     summary:
       'Hosted product tied to a single vendor. Open Design is local-first, BYOK, and Apache-2.0 — your skills and DESIGN.md live in your repo.',
     cta: 'Read the full comparison →',
@@ -74,12 +108,22 @@ const jsonLd = [
     url: `${SITE}compare/`,
     isPartOf: { '@id': `${SITE}#website` },
   },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    '@id': `${SITE}compare/#limits-faq`,
+    mainEntity: limitsFaq.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  },
 ];
 ---
 
 <Layout title={title} description={description} active="home" jsonLd={jsonLd}>
   <nav class="breadcrumb" aria-label="Breadcrumb">
-    <a href="/">Open Design</a>
+    <a href={href('/')}>Open Design</a>
     <span>/</span>
     <span aria-current="page">Compare</span>
   </nav>
@@ -140,22 +184,27 @@ const jsonLd = [
     </section>
 
     <section class="info-section" id="limits">
-      <h2>Honest limits</h2>
+      <h2>Honest <em>limits</em> — what Open Design isn't</h2>
       <p>
-        Open Design is not a hosted PaaS. If you want a one-click web
-        sandbox with zero local install, the hosted competitors above are
-        better for that use case. Open Design is the better fit when:
+        Open Design isn't trying to be every hosted AI design tool. The
+        questions below are the ones that recur in Discord and GitHub
+        issues from evaluators; the answers describe the trade-offs
+        instead of glossing them.
       </p>
-      <ul>
-        <li>You care about your design system staying in your repo as Markdown, not in someone's cloud DB.</li>
-        <li>You want to drive design from the same agent you use for code (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Qwen).</li>
-        <li>You need BYOK so API spend and credentials stay on your account.</li>
-        <li>You expect to fork and rebrand the tool for your studio or company.</li>
-      </ul>
-      <p>
-        For everything else, the comparison pages above describe the
-        trade-offs in detail.
-      </p>
+      <ol class="faq-list">
+        {limitsFaq.map(({ q, a }, idx) => (
+          <li class="faq-item">
+            <details>
+              <summary>
+                <span class="faq-index">{String(idx + 1).padStart(2, '0')}</span>
+                <span class="faq-q">{q}</span>
+                <span class="faq-toggle" aria-hidden="true">+</span>
+              </summary>
+              <p class="faq-a">{a}</p>
+            </details>
+          </li>
+        ))}
+      </ol>
     </section>
   </article>
 </Layout>

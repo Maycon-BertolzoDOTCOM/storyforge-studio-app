@@ -190,6 +190,216 @@ export interface HomeFaqEntry {
   a: string;
 }
 
+export interface LandingUiCopy {
+  footer: {
+    summary: string;
+    catalog: string;
+    openDesign: string;
+    official: string;
+    quickstart: string;
+    agents: string;
+    compare: string;
+    claudeAlternative: string;
+    connect: string;
+    bottomLeft: string;
+    bottomRight: string;
+  };
+  blog: {
+    title: string;
+    seoTitle: string;
+    description: string;
+    categoriesLabel: string;
+    categories: {
+      all: string;
+      product: string;
+      guides: string;
+      useCases: string;
+      community: string;
+    };
+    minRead: string;
+    readMore: string;
+    read: string;
+    backToBlog: string;
+    noEntries: string;
+    noPostsInCategory: string;
+    nextStep: string;
+    joinDiscord: string;
+    viewSource: string;
+    cta: {
+      downloadTitle: string;
+      downloadBody: string;
+      downloadLabel: string;
+      skillsTitle: string;
+      skillsBody: string;
+      skillsLabel: string;
+      repoTitle: string;
+      repoBody: string;
+      repoLabel: string;
+    };
+  };
+  catalog: {
+    breadcrumbLabel: string;
+    skills: {
+      title: (count: number) => string;
+      description: string;
+      label: string;
+      heading: (count: number) => string;
+      lead: string;
+      mode: string;
+      scenario: string;
+      platform: string;
+      featured: string;
+      allAria: string;
+      detailTitle: (name: string) => string;
+      detailFallbackDescription: (name: string) => string;
+      detailLabel: string;
+      featuredNumber: (rank: string) => string;
+      viewOnGithub: string;
+      upstream: string;
+      previewCaption: (slug: string) => string;
+      triggers: string;
+      triggersLead: string;
+      examplePrompt: string;
+      related: string;
+      filterTitle: (heading: string, count: number) => string;
+      modeDescription: (heading: string, count: number) => string;
+      scenarioDescription: (heading: string, count: number) => string;
+      modeHeading: (heading: string, count: number) => string;
+      scenarioHeading: (heading: string, count: number) => string;
+      modeLead: (label: string) => string;
+      scenarioLead: (label: string) => string;
+      allSkills: (count?: number) => string;
+    };
+    systems: {
+      title: (count: number) => string;
+      description: string;
+      label: string;
+      heading: (count: number) => string;
+      lead: string;
+      category: string;
+      allAria: string;
+      detailTitle: (name: string) => string;
+      detailFallbackDescription: (name: string, category: string) => string;
+      detailLabel: string;
+      viewOnGithub: string;
+      paletteSample: string;
+      paletteLead: (count: number) => string;
+      visualTheme: string;
+      related: (category: string) => string;
+      categoryDescription: (heading: string, count: number) => string;
+      categoryHeading: (heading: string, count: number) => string;
+      categoryLead: (label: string) => string;
+      allSystems: string;
+    };
+    templates: {
+      title: (count: number) => string;
+      description: string;
+      label: string;
+      heading: (count: number) => string;
+      lead: string;
+      allAria: string;
+      liveArtifact: string;
+      skillTemplate: string;
+      detailTitle: (name: string) => string;
+      detailLabel: string;
+      forkOnGithub: string;
+      previewCaption: string;
+      whatsInside: string;
+      whatsInsideLead: string;
+      renderer: string;
+      seedData: string;
+      readme: string;
+    };
+    craft: {
+      title: (count: number) => string;
+      description: string;
+      label: string;
+      heading: (count: number) => string;
+      lead: string;
+      allAria: string;
+      detailTitle: (name: string) => string;
+      detailFallbackDescription: (name: string) => string;
+      detailLabel: string;
+      readFullRule: string;
+      related: string;
+    };
+  };
+  plugins: {
+    registryTitle: string;
+    registryDescription: (count: number) => string;
+    directoryRailRight: string;
+    directoryRailLeft: string;
+    topbarTitle: string;
+    topbarSubtitle: string;
+    topbarMeta: string;
+    sourceJson: string;
+    heroLabel: string;
+    heroTitle: string;
+    heroBody: string;
+    browseRegistry: string;
+    communityMarketplace: string;
+    preview: string;
+    installableEntries: string;
+    official: string;
+    withPreview: string;
+    surfaces: string;
+    availableFromSources: string;
+    registryEntries: string;
+    searchPlugins: string;
+    searchPlaceholder: string;
+    filtersLabel: string;
+    all: string;
+    community: string;
+    visiblePlugins: string;
+    openDetails: (title: string) => string;
+    details: string;
+    detailTitle: (title: string) => string;
+    detailDescription: (description: string, command: string) => string;
+    detailRailRight: (id: string) => string;
+    allPlugins: string;
+    registry: string;
+    deprecated: string;
+    yanked: string;
+    installFromRegistry: string;
+    copy: string;
+    copied: string;
+    select: string;
+    previewAndFacts: string;
+    marketplaceJson: string;
+    sourceRepository: string;
+    homepage: string;
+    interactivePreview: string;
+    imagePreview: string;
+    videoPoster: string;
+    liveHtmlPreview: string;
+    trustLabels: {
+      official: string;
+      trusted: string;
+      restricted: string;
+    };
+    facts: {
+      pluginId: string;
+      version: string;
+      registry: string;
+      mode: string;
+      license: string;
+      publisher: string;
+      notSpecified: string;
+    };
+    howItResolves: string;
+    provenance: string;
+    provenanceBody: string;
+    capabilities: string;
+    workflowSurface: string;
+    directSourceFallback: string;
+    examplePrompt: string;
+    howPeopleUseIt: string;
+    examplePromptBody: string;
+    moreFrom: (registryName: string) => string;
+    related: string;
+  };
+}
+
 type HomeFaqTemplate = {
   q: string;
   a: string;
@@ -799,11 +1009,43 @@ const HOME_FAQ_COPY: Record<LandingLocaleCode, HomeFaqTemplate[]> = {
     },
     {
       q: 'Which coding agents does Open Design support?',
-      a: 'Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Qwen, and other adapters that speak the same skill protocol. Switching agents does not require redesigning your skill library.',
+      a: 'Open Design ships 17 first-party BYOK adapters out of the box: Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot CLI, Grok, Hermes, Kimi, Devin for Terminal, OpenCode, Qwen, DeepSeek, Pi, Mistral Vibe, Kiro, Kilo, and Qoder. Any adapter that speaks the same skill protocol works — switching agents is a config change, not a redesign.',
     },
     {
       q: 'Can I self-host or fork it?',
       a: 'Yes. The code is Apache-2.0. You can fork the repo, edit skills, add your own DESIGN.md systems, or run the daemon on your own machines.',
+    },
+    // ---- Q9+ — added after the initial 8-Q sync; non-English locales
+    // will fall back to English for these entries until translators
+    // catch up. Order is intentional: data-flow / cost questions first
+    // (the highest evaluator concerns), then workflow / roadmap. ----
+    {
+      q: 'Is my data sent to Anthropic, OpenAI, or Google?',
+      a: 'Only your prompt and skill context goes to whichever provider you bring keys for (BYOK). Open Design has no server of its own — the daemon talks to your provider directly. Generated artifacts land as files in your project directory, not in any vendor cloud.',
+    },
+    {
+      q: 'Can I run Open Design without installing the CLI or desktop app?',
+      a: 'Not today. Open Design is local-first by design — the minimum is a local daemon plus an agent (Claude Code, Codex, Cursor, Gemini CLI, or one of the 17 supported adapters). A hosted sandbox is on the roadmap but not the priority: artifacts in your repo beat documents in someone else\'s database.',
+    },
+    {
+      q: 'How much does Open Design cost?',
+      a: 'The product is free and Apache-2.0 — there is no Open Design subscription. You pay the API costs of whichever provider you use (Anthropic, OpenAI, Google, Mistral, xAI, Moonshot, etc.), billed directly to your account. BYOK keeps both the credentials and the spend on your side of the line.',
+    },
+    {
+      q: 'Can I self-host Open Design on Vercel, Cloudflare, or my own server?',
+      a: 'Yes. The daemon runs anywhere Node 24 runs, and the landing page is a static Astro build that deploys to Cloudflare Pages, Vercel, or Netlify as-is. Teams running shared deployments typically pin the daemon to a machine inside their network and point each developer\'s CLI at it.',
+    },
+    {
+      q: 'How do I move my brand into Open Design?',
+      a: 'Drop a screenshot or a Figma export into the web UI and ask your agent to extract a brand into a DESIGN.md file. Save that file under design-systems/<your-brand>/ in your repo; every skill then renders in that brand without re-prompting. /alternatives/claude-design/ describes the same flow in step form.',
+    },
+    {
+      q: 'Can I switch agents without redoing my work?',
+      a: 'Yes. Skills and DESIGN.md systems are agent-agnostic — the same SKILL.md file renders against Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, Grok, Hermes, Qwen, or any other supported adapter. Switching agents is a config change in the daemon, not a redesign.',
+    },
+    {
+      q: 'What\'s on the Open Design roadmap?',
+      a: 'The live roadmap is at docs/roadmap.md in the GitHub repo, and weekly release notes ship through GitHub Releases. Major themes for the next quarter: more agent adapters, richer template families (3D, video, audio), and an optional shared-daemon mode for design teams.',
     },
   ],
   zh: [
@@ -1267,6 +1509,557 @@ const HOME_FAQ_COPY: Record<LandingLocaleCode, HomeFaqTemplate[]> = {
   ],
 };
 
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends (...args: any[]) => any
+    ? T[K]
+    : T[K] extends object
+      ? DeepPartial<T[K]>
+      : T[K];
+};
+
+const LANDING_UI_COPY: LandingUiCopy = {
+  footer: {
+    summary:
+      'The official open-source, local-first alternative to Claude Design. Apache-2.0, BYOK at every layer.',
+    catalog: 'Catalog',
+    openDesign: 'Open Design',
+    official: 'Official source page',
+    quickstart: 'Quickstart',
+    agents: 'Agents',
+    compare: 'Compare',
+    claudeAlternative: 'Claude Design alternative',
+    connect: 'Connect',
+    bottomLeft: '● Open Design · Apache-2.0 · 2026 / Volume 01 / Issue Nº 26',
+    bottomRight: 'Berlin / Open / Earth · 52.5200° N · 13.4050° E',
+  },
+  blog: {
+    title: 'Blog',
+    seoTitle: 'Blog — Open Design',
+    description:
+      'Notes to help you understand, explore, and build with Open Design — across product, guides, use cases, and community.',
+    categoriesLabel: 'Blog categories',
+    categories: {
+      all: 'All',
+      product: 'Product',
+      guides: 'Guides',
+      useCases: 'Use cases',
+      community: 'Community',
+    },
+    minRead: 'min read',
+    readMore: 'Read more →',
+    read: 'Read →',
+    backToBlog: '← Back to Blog',
+    noEntries: 'No entries yet. Check back soon.',
+    noPostsInCategory: 'No posts in this category yet. More field notes are coming.',
+    nextStep: 'Next step',
+    joinDiscord: 'Join Discord',
+    viewSource: 'View source on GitHub ↗',
+    cta: {
+      downloadTitle: 'Download the desktop build',
+      downloadBody:
+        'Take the open-source design workspace for a spin, inspect the release notes on GitHub, or join our Discord for live community feedback.',
+      downloadLabel: 'Download desktop ↗',
+      skillsTitle: 'Run the skill workflow locally',
+      skillsBody:
+        'Browse the workflow library, pick a starting point, and wire it into the agent you already use. Join our Discord if you want help adapting it.',
+      skillsLabel: 'Browse workflows ↗',
+      repoTitle: 'See the implementation on GitHub',
+      repoBody:
+        'Open the repository to inspect the source, star the project, fork the workflow, or join our Discord to discuss what should land next.',
+      repoLabel: 'Open repository ↗',
+    },
+  },
+  catalog: {
+    breadcrumbLabel: 'Breadcrumb',
+    skills: {
+      title: (count) => `Skills — ${count} composable design capabilities | Open Design`,
+      description:
+        'Browse the full Open Design skills catalog: 100+ file-based SKILL.md bundles spanning decks, prototypes, dashboards, mobile flows, video, and live artifacts. Each skill is a folder you drop into the daemon.',
+      label: 'Catalog · Nº 01',
+      heading: (count) => `Skills — ${count} composable design capabilities.`,
+      lead:
+        'Each skill is a single folder with one SKILL.md. Drop it in, restart the daemon, the picker shows it. Filter by surface, scenario, or platform below to find the one that matches your brief.',
+      mode: 'Mode',
+      scenario: 'Scenario',
+      platform: 'Platform',
+      featured: 'Featured',
+      allAria: 'All skills',
+      detailTitle: (name) => `${name} — Open Design skill`,
+      detailFallbackDescription: (name) => `Open Design skill bundle: ${name}.`,
+      detailLabel: 'Skill',
+      featuredNumber: (rank) => `· Featured Nº ${rank}`,
+      viewOnGithub: 'View on GitHub',
+      upstream: 'Upstream',
+      previewCaption: (slug) => `Rendered from skills/${slug}/example.html`,
+      triggers: 'Triggers',
+      triggersLead:
+        'The picker matches these prompts to the skill. Copy one and adapt it to your brief.',
+      examplePrompt: 'Example prompt',
+      related: 'Related skills',
+      filterTitle: (heading, count) =>
+        `${heading} skills — ${count} Open Design ${heading.toLowerCase()} agents`,
+      modeDescription: (heading, count) =>
+        `Every Open Design skill that produces ${heading.toLowerCase()} artifacts. ${count} ready-to-run, system-aware agents — installable through the daemon, brand-locked through any DESIGN.md system.`,
+      scenarioDescription: (heading, count) =>
+        `Every Open Design skill in the ${heading.toLowerCase()} scenario. ${count} ready-to-run agents covering decks, prototypes, templates, and live artifacts — all brand-locked through any DESIGN.md.`,
+      modeHeading: (heading, count) =>
+        `${heading} — ${count} brand-grade ${heading.toLowerCase()} agents.`,
+      scenarioHeading: (heading, count) =>
+        `${heading} — ${count} ${heading.toLowerCase()} skills.`,
+      modeLead: (label) =>
+        `Filtered to od.mode: ${label}. Every skill below reads the active DESIGN.md as a system prompt, so it inherits colors, type, and spacing from any portable system you pair it with.`,
+      scenarioLead: (label) =>
+        `Filtered to od.scenario: ${label}. Pair any of these with a portable design system and the daemon orchestrates the rest — one prompt, one branded artifact.`,
+      allSkills: (count) => `← All skills${typeof count === 'number' ? ` (${count} of total)` : ''}`,
+    },
+    systems: {
+      title: (count) => `Design Systems — ${count} portable visual systems | Open Design`,
+      description:
+        'Browse the full Open Design design systems catalog: 100+ DESIGN.md token bundles spanning editorial, productivity, brand, futuristic, and minimalist systems. Pick one in the daemon top-bar and every skill renders in that visual language.',
+      label: 'Catalog · Nº 02',
+      heading: (count) => `Design Systems — ${count} portable visual systems.`,
+      lead:
+        'Each system is a single DESIGN.md token spec. Pick one in the daemon top-bar and every skill reads it as part of its system prompt — colors, type, spacing, components, all consistent.',
+      category: 'Category',
+      allAria: 'All systems',
+      detailTitle: (name) => `${name} — Open Design design system`,
+      detailFallbackDescription: (name, category) =>
+        `Open Design system bundle: ${name}, ${category}.`,
+      detailLabel: 'Design system',
+      viewOnGithub: 'View DESIGN.md on GitHub',
+      paletteSample: 'Palette sample',
+      paletteLead: (count) =>
+        `First ${count} hex codes lifted from the DESIGN.md color sections. The full palette and roles live in the source spec.`,
+      visualTheme: 'Visual theme',
+      related: (category) => `Related systems in ${category}`,
+      categoryDescription: (heading, count) =>
+        `Every Open Design design system tagged ${heading.toLowerCase()}. ${count} portable DESIGN.md token bundles — ready to pair with any skill in the catalog for instant brand-grade output.`,
+      categoryHeading: (heading, count) =>
+        `${heading} — ${count} portable visual systems.`,
+      categoryLead: (label) =>
+        `Filtered to category ${label}. Pick any of these in the daemon top-bar and every skill in the catalog reads its tokens — colors, type, spacing, voice — as part of its system prompt.`,
+      allSystems: '← All design systems',
+    },
+    templates: {
+      title: (count) => `Templates — ${count} ready-to-fork artifact templates | Open Design`,
+      description:
+        'Ready-to-fork artifact templates: refreshable Live Artifacts (Notion-style team dashboards, ops briefs) plus deck and prototype starting points. Each template ships as a fork-friendly bundle with sample data.',
+      label: 'Catalog · Nº 04',
+      heading: (count) => `Templates — ${count} ready-to-fork artifacts.`,
+      lead:
+        'Pre-wired artifact bundles with sample data and a known-good visual language. Fork the folder, swap the sample data with yours, and ship.',
+      allAria: 'All templates',
+      liveArtifact: 'Live Artifact',
+      skillTemplate: 'Skill template',
+      detailTitle: (name) => `${name} — Open Design template`,
+      detailLabel: 'Template',
+      forkOnGithub: 'Fork on GitHub',
+      previewCaption: "Rendered from the template's seed data.",
+      whatsInside: "What's in this template",
+      whatsInsideLead:
+        'Live Artifact templates ship as a folder you can copy verbatim into your workspace. They include a template.html renderer, a data.json with the seed values, and a README describing the connector wiring.',
+      renderer: 'the artifact renderer',
+      seedData: 'seed values for offline / preview rendering',
+      readme: 'connector wiring, refresh cadence, customization notes',
+    },
+    craft: {
+      title: (count) => `Craft — ${count} brand-agnostic rendering principles | Open Design`,
+      description:
+        'Universal craft rules every Open Design skill can opt into: accessibility, animation discipline, color, form validation, laws of UX, RTL/Bidi, state coverage, and typography hierarchy.',
+      label: 'Catalog · Nº 03',
+      heading: (count) => `Craft — ${count} brand-agnostic rendering principles.`,
+      lead:
+        'Skills declare which craft rules they require. The agent loads the matching rules into its system prompt so quality concerns (a11y, motion, color, type) stay invariant across visual systems.',
+      allAria: 'All craft principles',
+      detailTitle: (name) => `${name} — Open Design craft principle`,
+      detailFallbackDescription: (name) => `Open Design craft rule: ${name}.`,
+      detailLabel: 'Craft principle',
+      readFullRule: 'Read the full rule on GitHub',
+      related: 'Other craft principles',
+    },
+  },
+  plugins: {
+    registryTitle: 'Open Design Plugins — Official and community registries',
+    registryDescription: (count) =>
+      `Browse ${count} Open Design plugins from official and community registries. Search installable agent-native design workflows with stable vendor/plugin IDs.`,
+    directoryRailRight: 'Open Design Registry · Official · Community',
+    directoryRailLeft: 'vendor/plugin-name · marketplace.json',
+    topbarTitle: 'OD / REGISTRY',
+    topbarSubtitle: 'Public index',
+    topbarMeta: 'Official · Community · Self-hosted',
+    sourceJson: 'Source JSON',
+    heroLabel: 'Plugin Registry · public ecosystem',
+    heroTitle: 'Browse agent-native design plugins with live previews.',
+    heroBody:
+      'Discover installable workflows, decks, image templates, design systems, and atomic capabilities. Each entry keeps a stable vendor/plugin ID, clear provenance, and a visual cue so browsing the registry feels closer to choosing a creative tool than reading a manifest dump.',
+    browseRegistry: 'Browse registry',
+    communityMarketplace: 'Community marketplace.json',
+    preview: 'Registry preview',
+    installableEntries: 'installable entries',
+    official: 'Official',
+    withPreview: 'with preview',
+    surfaces: 'surfaces',
+    availableFromSources: 'Available from sources',
+    registryEntries: 'Registry entries',
+    searchPlugins: 'Search plugins',
+    searchPlaceholder: 'Search plugins, workflows, vendors...',
+    filtersLabel: 'Registry filters',
+    all: 'All',
+    community: 'Community',
+    visiblePlugins: 'visible plugins',
+    openDetails: (title) => `Open ${title} details`,
+    details: 'Details',
+    detailTitle: (title) => `${title} — Open Design Plugin`,
+    detailDescription: (description, command) => `${description} Install with ${command}.`,
+    detailRailRight: (id) => `Open Design Plugin · ${id}`,
+    allPlugins: 'All plugins',
+    registry: 'Registry',
+    deprecated: 'Deprecated',
+    yanked: 'Yanked',
+    installFromRegistry: 'Install from registry',
+    copy: 'Copy',
+    copied: 'Copied',
+    select: 'Select',
+    previewAndFacts: 'Plugin preview and facts',
+    marketplaceJson: 'Marketplace JSON',
+    sourceRepository: 'Source repository',
+    homepage: 'Homepage',
+    interactivePreview: 'Interactive preview',
+    imagePreview: 'Image preview',
+    videoPoster: 'Video poster',
+    liveHtmlPreview: 'Live HTML preview',
+    trustLabels: {
+      official: 'Official',
+      trusted: 'Trusted',
+      restricted: 'Restricted',
+    },
+    facts: {
+      pluginId: 'Plugin ID',
+      version: 'Version',
+      registry: 'Registry',
+      mode: 'Mode',
+      license: 'License',
+      publisher: 'Publisher',
+      notSpecified: 'Not specified',
+    },
+    howItResolves: 'How it resolves',
+    provenance: 'Registry provenance',
+    provenanceBody:
+      'This entry is discovered from a marketplace catalog and resolves to the transport source below. The product can group it by source while the CLI keeps the install target stable through the vendor/plugin-name ID.',
+    capabilities: 'Capabilities',
+    workflowSurface: 'Workflow surface',
+    directSourceFallback: 'Direct source fallback',
+    examplePrompt: 'Example prompt',
+    howPeopleUseIt: 'How people use it',
+    examplePromptBody:
+      'The registry entry includes a ready-to-run prompt seed so the plugin can be evaluated without guessing its expected workflow.',
+    moreFrom: (registryName) => `More from ${registryName}`,
+    related: 'Related plugins',
+  },
+};
+
+const LANDING_UI_COPY_OVERRIDES: Partial<
+  Record<LandingLocaleCode, DeepPartial<LandingUiCopy>>
+> = {
+  zh: {
+    footer: {
+      summary:
+        '官方开源、本地优先的 Claude Design 替代方案。Apache-2.0，所有层都 BYOK。',
+      catalog: '目录',
+      official: '官方来源页',
+      quickstart: '快速开始',
+      agents: 'Agent',
+      compare: '对比',
+      claudeAlternative: 'Claude Design 替代方案',
+      connect: '连接',
+      bottomLeft: '● Open Design · Apache-2.0 · 2026 / 第 01 卷 / 第 26 期',
+      bottomRight: '柏林 / 开放 / 地球 · 52.5200° N · 13.4050° E',
+    },
+    blog: {
+      title: '博客',
+      seoTitle: '博客 — Open Design',
+      description:
+        '理解、探索和构建 Open Design 的笔记，覆盖产品、指南、使用场景与社区。',
+      categoriesLabel: '博客分类',
+      categories: {
+        all: '全部',
+        product: '产品',
+        guides: '指南',
+        useCases: '使用场景',
+        community: '社区',
+      },
+      minRead: '分钟阅读',
+      readMore: '继续阅读 →',
+      read: '阅读 →',
+      backToBlog: '← 返回博客',
+      noEntries: '暂时还没有文章，请稍后再来。',
+      noPostsInCategory: '这个分类还没有文章，更多现场笔记即将发布。',
+      nextStep: '下一步',
+      joinDiscord: '加入 Discord',
+      viewSource: '在 GitHub 查看源码 ↗',
+      cta: {
+        downloadTitle: '下载桌面版本',
+        downloadBody:
+          '试用这个开源设计工作台，在 GitHub 查看 release notes，或加入 Discord 获取社区反馈。',
+        downloadLabel: '下载桌面端 ↗',
+        skillsTitle: '在本地运行 Skill 工作流',
+        skillsBody:
+          '浏览工作流库，选择一个起点，把它接入你已经在使用的 Agent。需要适配帮助时可以加入 Discord。',
+        skillsLabel: '浏览工作流 ↗',
+        repoTitle: '查看 GitHub 实现',
+        repoBody:
+          '打开仓库查看源码、为项目点 Star、fork 工作流，或加入 Discord 讨论下一步。',
+        repoLabel: '打开仓库 ↗',
+      },
+    },
+    catalog: {
+      skills: {
+        title: (count) => `Skill — ${count} 个可组合设计能力 | Open Design`,
+        description:
+          '浏览完整的 Open Design Skill 目录：100+ 个基于 SKILL.md 的文件夹，覆盖演示文稿、原型、仪表盘、移动流程、视频与实时 Artifact。每个 Skill 都是一个可放入 daemon 的文件夹。',
+        label: '目录 · Nº 01',
+        heading: (count) => `Skill — ${count} 个可组合设计能力。`,
+        lead:
+          '每个 Skill 都是一个包含 SKILL.md 的文件夹。放入目录、重启 daemon，选择器就会出现它。你可以按产物类型、场景或平台筛选，找到最匹配 brief 的工作流。',
+        mode: '模式',
+        scenario: '场景',
+        platform: '平台',
+        featured: '精选',
+        allAria: '全部 Skill',
+        detailTitle: (name) => `${name} — Open Design Skill`,
+        detailFallbackDescription: (name) => `Open Design Skill 包：${name}。`,
+        detailLabel: 'Skill',
+        featuredNumber: (rank) => `· 精选 Nº ${rank}`,
+        viewOnGithub: '在 GitHub 查看',
+        upstream: '上游来源',
+        previewCaption: (slug) => `渲染自 skills/${slug}/example.html`,
+        triggers: '触发词',
+        triggersLead: '选择器会用这些提示匹配 Skill。复制一个，再按你的 brief 调整。',
+        examplePrompt: '示例提示词',
+        related: '相关 Skill',
+        filterTitle: (heading, count) =>
+          `${heading} Skill — ${count} 个 Open Design ${heading.toLowerCase()} Agent`,
+        modeDescription: (heading, count) =>
+          `所有生成 ${heading.toLowerCase()} Artifact 的 Open Design Skill。${count} 个可直接运行、读取系统上下文的 Agent，可以通过 daemon 安装，并通过任意 DESIGN.md 系统锁定品牌。`,
+        scenarioDescription: (heading, count) =>
+          `${heading.toLowerCase()} 场景下的全部 Open Design Skill。${count} 个可运行 Agent，覆盖演示文稿、原型、模板与实时 Artifact，并可通过任意 DESIGN.md 锁定品牌。`,
+        modeHeading: (heading, count) =>
+          `${heading} — ${count} 个品牌级 ${heading.toLowerCase()} Agent。`,
+        scenarioHeading: (heading, count) =>
+          `${heading} — ${count} 个 ${heading.toLowerCase()} Skill。`,
+        modeLead: (label) =>
+          `已筛选 od.mode: ${label}。下面每个 Skill 都会把当前 DESIGN.md 作为系统提示的一部分，因此会继承你搭配的任意可移植系统的颜色、字体和间距。`,
+        scenarioLead: (label) =>
+          `已筛选 od.scenario: ${label}。把这些 Skill 与任意可移植设计系统配对，daemon 会完成后续编排：一个提示词，一个品牌化 Artifact。`,
+        allSkills: (count) => `← 全部 Skill${typeof count === 'number' ? `（共 ${count} 个）` : ''}`,
+      },
+      systems: {
+        title: (count) => `设计系统 — ${count} 套可移植视觉系统 | Open Design`,
+        description:
+          '浏览完整的 Open Design 设计系统目录：100+ 个 DESIGN.md token 包，覆盖 editorial、productivity、brand、futuristic 与 minimalist 等系统。你可以在 daemon 顶栏选择一个系统，让所有 Skill 以同一种视觉语言渲染。',
+        label: '目录 · Nº 02',
+        heading: (count) => `设计系统 — ${count} 套可移植视觉系统。`,
+        lead:
+          '每套系统都是一个 DESIGN.md token spec。在 daemon 顶栏选择后，每个 Skill 都会把它作为系统提示的一部分读取，颜色、字体、间距和组件保持一致。',
+        category: '分类',
+        allAria: '全部设计系统',
+        detailTitle: (name) => `${name} — Open Design 设计系统`,
+        detailFallbackDescription: (name, category) =>
+          `Open Design 系统包：${name}，${category}。`,
+        detailLabel: '设计系统',
+        viewOnGithub: '在 GitHub 查看 DESIGN.md',
+        paletteSample: '色板示例',
+        paletteLead: (count) =>
+          `从 DESIGN.md 颜色章节提取的前 ${count} 个 hex 色值。完整色板与语义角色在源规范中。`,
+        visualTheme: '视觉主题',
+        related: (category) => `${category} 中的相关系统`,
+        categoryDescription: (heading, count) =>
+          `所有标记为 ${heading.toLowerCase()} 的 Open Design 设计系统。${count} 套可移植 DESIGN.md token 包，可与目录中任意 Skill 搭配，快速得到品牌级输出。`,
+        categoryHeading: (heading, count) =>
+          `${heading} — ${count} 套可移植视觉系统。`,
+        categoryLead: (label) =>
+          `已筛选分类 ${label}。在 daemon 顶栏选择其中任意系统，目录中的所有 Skill 都会把它的 token、颜色、字体、间距和语气作为系统提示读取。`,
+        allSystems: '← 全部设计系统',
+      },
+      templates: {
+        title: (count) => `模板 — ${count} 个可 fork 的 Artifact 模板 | Open Design`,
+        description:
+          '可直接 fork 的 Artifact 模板：可刷新的 Live Artifact（类似 Notion 的团队仪表盘、运营简报）以及演示文稿和原型起点。每个模板都带有示例数据，适合复制改造。',
+        label: '目录 · Nº 04',
+        heading: (count) => `模板 — ${count} 个可 fork 的 Artifact。`,
+        lead:
+          '预先接好的 Artifact 包，带示例数据和已验证的视觉语言。Fork 文件夹，把示例数据换成你的数据，然后交付。',
+        allAria: '全部模板',
+        liveArtifact: 'Live Artifact',
+        skillTemplate: 'Skill 模板',
+        detailTitle: (name) => `${name} — Open Design 模板`,
+        detailLabel: '模板',
+        forkOnGithub: '在 GitHub fork',
+        previewCaption: '由模板种子数据渲染。',
+        whatsInside: '模板包含什么',
+        whatsInsideLead:
+          'Live Artifact 模板是一个可以原样复制进工作区的文件夹，包含 template.html 渲染器、带种子值的 data.json，以及描述 connector 接线方式的 README。',
+        renderer: 'Artifact 渲染器',
+        seedData: '离线 / 预览渲染的种子值',
+        readme: 'connector 接线、刷新节奏和自定义说明',
+      },
+      craft: {
+        title: (count) => `工艺规则 — ${count} 条品牌无关渲染原则 | Open Design`,
+        description:
+          '每个 Open Design Skill 都可以声明要加载的通用工艺规则：无障碍、动画纪律、颜色、表单验证、UX 法则、RTL/Bidi、状态覆盖和字体层级。',
+        label: '目录 · Nº 03',
+        heading: (count) => `工艺规则 — ${count} 条品牌无关渲染原则。`,
+        lead:
+          'Skill 会声明它需要哪些工艺规则。Agent 会把匹配的规则加载进系统提示，让无障碍、动效、颜色和字体等质量要求在不同视觉系统中保持不变。',
+        allAria: '全部工艺规则',
+        detailTitle: (name) => `${name} — Open Design 工艺规则`,
+        detailFallbackDescription: (name) => `Open Design 工艺规则：${name}。`,
+        detailLabel: '工艺规则',
+        readFullRule: '在 GitHub 阅读完整规则',
+        related: '其他工艺规则',
+      },
+    },
+    plugins: {
+      registryTitle: 'Open Design 插件 — 官方与社区注册表',
+      registryDescription: (count) =>
+        `浏览来自官方与社区注册表的 ${count} 个 Open Design 插件。搜索可安装的 Agent 原生设计工作流，每个条目都有稳定的 vendor/plugin ID。`,
+      directoryRailRight: 'Open Design 注册表 · 官方 · 社区',
+      directoryRailLeft: 'vendor/plugin-name · marketplace.json',
+      topbarTitle: 'OD / 注册表',
+      topbarSubtitle: '公开索引',
+      topbarMeta: '官方 · 社区 · 自托管',
+      sourceJson: '源 JSON',
+      heroLabel: '插件注册表 · 公共生态',
+      heroTitle: '浏览带实时预览的 Agent 原生设计插件。',
+      heroBody:
+        '发现可安装的工作流、演示文稿、图像模板、设计系统和原子能力。每个条目保留稳定的 vendor/plugin ID、清晰来源和视觉线索，让浏览注册表更像选择创作工具，而不是阅读 manifest dump。',
+      browseRegistry: '浏览注册表',
+      communityMarketplace: '社区 marketplace.json',
+      preview: '注册表预览',
+      installableEntries: '可安装条目',
+      official: '官方',
+      withPreview: '带预览',
+      surfaces: '表面类型',
+      availableFromSources: '可用来源',
+      registryEntries: '注册表条目',
+      searchPlugins: '搜索插件',
+      searchPlaceholder: '搜索插件、工作流、vendor...',
+      filtersLabel: '注册表筛选',
+      all: '全部',
+      community: '社区',
+      visiblePlugins: '个可见插件',
+      openDetails: (title) => `打开 ${title} 详情`,
+      details: '详情',
+      detailTitle: (title) => `${title} — Open Design 插件`,
+      detailDescription: (description, command) => `${description} 使用 ${command} 安装。`,
+      detailRailRight: (id) => `Open Design 插件 · ${id}`,
+      allPlugins: '全部插件',
+      registry: '注册表',
+      deprecated: '已弃用',
+      yanked: '已下架',
+      installFromRegistry: '从注册表安装',
+      copy: '复制',
+      copied: '已复制',
+      select: '选择',
+      previewAndFacts: '插件预览与信息',
+      marketplaceJson: 'Marketplace JSON',
+      sourceRepository: '源仓库',
+      homepage: '主页',
+      interactivePreview: '交互预览',
+      imagePreview: '图片预览',
+      videoPoster: '视频封面',
+      liveHtmlPreview: 'Live HTML 预览',
+      trustLabels: {
+        official: '官方',
+        trusted: '可信',
+        restricted: '受限',
+      },
+      facts: {
+        pluginId: '插件 ID',
+        version: '版本',
+        registry: '注册表',
+        mode: '模式',
+        license: '许可证',
+        publisher: '发布方',
+        notSpecified: '未指定',
+      },
+      howItResolves: '解析方式',
+      provenance: '注册表来源',
+      provenanceBody:
+        '这个条目来自 marketplace catalog，并解析到下面的传输来源。产品可以按来源分组展示，而 CLI 仍通过稳定的 vendor/plugin-name ID 保持安装目标一致。',
+      capabilities: '能力',
+      workflowSurface: '工作流表面',
+      directSourceFallback: '直接来源 fallback',
+      examplePrompt: '示例提示词',
+      howPeopleUseIt: '使用方式',
+      examplePromptBody:
+        '注册表条目包含可直接运行的提示词种子，因此无需猜测预期工作流即可评估插件。',
+      moreFrom: (registryName) => `更多来自 ${registryName}`,
+      related: '相关插件',
+    },
+  },
+  'zh-tw': {
+    footer: {
+      summary:
+        '官方開源、本地優先的 Claude Design 替代方案。Apache-2.0，每一層都 BYOK。',
+      catalog: '目錄',
+      official: '官方來源頁',
+      quickstart: '快速開始',
+      agents: 'Agent',
+      compare: '比較',
+      claudeAlternative: 'Claude Design 替代方案',
+      connect: '連結',
+      bottomLeft: '● Open Design · Apache-2.0 · 2026 / 第 01 卷 / 第 26 期',
+      bottomRight: '柏林 / 開放 / 地球 · 52.5200° N · 13.4050° E',
+    },
+    blog: {
+      title: '部落格',
+      seoTitle: '部落格 — Open Design',
+      description:
+        '理解、探索與建構 Open Design 的筆記，涵蓋產品、指南、使用場景與社群。',
+      categoriesLabel: '部落格分類',
+      categories: {
+        all: '全部',
+        product: '產品',
+        guides: '指南',
+        useCases: '使用場景',
+        community: '社群',
+      },
+      minRead: '分鐘閱讀',
+      readMore: '繼續閱讀 →',
+      read: '閱讀 →',
+      backToBlog: '← 返回部落格',
+      noEntries: '暫時還沒有文章，請稍後再來。',
+      noPostsInCategory: '這個分類還沒有文章，更多現場筆記即將發布。',
+      nextStep: '下一步',
+      joinDiscord: '加入 Discord',
+      viewSource: '在 GitHub 查看原始碼 ↗',
+    },
+  },
+};
+
+function mergeCopy<T>(base: T, override: DeepPartial<T> | undefined): T {
+  if (!override) return base;
+  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(override)) {
+    if (value === undefined) continue;
+    const baseValue = out[key];
+    if (
+      baseValue &&
+      value &&
+      typeof baseValue === 'object' &&
+      typeof value === 'object' &&
+      !Array.isArray(baseValue) &&
+      !Array.isArray(value)
+    ) {
+      out[key] = mergeCopy(baseValue, value as DeepPartial<typeof baseValue>);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out as T;
+}
+
 const localeByCode = new Map<string, LandingLocale>(
   LANDING_LOCALES.map((locale) => [locale.code, locale]),
 );
@@ -1281,6 +2074,49 @@ export function getLocaleDefinition(code: LandingLocaleCode): LandingLocale {
 
 export function getCommonCopy(locale: LandingLocaleCode): CommonCopy {
   return COMMON_COPY[locale] ?? COMMON_COPY[DEFAULT_LOCALE];
+}
+
+export function getLandingUiCopy(locale: LandingLocaleCode): LandingUiCopy {
+  return mergeCopy(LANDING_UI_COPY, LANDING_UI_COPY_OVERRIDES[locale]);
+}
+
+export type LocalizedStringRecord = Partial<
+  Record<LandingLocaleCode | string, string>
+>;
+
+export type LocalizedStringValue = string | LocalizedStringRecord | undefined;
+
+export function getLocalizedString(
+  value: LocalizedStringValue,
+  locale: LandingLocaleCode,
+  fallback = '',
+): string {
+  if (typeof value === 'string') return value.trim() || fallback;
+  if (!value || typeof value !== 'object') return fallback;
+
+  const localeDef = getLocaleDefinition(locale);
+  const candidates = [
+    locale,
+    localeDef.htmlLang,
+    localeDef.htmlLang.toLowerCase(),
+    localeDef.htmlLang.replace('-', '_'),
+    locale === 'zh' ? 'zh-CN' : undefined,
+    locale === 'zh-tw' ? 'zh-TW' : undefined,
+    locale === 'pt-br' ? 'pt-BR' : undefined,
+    DEFAULT_LOCALE,
+    'en-US',
+    'en_US',
+  ].filter((item): item is string => Boolean(item));
+
+  for (const key of candidates) {
+    const text = value[key];
+    if (typeof text === 'string' && text.trim()) return text.trim();
+  }
+
+  const first = Object.values(value).find(
+    (item): item is string => typeof item === 'string' && item.trim().length > 0,
+  );
+  return first?.trim() ?? fallback;
 }
 
 export function getHomeSeo(

@@ -13,13 +13,25 @@
  */
 import Layout from '../../_components/sub-page-layout.astro';
 import { getGithubRepoMeta } from '../../_lib/github';
+import { localeFromPath, localizedHref } from '../../i18n';
+import { heroImage } from '../../image-assets';
 
 const github = await getGithubRepoMeta();
+const locale = localeFromPath(Astro.url.pathname);
+const href = (path: string) => localizedHref(path, locale);
 
-const SITE = 'https://open-design.ai/';
+// Derive SITE from Astro.site so preview/staging JSON-LD matches the
+// layout's canonical link. Falls back to the production origin.
+const SITE = Astro.site?.toString() ?? 'https://open-design.ai/';
 const REPO = 'https://github.com/nexu-io/open-design';
 const REPO_RELEASES = `${REPO}/releases`;
 const QUICKSTART_DOC = `${REPO}/blob/main/QUICKSTART.md`;
+
+// Google's HowTo rich result is image-biased: a HowTo with no images is
+// near-invisible in the SERP. We attach the canonical homepage hero as
+// the top-level HowTo image and reuse it per-step as a fallback until
+// we render per-step screenshots through `scripts/generate-previews.ts`.
+const HOWTO_IMAGE = heroImage;
 
 const title = 'Open Design quickstart — Install in three commands (Node 24, pnpm)';
 const description =
@@ -58,6 +70,10 @@ const jsonLd = [
     name: 'Install Open Design in three commands',
     description,
     totalTime: 'PT5M',
+    // Google's HowTo rich result requires an image at the top level
+    // for SERP eligibility. Until per-step screenshots ship, we attach
+    // the canonical hero image at both the root and each step.
+    image: { '@type': 'ImageObject', url: HOWTO_IMAGE },
     tool: [
       { '@type': 'HowToTool', name: 'Node.js 24' },
       { '@type': 'HowToTool', name: 'pnpm 10.33.2 (Corepack)' },
@@ -68,6 +84,8 @@ const jsonLd = [
       position: idx + 1,
       name: s.name,
       text: s.text,
+      image: { '@type': 'ImageObject', url: HOWTO_IMAGE },
+      url: `${SITE}quickstart/#commands`,
     })),
   },
 ];
@@ -75,7 +93,7 @@ const jsonLd = [
 
 <Layout title={title} description={description} active="home" jsonLd={jsonLd}>
   <nav class="breadcrumb" aria-label="Breadcrumb">
-    <a href="/">Open Design</a>
+    <a href={href('/')}>Open Design</a>
     <span>/</span>
     <span aria-current="page">Quickstart</span>
   </nav>
@@ -100,7 +118,7 @@ const jsonLd = [
         <li><strong>Node.js 24</strong> — install via <code>winget install OpenJS.NodeJS.LTS</code>, <code>brew install node@24</code>, or <a class="inline-link" href="https://nodejs.org" target="_blank" rel="noreferrer noopener">nodejs.org</a>. Node 22 is not supported.</li>
         <li><strong>pnpm 10.33.2</strong> — enabled through Corepack (<code>corepack enable</code>) so the lockfile-pinned version is used. On Windows, run <code>npm install -g pnpm@10.33.2</code> instead because Corepack hits EPERM under <code>Program Files</code>.</li>
         <li><strong>git</strong> — any recent version.</li>
-        <li><strong>An agent</strong> — Claude Code, Codex, Cursor, Gemini CLI, OpenCode, or Qwen. See <a class="inline-link" href="/agents/">/agents/</a> for the full adapter list.</li>
+        <li><strong>An agent</strong> — Claude Code, Codex, Cursor, Gemini CLI, OpenCode, or Qwen. See <a class="inline-link" href={href('/agents/')}>/agents/</a> for the full adapter list.</li>
       </ul>
     </section>
 
@@ -144,7 +162,7 @@ const jsonLd = [
         <li><strong><code>EBADENGINE</code> on <code>pnpm install</code>:</strong> wrong Node major. <code>package.json#engines</code> pins <code>node: "~24"</code>. Switch with <code>nvm use 24</code> or reinstall Node 24.</li>
         <li><strong>better-sqlite3 build hangs on Windows:</strong> expected. Node 24 has no prebuilt binary on win32, so it compiles from source via node-gyp (~2 min). Install Visual Studio Build Tools 2022 first.</li>
         <li><strong>Port already in use:</strong> pass <code>--daemon-port</code> and <code>--web-port</code> to <code>pnpm tools-dev</code>, or stop the previous run with <code>pnpm tools-dev stop</code>.</li>
-        <li><strong>Agent does not show up:</strong> see the agent adapter docs at <a class="inline-link" href="/agents/">/agents/</a>. Most adapters need a credential at <code>.od/media-config.json</code>.</li>
+        <li><strong>Agent does not show up:</strong> see the agent adapter docs at <a class="inline-link" href={href('/agents/')}>/agents/</a>. Most adapters need a credential at <code>.od/media-config.json</code>.</li>
         <li><strong>Permission prompt loops:</strong> <code>pnpm tools-dev check</code> verifies your environment and prints what's missing.</li>
       </ul>
     </section>
@@ -152,11 +170,34 @@ const jsonLd = [
     <section class="info-section" id="next">
       <h2>Next steps</h2>
       <ul>
-        <li><a class="inline-link" href="/skills/">Browse the skill catalog</a> and pick one to render.</li>
-        <li><a class="inline-link" href="/systems/">Pick a DESIGN.md system</a> so generated artifacts inherit a brand.</li>
-        <li><a class="inline-link" href="/compare/">Compare Open Design to Claude Design, Figma Make, v0, and Lovable</a>.</li>
+        <li><a class="inline-link" href={href('/skills/')}>Browse the skill catalog</a> and pick one to render.</li>
+        <li><a class="inline-link" href={href('/systems/')}>Pick a DESIGN.md system</a> so generated artifacts inherit a brand.</li>
+        <li><a class="inline-link" href={href('/compare/')}>Compare Open Design to Claude Design, Figma Make, v0, and Lovable</a>.</li>
         <li><a class="inline-link" href={REPO_RELEASES} target="_blank" rel="noreferrer noopener">Subscribe to the GitHub releases feed</a> for new versions.</li>
       </ul>
+    </section>
+
+    {/* Closing CTA — keeps the documentation-heavy page from ending in
+     * silence and gives Google a clear conversion signal. */}
+    <section class="info-cta" aria-label="Open Design call to action">
+      <div>
+        <h2>Three commands. <em>Yours to keep.</em></h2>
+        <p>
+          You've read the install. Now star the repo so we know it
+          helped, grab the desktop build, or hop into Discord if anything
+          breaks on first run.
+        </p>
+      </div>
+      <div class="info-cta-actions">
+        <a class="btn btn-primary" href="https://github.com/nexu-io/open-design" target="_blank" rel="noreferrer noopener">Star on GitHub</a>
+        <a class="btn btn-ghost" href={REPO_RELEASES} target="_blank" rel="noreferrer noopener">Download desktop</a>
+        <a class="btn btn-ghost" href="https://discord.gg/9ptkbbqRu" target="_blank" rel="noreferrer noopener">Join Discord</a>
+      </div>
+      <div class="info-cta-meta">
+        <span class="stamp">● Live</span>
+        <span>{github.versionLabel} · Apache-2.0</span>
+        <span>macOS · Windows · Linux</span>
+      </div>
     </section>
   </article>
 </Layout>
