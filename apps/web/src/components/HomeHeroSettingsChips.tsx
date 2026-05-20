@@ -305,10 +305,10 @@ export function HomeHeroSettingsChips({
                           className="home-hero__design-system-preview-expand"
                           data-testid="home-hero-design-system-preview-expand"
                           onClick={() => setFullscreenPreview(true)}
-                          title="全屏预览"
-                          aria-label="全屏预览"
+                          title="打开预览"
+                          aria-label="打开预览"
                         >
-                          <Icon name="external-link" size={13} />
+                          <Icon name="eye" size={16} strokeWidth={1.9} />
                         </button>
                       ) : null}
                     </div>
@@ -389,7 +389,7 @@ export function HomeHeroSettingsChips({
                     aria-label="关闭全屏预览"
                     title="关闭 (Esc)"
                   >
-                    <Icon name="close" size={14} />
+                    <Icon name="close" size={18} strokeWidth={2.1} />
                   </button>
                 </div>
                 <iframe

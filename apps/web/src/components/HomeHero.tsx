@@ -22,6 +22,7 @@ import type {
   ForwardedRef,
   KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
+import { Plug } from 'lucide-react';
 import type {
   ConnectorDetail,
   DesignSystemSummary,
@@ -538,8 +539,8 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
                   onClick={() => onOpenPluginDetails(plugin)}
                   title={t('homeHero.pluginTitle', { title: plugin.title })}
                 >
-                  <span className="home-hero__active-dot" aria-hidden />
-                  <span>@{plugin.title}</span>
+                  <Plug className="home-hero__active-type-icon" size={13} strokeWidth={1.8} aria-hidden="true" />
+                  <span>{plugin.title}</span>
                 </button>
                 <button
                   type="button"
@@ -569,8 +570,8 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
                   disabled={!activePluginRecord}
                   title={activePluginRecord ? t('homeHero.pluginTitle', { title: activePluginRecord.title }) : undefined}
                 >
-                  <span className="home-hero__active-dot" aria-hidden />
-                  <span>{t('homeHero.pluginPrefix', { title: activePluginTitle })}</span>
+                  <Plug className="home-hero__active-type-icon" size={13} strokeWidth={1.8} aria-hidden="true" />
+                  <span>{activePluginTitle}</span>
                 </button>
                 <button
                   type="button"

@@ -15049,6 +15049,7 @@ button.ghost.mcp-copy-btn:hover:not(:disabled) {
   border-left: 1px solid var(--border);
   background: var(--bg-panel);
   overflow: auto;
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
 }
@@ -23265,6 +23266,18 @@ body.desktop-pet-shell .pet-task-item {
   flex-wrap: wrap;
 }
 .plugin-details-modal__stage-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
 /* Settings → Skills (functional) row stack.
    Mirrors the External MCP servers panel: a vertical list of
    collapsible rows. Each row's header is always visible; SKILL.md
@@ -23743,7 +23756,7 @@ body.desktop-pet-shell .pet-task-item {
    sidebar). Tightens padding, shrinks chip type, and wraps long file
    paths so the section list reads cleanly in a 320–540px column. */
 .plugin-info-pane {
-  padding: 16px 18px 24px;
+  padding: 22px 28px 28px 32px;
   background: var(--bg-panel);
 }
 .plugin-info-pane .plugin-meta-sections {
@@ -23832,7 +23845,7 @@ body.desktop-pet-shell .pet-task-item {
 }
 .plugin-design-sidebar__spec {
   border-top: 1px dashed var(--border);
-  padding: 14px 18px 24px;
+  padding: 18px 28px 28px 32px;
   background: var(--bg-panel);
 }
 .plugin-design-sidebar__spec-head {
@@ -23914,6 +23927,10 @@ body.desktop-pet-shell .pet-task-item {
     max-height: 100vh;
     border-radius: 0;
     border: none;
+  }
+  .plugin-info-pane,
+  .plugin-design-sidebar__spec {
+    padding: 18px 20px 24px;
   }
 }
 
@@ -26534,12 +26551,12 @@ body.desktop-pet-shell .pet-task-item {
 }
 .home-hero__design-system-preview-expand {
   margin-left: auto;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   border: 1px solid var(--border);
-  background: var(--bg-panel);
-  color: var(--text-muted);
+  background: var(--bg-subtle, var(--bg-panel));
+  color: var(--text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -26548,8 +26565,13 @@ body.desktop-pet-shell .pet-task-item {
     color 150ms cubic-bezier(0.23, 1, 0.32, 1),
     border-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
+.home-hero__design-system-preview-expand svg {
+  display: block;
+  width: 16px !important;
+  height: 16px !important;
+}
 .home-hero__design-system-preview-expand:hover {
-  color: var(--text-strong, var(--text));
+  color: var(--accent);
   border-color: var(--border-strong, var(--border));
   background: color-mix(in srgb, var(--text-muted) 8%, var(--bg-panel));
 }
@@ -26592,16 +26614,21 @@ body.desktop-pet-shell .pet-task-item {
 }
 .home-hero__design-system-fullscreen-close {
   margin-left: auto;
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+.home-hero__design-system-fullscreen-close svg {
+  display: block;
+  width: 18px !important;
+  height: 18px !important;
 }
 .home-hero__design-system-fullscreen-close:hover {
   border-color: var(--border);
