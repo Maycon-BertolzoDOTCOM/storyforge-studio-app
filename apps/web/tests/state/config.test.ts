@@ -320,6 +320,39 @@ describe('mergeDaemonMediaProviders', () => {
     expect(merged.mediaProviders).toEqual(localConfig.mediaProviders);
   });
 
+  it('preserves local pending media-provider edits when daemon reload returns saved marker state', () => {
+    const merged = mergeDaemonMediaProviders(
+      {
+        ...DEFAULT_CONFIG,
+        mediaProviders: {
+          openai: {
+            apiKey: 'sk-local-pending',
+            apiKeyConfigured: true,
+            apiKeyTail: '1234',
+            baseUrl: 'https://local-pending.example/v1',
+          },
+        },
+      },
+      {
+        openai: {
+          apiKey: '',
+          apiKeyConfigured: true,
+          apiKeyTail: '9876',
+          baseUrl: 'https://daemon.example/v1',
+        },
+      },
+    );
+
+    expect(merged.mediaProviders).toEqual({
+      openai: {
+        apiKey: 'sk-local-pending',
+        apiKeyConfigured: true,
+        apiKeyTail: '1234',
+        baseUrl: 'https://local-pending.example/v1',
+      },
+    });
+  });
+
   it('drops stale marker-only local entries when daemon definitively has no stored state', () => {
     const merged = mergeDaemonMediaProviders(
       {

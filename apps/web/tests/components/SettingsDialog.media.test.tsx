@@ -71,6 +71,79 @@ describe('SettingsDialog media providers', () => {
     );
   });
 
+  it('shows loading while reloading, then clears the success flash after a short delay', async () => {
+    const reloadMock = vi.fn(
+      () =>
+        new Promise<AppConfig['mediaProviders']>((resolve) => {
+          setTimeout(() => {
+            resolve({
+              openai: {
+                apiKey: '',
+                apiKeyConfigured: true,
+                apiKeyTail: '9876',
+                baseUrl: 'https://daemon.example/v1',
+              },
+            });
+          }, 50);
+        }),
+    );
+    renderDialog(
+      {
+        ...DEFAULT_CONFIG,
+        mediaProviders: {},
+      },
+      {
+        mediaProvidersNotice:
+          'Could not load media provider settings from the local daemon. Using browser-saved settings for now.',
+        onReloadMediaProviders: reloadMock,
+      },
+    );
+
+    const reloadButton = screen.getByRole('button', { name: 'Reload from daemon' });
+    fireEvent.click(reloadButton);
+
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect((screen.getByRole('button', { name: 'Loading…' }) as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Reloaded media provider settings from the local daemon.')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Reloaded' })).toBeTruthy();
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 2100));
+    await waitFor(() => {
+      expect(screen.queryByText('Reloaded media provider settings from the local daemon.')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Reload from daemon' })).toBeTruthy();
+    });
+  });
+
+  it('shows a sticky error when reloading media providers from daemon fails', async () => {
+    const reloadMock = vi.fn(async () => null);
+    renderDialog(
+      {
+        ...DEFAULT_CONFIG,
+        mediaProviders: {},
+      },
+      {
+        mediaProvidersNotice:
+          'Could not load media provider settings from the local daemon. Using browser-saved settings for now.',
+        onReloadMediaProviders: reloadMock,
+      },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reload from daemon' }));
+
+    await waitFor(() => {
+      expect(reloadMock).toHaveBeenCalledTimes(1);
+      expect(
+        screen.getByText('Could not reload media provider settings from the local daemon.'),
+      ).toBeTruthy();
+    });
+    expect(screen.getByRole('button', { name: 'Reload from daemon' })).toBeTruthy();
+  });
+
   it('preserves local-only providers when daemon reload returns a partial provider set', async () => {
     const reloadMock = vi.fn(async () => ({
       openai: {
@@ -154,6 +227,52 @@ describe('SettingsDialog media providers', () => {
     });
   });
 
+  it('does not overwrite a local pending media-provider edit when daemon reload returns saved state', async () => {
+    const reloadMock = vi.fn(async () => ({
+      openai: {
+        apiKey: '',
+        apiKeyConfigured: true,
+        apiKeyTail: '9876',
+        baseUrl: 'https://daemon.example/v1',
+      },
+    }));
+    renderDialog(
+      {
+        ...DEFAULT_CONFIG,
+        mediaProviders: {
+          openai: {
+            apiKey: '',
+            apiKeyConfigured: true,
+            apiKeyTail: '1234',
+            baseUrl: 'https://saved.example/v1',
+          },
+        },
+      },
+      {
+        mediaProvidersNotice:
+          'Could not load media provider settings from the local daemon. Using browser-saved settings for now.',
+        onReloadMediaProviders: reloadMock,
+      },
+    );
+
+    fireEvent.change(screen.getByLabelText('OpenAI API key'), {
+      target: { value: 'sk-local-pending' },
+    });
+    fireEvent.change(screen.getByLabelText('OpenAI Base URL'), {
+      target: { value: 'https://local-pending.example/v1' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reload from daemon' }));
+
+    await waitFor(() => {
+      expect(reloadMock).toHaveBeenCalledTimes(1);
+    });
+    expect((screen.getByLabelText('OpenAI API key') as HTMLInputElement).value).toBe('sk-local-pending');
+    expect((screen.getByLabelText('OpenAI Base URL') as HTMLInputElement).value).toBe(
+      'https://local-pending.example/v1',
+    );
+  });
+
   it('clears saved media keys only through the explicit Clear action', async () => {
     const onPersist = vi.fn();
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -183,6 +302,47 @@ describe('SettingsDialog media providers', () => {
       );
     });
 
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    confirmSpy.mockRestore();
+  });
+
+  it('clears saved marker state and custom model fields together for custom-model providers', async () => {
+    const onPersist = vi.fn();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderDialog(
+      {
+        ...saveableConfig(),
+        mediaProviders: {
+          nanobanana: {
+            apiKey: '',
+            apiKeyConfigured: true,
+            apiKeyTail: '5555',
+            baseUrl: 'https://gateway.example.com',
+            model: 'gemini-3.1-flash-image-preview',
+          },
+        },
+      },
+      { onPersist },
+    );
+
+    const row = screen.getByText('Nano Banana').closest('.media-provider-row') as HTMLElement | null;
+    if (!row) throw new Error('Expected Nano Banana media provider row');
+
+    expect(screen.getByText('Saved · ••••5555')).toBeTruthy();
+    expect(screen.getByLabelText('Nano Banana API key').getAttribute('placeholder')).toBe(
+      'Paste a new key to replace the saved one',
+    );
+
+    fireEvent.click(within(row).getByRole('button', { name: 'Clear' }));
+
+    await waitFor(() => {
+      expect(onPersist).toHaveBeenCalledWith(
+        expect.objectContaining({ mediaProviders: {} }),
+        expect.objectContaining({ forceMediaProviderSync: true }),
+      );
+    });
+
+    expect((screen.getByLabelText('Nano Banana model') as HTMLInputElement).value).toBe('');
     expect(confirmSpy).toHaveBeenCalledTimes(1);
     confirmSpy.mockRestore();
   });
