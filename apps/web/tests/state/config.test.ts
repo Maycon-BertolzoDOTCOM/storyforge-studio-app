@@ -225,7 +225,7 @@ describe('mergeDaemonConfig', () => {
 });
 
 describe('mergeDaemonMediaProviders', () => {
-  it('prefers daemon-backed media provider state when present', () => {
+  it('preserves a local pending media-provider edit while adopting daemon saved-marker metadata', () => {
     const merged = mergeDaemonMediaProviders(
       {
         ...DEFAULT_CONFIG,
@@ -248,15 +248,15 @@ describe('mergeDaemonMediaProviders', () => {
 
     expect(merged.mediaProviders).toEqual({
       openai: {
-        apiKey: '',
+        apiKey: 'sk-local',
         apiKeyConfigured: true,
         apiKeyTail: '1234',
-        baseUrl: 'https://daemon.example/v1',
+        baseUrl: 'https://local.example/v1',
       },
     });
   });
 
-  it('preserves local-only providers when daemon returns a partial provider set', () => {
+  it('preserves local pending edits and unrelated local-only providers when daemon returns a partial provider set', () => {
     const merged = mergeDaemonMediaProviders(
       {
         ...DEFAULT_CONFIG,
@@ -284,10 +284,10 @@ describe('mergeDaemonMediaProviders', () => {
 
     expect(merged.mediaProviders).toEqual({
       openai: {
-        apiKey: '',
+        apiKey: 'sk-local-openai',
         apiKeyConfigured: true,
         apiKeyTail: '1234',
-        baseUrl: 'https://daemon-openai.example/v1',
+        baseUrl: 'https://local-openai.example/v1',
       },
       fal: {
         apiKey: 'sk-local-fal',
