@@ -644,8 +644,9 @@ function BashCard({ input, result, runStreaming, runSucceeded }: { input: unknow
         {desc ? <span className="op-meta op-desc">{desc}</span> : null}
         <ResultBadge result={result} runStreaming={runStreaming} runSucceeded={runSucceeded} />
         {result && result.content ? (
-          <button className="op-toggle" onClick={() => setOpen((o) => !o)}>
-            {open ? t('tool.hide') : t('tool.output')}
+          <button className="op-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+            <span>{open ? t('tool.hide') : t('tool.output')}</span>
+            <span className="op-toggle-chevron" aria-hidden>{open ? '▴' : '▾'}</span>
           </button>
         ) : null}
       </div>
@@ -756,7 +757,12 @@ function ResultBadge({ result, runStreaming, runSucceeded }: { result?: Props['r
   if (!result && runStreaming) return <span className="op-status op-status-running">{t('tool.running')}</span>;
   if (!result && !runSucceeded) return <span className="op-status op-status-error">{t('tool.error')}</span>;
   if (result?.isError) return <span className="op-status op-status-error">{t('tool.error')}</span>;
-  return <span className="op-status op-status-ok">{t('tool.done')}</span>;
+  return (
+    <span className="op-status op-status-ok">
+      <span aria-hidden>✓</span>
+      <span>{t('tool.done')}</span>
+    </span>
+  );
 }
 
 function describeInput(input: unknown): string {

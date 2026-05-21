@@ -13694,6 +13694,9 @@ button.ghost.mcp-copy-btn:hover:not(:disabled) {
 }
 .op-status {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10.5px;
   padding: 2px 9px;
   border-radius: var(--radius-pill);
@@ -13718,15 +13721,37 @@ button.ghost.mcp-copy-btn:hover:not(:disabled) {
   background: var(--purple-bg);
   color: var(--purple);
 }
-.op-status-ok { border-color: var(--green-border); background: var(--green-bg); color: var(--green); }
+.op-status-ok {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-color: var(--green-border);
+  background: var(--green-bg);
+  color: var(--green);
+  cursor: default;
+  user-select: none;
+}
 .op-status-error { border-color: var(--red-border); background: var(--red-bg); color: var(--red); }
 .op-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10.5px;
-  padding: 2px 8px;
+  padding: 2px 7px 2px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--text-muted);
+}
+.op-toggle-chevron {
+  font-size: 9px;
+  line-height: 1;
+  color: var(--text-soft);
+}
+.op-toggle:hover,
+.op-toggle:focus-visible {
+  border-color: color-mix(in srgb, var(--border) 70%, var(--text-muted));
+  background: var(--bg-subtle);
+  color: var(--text);
 }
 .op-open {
   font-size: 10.5px;
