@@ -801,6 +801,9 @@ export function SettingsDialog({
   const { t, locale, setLocale } = useI18n();
   const analytics = useAnalytics();
   const [cfg, setCfg] = useState<AppConfig>(initial);
+  const [pendingMediaProviderEditIds, setPendingMediaProviderEditIds] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
   const lastSavedAppearanceRef = useRef({
     theme: initial.theme ?? 'system',
     accentColor: resolveAccentColor(initial.accentColor),
@@ -1618,6 +1621,7 @@ export function SettingsDialog({
           };
           if (persistOptions.forceMediaProviderSync) {
             lastSyncedMediaProvidersVersionRef.current = mediaProvidersVersion;
+            setPendingMediaProviderEditIds(new Set());
           }
           // If a newer edit landed while the request was in flight,
           // leave the status as 'pending' so the next debounce tick
@@ -3230,8 +3234,15 @@ export function SettingsDialog({
               setCfg={setCfg}
               mediaProvidersNotice={mediaProvidersNotice}
               onReloadMediaProviders={onReloadMediaProviders}
-              onChange={() => {
+              pendingLocalProviderIds={pendingMediaProviderEditIds}
+              onChange={(providerId) => {
                 mediaProvidersChangeVersionRef.current += 1;
+                setPendingMediaProviderEditIds((current) => {
+                  if (current.has(providerId)) return current;
+                  const next = new Set(current);
+                  next.add(providerId);
+                  return next;
+                });
               }}
             />
           ) : null}
@@ -4800,13 +4811,15 @@ function MediaProvidersSection({
   setCfg,
   mediaProvidersNotice,
   onReloadMediaProviders,
+  pendingLocalProviderIds,
   onChange,
 }: {
   cfg: AppConfig;
   setCfg: Dispatch<SetStateAction<AppConfig>>;
   mediaProvidersNotice?: string | null;
   onReloadMediaProviders?: () => Promise<AppConfig['mediaProviders'] | null>;
-  onChange: () => void;
+  pendingLocalProviderIds: ReadonlySet<string>;
+  onChange: (providerId: string) => void;
 }) {
   const { t } = useI18n();
   const analytics = useAnalytics();
@@ -4861,7 +4874,7 @@ function MediaProvidersSection({
       apiKeyTail?: string;
     },
   ) => {
-    onChange();
+    onChange(provider.id);
     setCfg((curr) => {
       const prev = curr.mediaProviders?.[provider.id] ?? { apiKey: '', baseUrl: '', model: '' };
       const next = { ...prev, ...patch };
@@ -4885,7 +4898,7 @@ function MediaProvidersSection({
         return;
       }
       setCfg((curr) => mergeDaemonMediaProviders(curr, next, {
-        preservePendingLocalSecretEdits: true,
+        preserveLocalProviderIds: pendingLocalProviderIds,
       }));
       setReloadNotice({ kind: 'success', message: t('settings.mediaProviderReloadSuccess') });
     } finally {

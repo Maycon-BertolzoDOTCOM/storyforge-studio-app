@@ -144,7 +144,7 @@ describe('SettingsDialog media providers', () => {
     expect(screen.getByRole('button', { name: 'Reload from daemon' })).toBeTruthy();
   });
 
-  it('preserves local pending edits and local-only providers when daemon reload returns a partial provider set', async () => {
+  it('refreshes daemon-backed providers while keeping untouched local-only providers when daemon reload returns a partial provider set', async () => {
     const reloadMock = vi.fn(async () => ({
       openai: {
         apiKey: '',
@@ -183,11 +183,10 @@ describe('SettingsDialog media providers', () => {
     });
 
     expect((screen.getByLabelText('OpenAI Base URL') as HTMLInputElement).value).toBe(
-      'https://local-openai.example/v1',
+      'https://daemon.example/v1',
     );
-    expect((screen.getByLabelText('OpenAI API key') as HTMLInputElement).value).toBe(
-      'sk-local-openai',
-    );
+    expect((screen.getByLabelText('OpenAI API key') as HTMLInputElement).value).toBe('');
+    expect(screen.getByText('Saved · ••••9876')).toBeTruthy();
     // Fal.ai is a non-integrated (coming-soon) provider and no longer has
     // editable input fields in the UI; its config is preserved in state via
     // mergeDaemonMediaProviders (covered by state/config.test.ts).
@@ -273,6 +272,71 @@ describe('SettingsDialog media providers', () => {
     expect((screen.getByLabelText('OpenAI Base URL') as HTMLInputElement).value).toBe(
       'https://local-pending.example/v1',
     );
+  });
+
+  it('stops preserving a provider on reload after its media autosave succeeds', async () => {
+    const reloadMock = vi.fn(async () => ({
+      openai: {
+        apiKey: '',
+        apiKeyConfigured: true,
+        apiKeyTail: '9876',
+        baseUrl: 'https://daemon.example/v1',
+      },
+    }));
+    const onPersist = vi.fn(async () => undefined);
+    renderDialog(
+      {
+        ...saveableConfig(),
+        mediaProviders: {
+          openai: {
+            apiKey: '',
+            apiKeyConfigured: true,
+            apiKeyTail: '1234',
+            baseUrl: 'https://saved.example/v1',
+          },
+        },
+      },
+      {
+        onPersist,
+        onReloadMediaProviders: reloadMock,
+      },
+    );
+
+    fireEvent.change(screen.getByLabelText('OpenAI API key'), {
+      target: { value: 'sk-local-saved' },
+    });
+    fireEvent.change(screen.getByLabelText('OpenAI Base URL'), {
+      target: { value: 'https://local-saved.example/v1' },
+    });
+
+    await waitFor(() => {
+      expect(onPersist).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mediaProviders: {
+            openai: {
+              apiKey: 'sk-local-saved',
+              apiKeyConfigured: true,
+              apiKeyTail: '1234',
+              baseUrl: 'https://local-saved.example/v1',
+            },
+          },
+        }),
+        expect.objectContaining({ forceMediaProviderSync: true }),
+      );
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reload from daemon' }));
+
+    await waitFor(() => {
+      expect(reloadMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Reloaded media provider settings from the local daemon.')).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('OpenAI API key') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('OpenAI Base URL') as HTMLInputElement).value).toBe(
+      'https://daemon.example/v1',
+    );
+    expect(screen.getByText('Saved · ••••9876')).toBeTruthy();
   });
 
   it('clears saved media keys only through the explicit Clear action', async () => {

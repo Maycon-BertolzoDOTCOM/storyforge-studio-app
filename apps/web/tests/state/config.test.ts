@@ -244,7 +244,7 @@ describe('mergeDaemonMediaProviders', () => {
           baseUrl: 'https://daemon.example/v1',
         },
       },
-      { preservePendingLocalSecretEdits: true },
+      { preserveLocalProviderIds: new Set(['openai']) },
     );
 
     expect(merged.mediaProviders).toEqual({
@@ -281,7 +281,7 @@ describe('mergeDaemonMediaProviders', () => {
           baseUrl: 'https://daemon-openai.example/v1',
         },
       },
-      { preservePendingLocalSecretEdits: true },
+      { preserveLocalProviderIds: new Set(['openai']) },
     );
 
     expect(merged.mediaProviders).toEqual({
@@ -343,7 +343,7 @@ describe('mergeDaemonMediaProviders', () => {
           baseUrl: 'https://daemon.example/v1',
         },
       },
-      { preservePendingLocalSecretEdits: true },
+      { preserveLocalProviderIds: new Set(['openai']) },
     );
 
     expect(merged.mediaProviders).toEqual({
@@ -419,6 +419,55 @@ describe('mergeDaemonMediaProviders', () => {
         apiKeyConfigured: true,
         apiKeyTail: '9876',
         baseUrl: 'https://daemon.example/v1',
+      },
+    });
+  });
+
+  it('refreshes browser-persisted saved rows from daemon state unless the dialog marks them dirty', () => {
+    const localConfig = {
+      ...DEFAULT_CONFIG,
+      mediaProviders: {
+        openai: {
+          apiKey: 'sk-browser-saved',
+          apiKeyConfigured: true,
+          apiKeyTail: '1234',
+          baseUrl: 'https://local-stale.example/v1',
+          model: 'gpt-image-1',
+        },
+      },
+    };
+
+    const daemonProviders = {
+      openai: {
+        apiKey: '',
+        apiKeyConfigured: true,
+        apiKeyTail: '9876',
+        baseUrl: 'https://daemon.example/v1',
+        model: 'gpt-image-1-mini',
+      },
+    };
+
+    expect(mergeDaemonMediaProviders(localConfig, daemonProviders).mediaProviders).toEqual({
+      openai: {
+        apiKey: '',
+        apiKeyConfigured: true,
+        apiKeyTail: '9876',
+        baseUrl: 'https://daemon.example/v1',
+        model: 'gpt-image-1-mini',
+      },
+    });
+
+    expect(
+      mergeDaemonMediaProviders(localConfig, daemonProviders, {
+        preserveLocalProviderIds: new Set(['openai']),
+      }).mediaProviders,
+    ).toEqual({
+      openai: {
+        apiKey: 'sk-browser-saved',
+        apiKeyConfigured: true,
+        apiKeyTail: '1234',
+        baseUrl: 'https://local-stale.example/v1',
+        model: 'gpt-image-1',
       },
     });
   });

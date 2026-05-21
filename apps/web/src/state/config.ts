@@ -458,12 +458,6 @@ function hasRecoverableLocalMediaProviderFields(
   );
 }
 
-function hasUnsavedLocalMediaProviderSecret(
-  entry: MediaProviderCredentials | null | undefined,
-): boolean {
-  return Boolean(entry?.apiKey?.trim());
-}
-
 function isMarkerOnlyMediaProviderEntry(
   entry: MediaProviderCredentials | null | undefined,
 ): boolean {
@@ -681,7 +675,7 @@ export function mergeDaemonMediaProviders(
   localConfig: AppConfig,
   daemonProviders: AppConfig['mediaProviders'] | null,
   options?: {
-    preservePendingLocalSecretEdits?: boolean;
+    preserveLocalProviderIds?: ReadonlySet<string>;
   },
 ): AppConfig {
   if (daemonProviders == null) {
@@ -702,9 +696,8 @@ export function mergeDaemonMediaProviders(
     if (!isStoredMediaProviderEntryPresent(daemonEntry)) continue;
     const localEntry = mediaProviders[providerId];
     const preserveLocalPendingEdit = Boolean(
-      options?.preservePendingLocalSecretEdits
-      && hasRecoverableLocalMediaProviderFields(localEntry)
-      && hasUnsavedLocalMediaProviderSecret(localEntry),
+      options?.preserveLocalProviderIds?.has(providerId)
+      && hasRecoverableLocalMediaProviderFields(localEntry),
     );
     mediaProviders[providerId] = preserveLocalPendingEdit
       ? { ...daemonEntry, ...localEntry }
