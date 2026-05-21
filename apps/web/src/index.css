@@ -13504,7 +13504,7 @@ button.ghost.mcp-copy-btn:hover:not(:disabled) {
 }
 .op-ask-question-options {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
 }
 .op-ask-question-option {
@@ -13521,6 +13521,7 @@ button.ghost.mcp-copy-btn:hover:not(:disabled) {
   font-family: inherit;
   cursor: pointer;
   text-align: left;
+  width: 100%;
   transition: border-color 120ms ease, background 120ms ease;
 }
 .op-ask-question-option:hover { border-color: var(--accent); }
