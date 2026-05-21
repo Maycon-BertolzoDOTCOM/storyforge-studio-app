@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { access, cp, mkdir, readdir, readFile, stat, symlink, unlink, writeFile } from "node:fs/promises";
+import { access, cp, lstat, mkdir, readdir, readFile, stat, symlink, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 
 import { hashJson, hashPath, ToolPackCache } from "./cache.js";
@@ -192,7 +192,13 @@ async function hoistStandaloneNextPeerDeps(standaloneRoot: string): Promise<void
   await mkdir(appNodeModules, { recursive: true });
   for (const pkg of STANDALONE_HOISTED_PEER_DEPS) {
     const linkPath = join(appNodeModules, pkg);
-    if (await pathExists(linkPath)) continue;
+    // `lstat` does not follow symlinks: this lets us distinguish a
+    // stale dangling link (which `access`/`pathExists` would falsely
+    // report as missing, and then `symlink()` would later reject with
+    // EEXIST) from a fresh slot. If Next genuinely hoisted a real
+    // directory, leave it alone.
+    const existing = await lstat(linkPath).catch(() => null);
+    if (existing && existing.isDirectory() && !existing.isSymbolicLink()) continue;
     // pnpm dirs look like `react@18.3.1` or
     // `react-dom@18.3.1_react@18.3.1` — pick the bare version, not a
     // peer-resolved sibling. The leading `${pkg}@` requirement
@@ -202,6 +208,10 @@ async function hoistStandaloneNextPeerDeps(standaloneRoot: string): Promise<void
     const target = join(pnpmRoot, match, "node_modules", pkg);
     if (!(await pathExists(target))) continue;
     const relativeTarget = relative(dirname(linkPath), target);
+    // Idempotent re-run: drop any pre-existing entry (stale symlink
+    // from a previous build with different react/react-dom versions)
+    // before recreating, so repeated invocations don't EEXIST.
+    if (existing) await unlink(linkPath).catch(() => undefined);
     await symlink(relativeTarget, linkPath);
   }
 }
@@ -209,10 +219,14 @@ async function hoistStandaloneNextPeerDeps(standaloneRoot: string): Promise<void
 async function copyWorkspaceBuildArtifactsToCache(config: ToolPackConfig, entryRoot: string): Promise<void> {
   for (const artifact of workspaceBuildArtifacts(config)) {
     const sourcePath = join(config.workspaceRoot, artifact.workspacePath);
+    // Strip dangling symlinks first: that clears any leftover from a
+    // previous build whose target moved (e.g. a renamed `.pnpm/<pkg>@<ver>`
+    // after a dependency bump), so the subsequent hoist step starts
+    // from a clean slot and can safely (re-)create its symlinks.
+    await stripBrokenSymlinks(sourcePath);
     if (artifact.workspacePath === WEB_STANDALONE_ARTIFACT) {
       await hoistStandaloneNextPeerDeps(sourcePath);
     }
-    await stripBrokenSymlinks(sourcePath);
     const targetPath = join(entryRoot, artifact.cachePath);
     await mkdir(dirname(targetPath), { recursive: true });
     await cp(sourcePath, targetPath, { dereference: true, recursive: true });
