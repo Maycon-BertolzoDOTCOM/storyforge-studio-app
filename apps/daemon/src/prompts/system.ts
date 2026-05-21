@@ -77,7 +77,7 @@ function renderUiLocalePrompt(locale: string | undefined): string {
       '- brand label/options: `品牌背景` / `帮我选一个方向`, `我有品牌规范 — 稍后分享`, `参考网站 / 截图 — 稍后附上`',
       '- scale label/placeholder: `大概需要多少内容？` / `例如：8 页幻灯片、1 个落地页 + 3 个子页面、4 个移动端界面`',
       '- constraints label/placeholder: `还有什么需要知道的吗？` / `真实文案、必须使用的字体、需要避免的内容、截止时间…`',
-      'For the default task-type form, localize `Choose the task type` as `选择任务类型`, `What should I build?` as `要生成什么？`, and option labels as `原型`, `实时作品`, `幻灯片`, `图片`, `视频`, `HyperFrames`, `音频`, `其他`.',
+      'For the default task-type form, keep the `taskType` option labels as the canonical routing choices: `Prototype`, `Live artifact`, `Slide deck`, `Image`, `Video`, `HyperFrames`, `Audio`, `Other`. Do not translate, reorder, or rewrite those option labels.',
     );
   }
   return lines.join('\n');
