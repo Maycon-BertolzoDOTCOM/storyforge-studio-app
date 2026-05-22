@@ -47,6 +47,7 @@ import {
   type WebDeployProviderId,
   type WebUpdateDeployConfigRequest,
   writeProjectTextFile,
+  writeProjectTextFileDetailed,
 } from '../providers/registry';
 import type { ProjectFilePreview } from '../providers/registry';
 import {
@@ -4764,11 +4765,13 @@ function HtmlViewer({
         baseSource,
         'The file changed outside manual edit mode. Refreshing before applying manual edits.',
       ))) return false;
-      const saved = await writeProjectTextFile(projectId, file.name, result.source, {
+      const saved = await writeProjectTextFileDetailed(projectId, file.name, result.source, {
         artifactManifest: file.artifactManifest,
       });
-      if (!saved) {
-        setManualEditError('Could not save the edited file.');
+      if (!saved.ok) {
+        setManualEditError(
+          `Could not save the edited file${saved.status ? ` (${saved.status}${saved.code ? ` ${saved.code}` : ''})` : ''}: ${saved.message}`,
+        );
         return false;
       }
       const entry: ManualEditHistoryEntry = {
