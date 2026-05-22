@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-22T06:58:58.156Z",
+  "generatedAt": "2026-05-22T07:20:46.859Z",
   "contributors": {
     "huyhoangnhh98": {
       "lastAnnouncedTier": "spark",
@@ -1355,11 +1355,11 @@
       "scoreVersion": "weighted-v1"
     },
     "goldenobsidianllc": {
-      "lastAnnouncedTier": "spark",
-      "lastKnownScore": 5,
-      "lastCheckedAt": "2026-05-22T00:04:39.988Z",
+      "lastAnnouncedTier": "signal",
+      "lastKnownScore": 35,
+      "lastCheckedAt": "2026-05-22T07:20:46.859Z",
       "scoreVersion": "weighted-v1",
-      "lastAnnouncedAt": "2026-05-22T00:04:39.988Z"
+      "lastAnnouncedAt": "2026-05-22T07:20:46.859Z"
     },
     "lock-down": {
       "lastAnnouncedTier": "spark",
