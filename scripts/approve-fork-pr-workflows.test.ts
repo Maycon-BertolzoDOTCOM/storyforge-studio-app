@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { isDeniedChangedPath, isPendingApprovalRun } from "./approve-fork-pr-workflows.ts";
+import { isDeniedChangedPath, isPendingApprovalRun, waitForPendingApprovalRuns } from "./approve-fork-pr-workflows.ts";
 
 test("isPendingApprovalRun matches approval-gated fork PR runs from GitHub's captured payload shape", () => {
   const pull = {
@@ -89,4 +89,49 @@ test("isDeniedChangedPath blocks common tool config files under allowlisted sour
   assert.equal(isDeniedChangedPath("apps/web/vite.config.ts"), true);
   assert.equal(isDeniedChangedPath("apps/web/playwright.config.ts"), true);
   assert.equal(isDeniedChangedPath("apps/web/src/app/page.tsx"), false);
+});
+
+test("waitForPendingApprovalRuns retries until action_required runs appear", async () => {
+  const run = {
+    id: 26273463769,
+    name: "CI",
+    event: "pull_request",
+    status: "completed",
+    conclusion: "action_required",
+    head_sha: "734076155c44e569304856590019cea54506fdab",
+    path: ".github/workflows/ci.yml@main",
+    pull_requests: [],
+  };
+
+  const batches = [[], [], [run]];
+  const sleeps: number[] = [];
+
+  const pendingRuns = await waitForPendingApprovalRuns(
+    async () => batches.shift() ?? [run],
+    async (ms) => {
+      sleeps.push(ms);
+    },
+  );
+
+  assert.deepEqual(pendingRuns, [run]);
+  assert.deepEqual(sleeps, [3000, 3000]);
+});
+
+test("waitForPendingApprovalRuns stops after the bounded retry budget", async () => {
+  let calls = 0;
+  const sleeps: number[] = [];
+
+  const pendingRuns = await waitForPendingApprovalRuns(
+    async () => {
+      calls += 1;
+      return [];
+    },
+    async (ms) => {
+      sleeps.push(ms);
+    },
+  );
+
+  assert.deepEqual(pendingRuns, []);
+  assert.equal(calls, 4);
+  assert.deepEqual(sleeps, [3000, 3000, 3000]);
 });

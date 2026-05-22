@@ -42,6 +42,8 @@ type WorkflowRunsResponse = {
 };
 
 const dryRun = process.env.DRY_RUN === "true";
+const pendingRunPollAttempts = 4;
+const pendingRunPollIntervalMs = 3_000;
 
 // Workflow allowlisting is the security boundary: fork PRs may touch broader
 // source paths, but this script only approves low-privilege pull_request
@@ -134,6 +136,24 @@ export function isPendingApprovalRun(run: WorkflowRun, pull: PullRequest): boole
   );
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function waitForPendingApprovalRuns(
+  loadRuns: () => Promise<WorkflowRun[]>,
+  sleep: (ms: number) => Promise<void> = delay,
+): Promise<WorkflowRun[]> {
+  let pendingRuns = await loadRuns();
+
+  for (let attempt = 1; pendingRuns.length === 0 && attempt < pendingRunPollAttempts; attempt += 1) {
+    await sleep(pendingRunPollIntervalMs);
+    pendingRuns = await loadRuns();
+  }
+
+  return pendingRuns;
+}
+
 async function github<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`https://api.github.com${path}`, {
     ...init,
@@ -175,6 +195,14 @@ async function approveRun(run: WorkflowRun): Promise<void> {
 
   await github<void>(`/repos/${repo}/actions/runs/${run.id}/approve`, { method: "POST" });
   console.log(`Approved workflow run ${run.id} (${run.name ?? run.path})`);
+}
+
+async function listPendingApprovalRuns(repo: string, pull: PullRequest): Promise<WorkflowRun[]> {
+  const runs = await github<WorkflowRunsResponse>(
+    `/repos/${repo}/actions/runs?event=pull_request&head_sha=${pull.head.sha}&status=action_required&per_page=100`,
+  );
+
+  return runs.workflow_runs.filter((run) => isPendingApprovalRun(run, pull));
 }
 
 async function main(): Promise<void> {
@@ -238,10 +266,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const runs = await github<WorkflowRunsResponse>(
-    `/repos/${repo}/actions/runs?event=pull_request&head_sha=${pull.head.sha}&status=action_required&per_page=100`,
-  );
-  const pendingRuns = runs.workflow_runs.filter((run) => isPendingApprovalRun(run, pull));
+  const pendingRuns = await waitForPendingApprovalRuns(() => listPendingApprovalRuns(repo, pull));
 
   if (pendingRuns.length === 0) {
     console.log(`No action_required pull_request workflow runs found for PR #${prNumber} at ${pull.head.sha}.`);
