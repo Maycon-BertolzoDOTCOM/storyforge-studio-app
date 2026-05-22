@@ -6285,7 +6285,14 @@ function HtmlViewer({
           <div className="viewer-empty">{t('fileViewer.loading')}</div>
         ) : mode === 'preview' ? (
           <div
-            className={`${manualEditMode ? `manual-edit-workspace${manualEditPortalId ? ' manual-edit-workspace-portal' : ''}` : 'comment-preview-layer'} preview-viewport preview-viewport-${previewViewport}`}
+            className={manualEditMode
+              ? `manual-edit-workspace${manualEditPortalId ? ' manual-edit-workspace-portal' : ''} preview-viewport preview-viewport-${previewViewport}`
+              : [
+                  'comment-preview-layer',
+                  boardMode ? 'comment-preview-layer-comments-open' : '',
+                  boardMode && commentSidePanelCollapsed ? 'comment-preview-layer-comments-collapsed' : '',
+                  `preview-viewport preview-viewport-${previewViewport}`,
+                ].filter(Boolean).join(' ')}
             style={previewViewportStyle(previewViewport, previewScale, previewBodySize)}
           >
             {manualEditPortalHost && manualEditPanel
