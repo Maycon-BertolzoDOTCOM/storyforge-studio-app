@@ -18783,6 +18783,11 @@ body.desktop-pet-shell .pet-task-item {
   height: clamp(188px, calc(100vh - 220px), 360px);
   overflow-y: auto;
 }
+.composer-tools-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .composer-tools-filter {
   display: flex;
   flex-direction: row;
@@ -18905,7 +18910,8 @@ body.desktop-pet-shell .pet-task-item {
   text-transform: lowercase;
 }
 /* Plugins panel — each row is a horizontal split: the main button
-   applies the plugin, the side button opens the details modal. */
+   applies the plugin in-place, the side button is a secondary quick
+   action that also inserts the plugin's prompt into the chat draft. */
 .composer-tools-row--plugin {
   padding: 0;
   gap: 0;
@@ -18979,6 +18985,25 @@ body.desktop-pet-shell .pet-task-item {
 .composer-tools-row-toggle {
   background: var(--bg-subtle);
   border-color: var(--border);
+}
+/* Import-sources panel — Folder is the only live row today; the other
+   four entries sit behind a "Soon" pill so the i18n keys keep ownership
+   of the copy and the user sees the surface roadmap without thinking
+   they're broken. */
+.composer-tools-row--soon {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.composer-tools-row--soon:hover {
+  background: transparent;
+}
+.composer-tools-import-linked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 4px 6px;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 4px;
 }
 /* ============================================================
    Pet — uploaded image / spritesheet rendering

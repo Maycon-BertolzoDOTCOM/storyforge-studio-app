@@ -297,6 +297,13 @@ interface Props {
   byokApiProtocol?: AppConfig['apiProtocol'];
   byokImageModel?: string;
   onChangeByokImageModel?: (model: string) => void;
+  // Import-sources wiring forwarded to ChatComposer's "+" popover →
+  // Import tab. ProjectView owns the link/unlink logic so the project
+  // header chip and the composer panel stay on the same source of
+  // truth (`project.metadata.linkedDirs`).
+  onLinkFolder?: () => Promise<void> | void;
+  linkedDirs?: string[];
+  onUnlinkFolder?: (dir: string) => Promise<void> | void;
 }
 
 type Tab = 'chat' | 'comments';
@@ -350,6 +357,9 @@ export function ChatPane({
   byokApiProtocol,
   byokImageModel,
   onChangeByokImageModel,
+  onLinkFolder,
+  linkedDirs,
+  onUnlinkFolder,
 }: Props) {
   const t = useT();
   const analytics = useAnalytics();
@@ -939,6 +949,9 @@ export function ChatPane({
             currentSkillId={currentSkillId}
             onProjectSkillChange={onProjectSkillChange}
             pinnedPluginId={activePluginSnapshot?.pluginId ?? null}
+            onLinkFolder={onLinkFolder}
+            linkedDirs={linkedDirs}
+            onUnlinkFolder={onUnlinkFolder}
           />
         </>
       ) : null}

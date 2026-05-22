@@ -4005,6 +4005,9 @@ export function ProjectView({
               }}
               activePluginSnapshot={activePluginSnapshot}
               onCollapse={() => setWorkspaceFocused(true)}
+              onLinkFolder={handleLinkFolder}
+              linkedDirs={linkedDirs}
+              onUnlinkFolder={handleUnlinkFolder}
             />
           ) : (
             <div className="pane" data-testid="chat-pane-loading">
