@@ -160,7 +160,6 @@ function isSamePullRequest(candidate: WorkflowRun["pull_requests"][number] | Pul
     candidate.head.sha === pull.head.sha &&
     candidate.head.repo?.full_name === pull.head.repo?.full_name &&
     candidate.base.ref === pull.base.ref &&
-    candidate.base.sha === pull.base.sha &&
     candidate.base.repo.full_name === pull.base.repo.full_name
   );
 }

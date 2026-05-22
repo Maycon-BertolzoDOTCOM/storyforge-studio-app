@@ -277,6 +277,45 @@ test("runTargetsPullRequest approves only the run that GitHub associates to the 
   assert.equal(runTargetsPullRequest(otherPrRun, pull, [pull, otherPull]), false);
 });
 
+test("runTargetsPullRequest ignores base tip churn for the same PR association", () => {
+  const pull = {
+    number: 2683,
+    state: "open",
+    changed_files: 1,
+    head: {
+      sha: "734076155c44e569304856590019cea54506fdab",
+      repo: { full_name: "someone/open-design" },
+    },
+    base: {
+      ref: "main",
+      sha: "4cd93a5c7a7b0db1961c854e55f8e0e6b1b45542",
+      repo: { full_name: "nexu-io/open-design" },
+    },
+  };
+
+  const run = {
+    id: 26273463769,
+    name: "CI",
+    event: "pull_request",
+    status: "completed",
+    conclusion: "action_required",
+    head_sha: pull.head.sha,
+    path: ".github/workflows/ci.yml@main",
+    pull_requests: [
+      {
+        number: pull.number,
+        head: pull.head,
+        base: {
+          ...pull.base,
+          sha: "08a88a65482123629ebda5a090c71533bd6b8a88",
+        },
+      },
+    ],
+  };
+
+  assert.equal(runTargetsPullRequest(run, pull, [pull]), true);
+});
+
 test("hasPullApprovalStateDrift ignores base tip churn but still rejects base retargeting and head drift", () => {
   const pull = {
     number: 2683,
