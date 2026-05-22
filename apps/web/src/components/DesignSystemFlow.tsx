@@ -21,6 +21,7 @@ import {
 } from '../providers/registry';
 import {
   createConversation,
+  getProject,
   listConversations,
   listMessages,
   loadTabs,
@@ -722,6 +723,12 @@ export function DesignSystemDetailView({
       if (cancelled) return;
       if (!workspace) {
         if (fallbackProjectId) {
+          const fallbackProject = await getProject(fallbackProjectId);
+          if (cancelled) return;
+          if (!fallbackProject) {
+            setWorkspaceLoadError('Could not open the design system workspace.');
+            return;
+          }
           const files = await fetchProjectFiles(fallbackProjectId);
           if (cancelled) return;
           setWorkspaceProjectId(fallbackProjectId);
