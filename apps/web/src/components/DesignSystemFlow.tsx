@@ -96,6 +96,11 @@ interface DetailProps {
 type SetupStep = 'setup' | 'confirm';
 type ReviewTab = 'system' | 'files';
 
+interface ResolvedDesignSystemWorkspaceProject {
+  projectId: string;
+  files: ProjectFile[];
+}
+
 interface SetupState {
   company: string;
   githubUrl: string;
@@ -183,6 +188,26 @@ function readRememberedGenerationJob(designSystemId: string): string | null {
   } catch {
     return null;
   }
+}
+
+async function resolveDesignSystemWorkspaceProject(
+  system: Pick<DesignSystemDetail, 'id' | 'projectId'>,
+): Promise<ResolvedDesignSystemWorkspaceProject | null> {
+  const workspace = await ensureDesignSystemWorkspace(system.id);
+  if (workspace) {
+    return {
+      projectId: workspace.project.id,
+      files: workspace.files,
+    };
+  }
+  if (!system.projectId) return null;
+  const fallbackProject = await getProject(system.projectId);
+  if (!fallbackProject) return null;
+  const files = await fetchProjectFiles(system.projectId);
+  return {
+    projectId: system.projectId,
+    files,
+  };
 }
 
 function clearRememberedGenerationJob(designSystemId: string): void {
@@ -714,38 +739,19 @@ export function DesignSystemDetailView({
 
   useEffect(() => {
     if (!system) return undefined;
-    const designSystemId = system.id;
-    const fallbackProjectId = system.projectId;
+    const currentSystem = system;
     let cancelled = false;
     async function syncWorkspaceProject() {
       setWorkspaceLoadError(null);
-      const workspace = await ensureDesignSystemWorkspace(designSystemId);
+      const resolved = await resolveDesignSystemWorkspaceProject(currentSystem);
       if (cancelled) return;
-      if (!workspace) {
-        if (fallbackProjectId) {
-          const fallbackProject = await getProject(fallbackProjectId);
-          if (cancelled) return;
-          if (!fallbackProject) {
-            setWorkspaceLoadError('Could not open the design system workspace.');
-            return;
-          }
-          const files = await fetchProjectFiles(fallbackProjectId);
-          if (cancelled) return;
-          setWorkspaceProjectId(fallbackProjectId);
-          setWorkspaceProjectFiles(files);
-          if (onOpenProject && openedProjectRef.current !== fallbackProjectId) {
-            openedProjectRef.current = fallbackProjectId;
-            await onProjectsRefresh?.();
-            if (!cancelled) onOpenProject(fallbackProjectId);
-          }
-          return;
-        }
+      if (!resolved) {
         setWorkspaceLoadError('Could not open the design system workspace.');
         return;
       }
-      const projectId = workspace.project.id;
+      const projectId = resolved.projectId;
       setWorkspaceProjectId(projectId);
-      setWorkspaceProjectFiles(workspace.files);
+      setWorkspaceProjectFiles(resolved.files);
       if (onOpenProject && openedProjectRef.current !== projectId) {
         openedProjectRef.current = projectId;
         await onProjectsRefresh?.();
@@ -1022,11 +1028,11 @@ export function DesignSystemDetailView({
   async function ensureWorkspaceProject() {
     if (!system) return workspaceProjectId;
     if (workspaceProjectId) return workspaceProjectId;
-    const workspace = await ensureDesignSystemWorkspace(system.id);
-    if (!workspace) return null;
-    setWorkspaceProjectId(workspace.project.id);
-    setWorkspaceProjectFiles(workspace.files);
-    return workspace.project.id;
+    const resolved = await resolveDesignSystemWorkspaceProject(system);
+    if (!resolved) return null;
+    setWorkspaceProjectId(resolved.projectId);
+    setWorkspaceProjectFiles(resolved.files);
+    return resolved.projectId;
   }
 
   const refreshWorkspaceProjectFiles = useCallback(async (projectId: string) => {
