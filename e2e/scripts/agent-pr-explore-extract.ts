@@ -430,8 +430,12 @@ function renderMarkdown(parsed: ParsedRun, args: CliArgs): string {
   add(
     `**Verdict**: ${overallEmoji} ${overallText} · **Coverage**: ${parsed.steps.length} scenarios · **Approved by**: @${args.approver}`,
   );
+  // Malformed marker count surfaces in the header so a run where the
+  // agent emitted nothing but garbage isn't rendered with all-zero
+  // counts (which would look clean). The detail block under
+  // "Findings worth attention" still shows the raw malformed lines.
   add(
-    `**Findings**: ${failures.length} fail · ${warnings.length} warning · ${unknowns.length} unknown · ${passed.length} pass`,
+    `**Findings**: ${failures.length} fail · ${warnings.length} warning · ${unknowns.length} unknown · ${parsed.malformedMarkers.length} malformed · ${passed.length} pass`,
   );
   add("");
 

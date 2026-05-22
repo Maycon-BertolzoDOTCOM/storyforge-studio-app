@@ -270,6 +270,26 @@ post-steps:
         --output /tmp/agent-report/comment.md \
         $mixed_flag
 
+  # gh-aw's safe-outputs.upload-artifact staging happens BEFORE this
+  # post-step block runs (it bundles only items the agent emitted),
+  # and the auto-generated "Upload agent artifacts" step lists
+  # specific paths under /tmp/gh-aw/ that don't include
+  # /tmp/agent-report/. So the rendered comment.md is written but
+  # never uploaded by either of those. Adding our own upload step
+  # explicitly. P1-private accepts this bypasses gh-aw's
+  # threat-detection (the comment body is generated from
+  # gh-aw-allowed STEP markers and contains no agent free-form
+  # output beyond those structured fields, so the detection surface
+  # is the same as the agent stdio which IS scanned).
+  - name: Upload rendered report
+    if: always()
+    uses: actions/upload-artifact@v4
+    with:
+      name: agent-pr-explore-report
+      path: /tmp/agent-report/
+      if-no-files-found: warn
+      retention-days: 7
+
 # Safe-outputs: P1-private uses only upload-artifact (the rendered
 # report + the raw session jsonl). The previous draft had a
 # `Post report to private channel` post-step that POSTed the rendered
