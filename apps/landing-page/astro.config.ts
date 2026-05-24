@@ -137,6 +137,14 @@ export default defineConfig({
   srcDir: './app',
   outDir: './out',
   trailingSlash: 'always',
+  build: {
+    // Inline every emitted stylesheet directly into the HTML <head>.
+    // Trade-off: HTML pages grow by ~10-15KB (already Brotli-compressed
+    // on CF). Win: zero render-blocking CSS roundtrip. Combined with the
+    // self-hosted variable fonts (see globals.css), this drops the
+    // PageSpeed "Render-blocking requests" estimate from ~2.3s to ~0.
+    inlineStylesheets: 'always',
+  },
   markdown: {
     // Use our paper-toned theme for fenced code blocks. Astro ships
     // Shiki under the hood and the default theme (`github-dark`)
@@ -163,7 +171,29 @@ export default defineConfig({
       // image — it already carries `<meta name="robots" content="noindex">`
       // and is `Disallow`-ed from `public/robots.txt`. Filtering it
       // out of the sitemap keeps the index strictly canonical pages.
-      filter: (page) => !page.includes('/og/'),
+      //
+      // We ALSO filter out every `/{locale}/...` route so the sitemap
+      // only carries canonical English URLs. Locale variants are
+      // expressed via the `<xhtml:link rel="alternate" hreflang="...">`
+      // annotations the `namespaces.xhtml: true` option emits inside
+      // each canonical entry, which is Google's recommended pattern
+      // for a multi-language site. Without this filter, ~500 routes ×
+      // 14 locales generates an XML payload that breaches the
+      // Cloudflare Pages 25 MiB single-file upload limit and fails
+      // deploy at the wrangler step (see PR #2603 — that was the
+      // exact failure mode that forced the revert of the previous
+      // attempt to land this work).
+      filter: (page) => {
+        if (page.includes('/og/')) return false;
+        const path = new URL(page).pathname;
+        const localeMatch = path.match(/^\/([a-z]{2}(?:-[a-z]{2})?)\//);
+        if (localeMatch) {
+          const code = localeMatch[1];
+          const isLanding = LANDING_LOCALES.some((l) => l.code === code);
+          if (isLanding && code !== DEFAULT_LOCALE) return false;
+        }
+        return true;
+      },
       serialize(item: SitemapItem) {
         const path = stripLocaleFromPath(new URL(item.url).pathname).pathname;
         if (path === '/') {

@@ -13,6 +13,8 @@
  * not a primary channel like /skills/ or /tutorials/.
  */
 import Layout from '../../_components/sub-page-layout.astro';
+import LazyImg from '../../_components/lazy-img.astro';
+import { imageAsset, imageAssetSrcset } from '../../image-assets';
 import {
   DEFAULT_LOCALE,
   getCommonCopy,
@@ -28,27 +30,75 @@ const HA_URL = `https://github.com/${HA_REPO}`;
 const HA_REPO_API = `https://api.github.com/repos/${HA_REPO}`;
 
 /*
- * Imagery sourced directly from the HA repo via raw.githubusercontent.com.
- * This is a temporary CDN — for production polish a follow-up should mirror
- * these PNGs into the same Cloudflare R2 bucket (`open-design-static`) the
- * rest of the marketing site already uses, then route them through Image
- * Resizing for `format=auto` + width-aware variants.
+ * SEO-targeted page titles per locale. Pattern: noun-stack with no
+ * separators — `{open-source} HTML Anything {official}`. The English
+ * tokens "Open Source" and "Official" capture brand-defense queries:
+ *   - "open source html anything"  (researching alternatives)
+ *   - "html anything official"     (verifying the canonical source)
+ *   - "open source html anything official"  (precise long tail)
+ *
+ * Each non-English locale translates the surrounding tokens so a
+ * user searching in their own language still lands on a title that
+ * matches their query, while "HTML Anything" stays untranslated as
+ * a brand. Word order follows whatever feels natural in each locale
+ * (German: Offiziell at end; French: adjectives after noun; CJK:
+ * adjectives before noun) rather than a slavish copy of the English
+ * stack — Google tokenizes regardless of order.
  */
-const HA_RAW = `https://raw.githubusercontent.com/${HA_REPO}/main`;
-const banner = `${HA_RAW}/docs/assets/banner.png`;
+const OPEN_SOURCE_OFFICIAL_TITLE: Record<LandingLocaleCode, string> = {
+  en:      'Open Source HTML Anything Official',
+  zh:      '开源 HTML Anything 官方',
+  'zh-tw': '開源 HTML Anything 官方',
+  ja:      'オープンソース HTML Anything 公式',
+  ko:      '오픈 소스 HTML Anything 공식',
+  de:      'Open Source HTML Anything Offiziell',
+  fr:      'HTML Anything Open Source Officiel',
+  ru:      'HTML Anything Open Source Официальный',
+  es:      'HTML Anything Open Source Oficial',
+  'pt-br': 'HTML Anything Open Source Oficial',
+  it:      'HTML Anything Open Source Ufficiale',
+  vi:      'HTML Anything Open Source Chính thức',
+  pl:      'HTML Anything Open Source Oficjalny',
+  id:      'HTML Anything Open Source Resmi',
+  nl:      'HTML Anything Open Source Officieel',
+  ar:      'HTML Anything مفتوح المصدر الرسمي',
+  tr:      'HTML Anything Açık Kaynak Resmi',
+  uk:      'HTML Anything Open Source Офіційний',
+};
+
+/*
+ * Imagery is hosted on the same Cloudflare R2 bucket as the rest of the
+ * marketing site (`open-design-static`, served via `static.open-design.ai`).
+ * Each `imageAsset()` call routes through `cdn-cgi/image/` so the browser
+ * gets a `format=auto` AVIF / WebP variant at the requested width — same
+ * pipeline used by the homepage hero. The source PNGs live under
+ * `landing/assets/html-anything/`; upload them with the
+ * `~/Downloads/r2-html-anything-orig/upload.sh` script that ships alongside
+ * this PR.
+ *
+ * Banner uses an explicit srcset (mirroring `heroImageSrcset`) because
+ * it's the LCP element on this page; the screenshots below are
+ * `<LazyImg>`-loaded at a single width since they only ever render at
+ * one viewport-fitted size.
+ */
+const banner = imageAsset('html-anything/banner.png', { width: 2400, quality: 82 });
+const bannerSrcset = imageAssetSrcset(
+  'html-anything/banner.png',
+  [768, 1280, 1920, 2400],
+);
 const shots = {
-  entry:    `${HA_RAW}/docs/screenshots/01-entry-view.png`,
-  picker:   `${HA_RAW}/docs/screenshots/02-template-picker.png`,
-  stream:   `${HA_RAW}/docs/screenshots/03-streaming.png`,
-  exportUI: `${HA_RAW}/docs/screenshots/04-export.png`,
-  deck:     `${HA_RAW}/docs/screenshots/05-deck-mode.png`,
-  hyper:    `${HA_RAW}/docs/screenshots/06-hyperframes.png`,
+  entry:    imageAsset('html-anything/01-entry-view.png',     { width: 1600, quality: 82 }),
+  picker:   imageAsset('html-anything/02-template-picker.png',{ width: 1600, quality: 82 }),
+  stream:   imageAsset('html-anything/03-streaming.png',      { width: 1600, quality: 82 }),
+  exportUI: imageAsset('html-anything/04-export.png',         { width: 1600, quality: 82 }),
+  deck:     imageAsset('html-anything/05-deck-mode.png',      { width: 1600, quality: 82 }),
+  hyper:    imageAsset('html-anything/06-hyperframes.png',    { width: 1600, quality: 82 }),
 };
 const skillShots = {
-  guizang:   `${HA_RAW}/docs/screenshots/skills/deck-guizang-editorial.png`,
-  swiss:     `${HA_RAW}/docs/screenshots/skills/deck-swiss-international.png`,
-  parchment: `${HA_RAW}/docs/screenshots/skills/doc-kami-parchment.png`,
-  poster:    `${HA_RAW}/docs/screenshots/skills/magazine-poster.png`,
+  guizang:   imageAsset('html-anything/skills/deck-guizang-editorial.png',   { width: 1280, quality: 82 }),
+  swiss:     imageAsset('html-anything/skills/deck-swiss-international.png', { width: 1280, quality: 82 }),
+  parchment: imageAsset('html-anything/skills/doc-kami-parchment.png',       { width: 1280, quality: 82 }),
+  poster:    imageAsset('html-anything/skills/magazine-poster.png',          { width: 1280, quality: 82 }),
 };
 
 // Hardcoded snapshot — last manually verified date. Used as fallback
@@ -153,7 +203,7 @@ type HtmlAnythingCopy = {
 };
 
 const HTML_ANYTHING_COPY_EN: HtmlAnythingCopy = {
-  title: 'HTML Anything — your local AI agent writes the HTML, you ship it | Open Design',
+  title: OPEN_SOURCE_OFFICIAL_TITLE.en,
   description:
     'HTML Anything is the agentic HTML editor from the Open Design family. Reuse the coding-agent CLI you already authenticated — Claude Code, Codex, Cursor, Gemini, Copilot, OpenCode, Qwen, Aider — to turn Markdown, CSV, or JSON into ship-ready HTML for WeChat, X, Zhihu, and Xiaohongshu. Open-source, Apache-2.0.',
   label: 'Sister project',
@@ -294,7 +344,7 @@ const HTML_ANYTHING_COPY_EN: HtmlAnythingCopy = {
 
 const HTML_ANYTHING_COPY_ZH: HtmlAnythingCopy = {
   ...HTML_ANYTHING_COPY_EN,
-  title: 'HTML Anything — 本地 AI Agent 写 HTML，你负责发布 | Open Design',
+  title: OPEN_SOURCE_OFFICIAL_TITLE.zh,
   description:
     'HTML Anything 是 Open Design 家族里的 Agent 原生 HTML 编辑器。复用你已经登录的 Claude Code、Codex、Cursor、Gemini、Copilot、OpenCode、Qwen、Aider，把 Markdown、CSV 或 JSON 变成可交付 HTML。',
   label: '姊妹项目',
@@ -395,7 +445,7 @@ const HTML_ANYTHING_COPY_ZH: HtmlAnythingCopy = {
 
 const HTML_ANYTHING_COPY_ZH_TW: HtmlAnythingCopy = {
   ...HTML_ANYTHING_COPY_ZH,
-  title: 'HTML Anything — 本地 AI Agent 寫 HTML，你負責發布 | Open Design',
+  title: OPEN_SOURCE_OFFICIAL_TITLE['zh-tw'],
   description:
     'HTML Anything 是 Open Design 家族裡的 Agent 原生 HTML 編輯器。複用你已經登入的 Claude Code、Codex、Cursor、Gemini、Copilot、OpenCode、Qwen、Aider，把 Markdown、CSV 或 JSON 變成可交付 HTML。',
   label: '姊妹專案',
@@ -509,7 +559,7 @@ function derivedHtmlAnythingCopy(locale: LandingLocaleCode): HtmlAnythingCopy {
 
   return {
     ...HTML_ANYTHING_COPY_EN,
-    title: `${product.htmlAnythingName} — ${product.htmlAnythingBlurb} | Open Design`,
+    title: OPEN_SOURCE_OFFICIAL_TITLE[locale] ?? OPEN_SOURCE_OFFICIAL_TITLE.en,
     description: `${product.htmlAnythingBlurb} ${summary}`,
     label: product.product,
     heading: product.htmlAnythingBlurb,
@@ -682,11 +732,46 @@ const jsonLd: Array<Record<string, unknown>> = [
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'HTML Anything',
-    alternateName: copy.schemaAlternateName,
+    /*
+     * alternateName fed as an explicit array so Google understands the
+     * project is searched as: hyphenated, spaced, joined, capitalized
+     * variants, plus the tagline. Each entry is a real query users
+     * type — keeping them in this list signals canonical-name
+     * equivalence rather than leaving the matching to Google's
+     * tokenizer alone. Restored from PR #2566; do not route this
+     * through the generic locale schema field — it should stay as
+     * a literal array regardless of UI locale because these are
+     * proper-noun query variants.
+     */
+    alternateName: [
+      'html anything',
+      'html-anything',
+      'htmlanything',
+      'HTML Anything Editor',
+      'The agentic HTML editor',
+      // Brand-defense + canonical-source queries: keep these stacked
+      // alongside the descriptive variants above so the structured
+      // entity matches whichever shape the user typed.
+      'open source html anything',
+      'html anything official',
+      'open source html anything official',
+    ],
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'macOS, Linux, Windows',
     description,
-    url: HA_URL,
+    /*
+     * `url` is the canonical surface for this entity. JSON-LD lives on
+     * the landing page, so the landing page IS the canonical URL —
+     * Google attributes the SoftwareApplication entity to the page
+     * named by `url`. Pointing it at the GitHub repo would credit
+     * github.com/... as canonical, which is the opposite of what
+     * this SEO surface is supposed to do. The BreadcrumbList block
+     * below also uses the LP URL — keep both blocks aligned.
+     * Restored from PR #2586. The GitHub repo lives in `sameAs`
+     * below as a peer reference surface.
+     */
+    url: 'https://open-design.ai/html-anything/',
+    sameAs: [HA_URL],
     license: 'https://www.apache.org/licenses/LICENSE-2.0',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     author: {
@@ -758,6 +843,8 @@ const jsonLd: Array<Record<string, unknown>> = [
   <figure class="ha-hero-figure">
     <img
       src={banner}
+      srcset={bannerSrcset}
+      sizes="(max-width: 900px) 100vw, 1280px"
       alt={copy.heroAlt}
       width="2400"
       height="1260"
@@ -801,7 +888,7 @@ const jsonLd: Array<Record<string, unknown>> = [
           <h3>{copy.flow[0].headline}</h3>
           <p>{copy.flow[0].body}</p>
           <figure class="step-shot">
-            <img src={shots.entry} alt={copy.flow[0].alt} loading="lazy" decoding="async" />
+            <LazyImg src={shots.entry} alt={copy.flow[0].alt} />
           </figure>
         </div>
       </li>
@@ -812,11 +899,11 @@ const jsonLd: Array<Record<string, unknown>> = [
           <p>{copy.flow[1].body}</p>
           <div class="step-shot-pair">
             <figure>
-              <img src={shots.picker} alt={copy.flow[1].figures?.[0]?.alt ?? copy.flow[1].alt} loading="lazy" decoding="async" />
+              <LazyImg src={shots.picker} alt={copy.flow[1].figures?.[0]?.alt ?? copy.flow[1].alt} />
               <figcaption>{copy.flow[1].figures?.[0]?.caption}</figcaption>
             </figure>
             <figure>
-              <img src={shots.stream} alt={copy.flow[1].figures?.[1]?.alt ?? copy.flow[1].alt} loading="lazy" decoding="async" />
+              <LazyImg src={shots.stream} alt={copy.flow[1].figures?.[1]?.alt ?? copy.flow[1].alt} />
               <figcaption>{copy.flow[1].figures?.[1]?.caption}</figcaption>
             </figure>
           </div>
@@ -828,7 +915,7 @@ const jsonLd: Array<Record<string, unknown>> = [
           <h3>{copy.flow[2].headline}</h3>
           <p>{copy.flow[2].body}</p>
           <figure class="step-shot">
-            <img src={shots.exportUI} alt={copy.flow[2].alt} loading="lazy" decoding="async" />
+            <LazyImg src={shots.exportUI} alt={copy.flow[2].alt} />
           </figure>
         </div>
       </li>
@@ -843,7 +930,7 @@ const jsonLd: Array<Record<string, unknown>> = [
     <ul class="ha-showcase-grid">
       <li>
         <figure>
-          <img src={skillShots.guizang} alt={copy.showcase[0].alt} loading="lazy" decoding="async" />
+          <LazyImg src={skillShots.guizang} alt={copy.showcase[0].alt} />
           <figcaption>
             <span class="ha-showcase-name">deck-guizang-editorial</span>
             <span class="ha-showcase-tag">{copy.showcase[0].tag}</span>
@@ -852,7 +939,7 @@ const jsonLd: Array<Record<string, unknown>> = [
       </li>
       <li>
         <figure>
-          <img src={skillShots.swiss} alt={copy.showcase[1].alt} loading="lazy" decoding="async" />
+          <LazyImg src={skillShots.swiss} alt={copy.showcase[1].alt} />
           <figcaption>
             <span class="ha-showcase-name">deck-swiss-international</span>
             <span class="ha-showcase-tag">{copy.showcase[1].tag}</span>
@@ -861,7 +948,7 @@ const jsonLd: Array<Record<string, unknown>> = [
       </li>
       <li>
         <figure>
-          <img src={skillShots.parchment} alt={copy.showcase[2].alt} loading="lazy" decoding="async" />
+          <LazyImg src={skillShots.parchment} alt={copy.showcase[2].alt} />
           <figcaption>
             <span class="ha-showcase-name">doc-kami-parchment</span>
             <span class="ha-showcase-tag">{copy.showcase[2].tag}</span>
@@ -870,7 +957,7 @@ const jsonLd: Array<Record<string, unknown>> = [
       </li>
       <li>
         <figure>
-          <img src={skillShots.poster} alt={copy.showcase[3].alt} loading="lazy" decoding="async" />
+          <LazyImg src={skillShots.poster} alt={copy.showcase[3].alt} />
           <figcaption>
             <span class="ha-showcase-name">magazine-poster</span>
             <span class="ha-showcase-tag">{copy.showcase[3].tag}</span>
@@ -887,13 +974,13 @@ const jsonLd: Array<Record<string, unknown>> = [
     </p>
     <div class="ha-modes-grid">
       <figure>
-        <img src={shots.deck} alt={copy.modeFigures[0].alt} loading="lazy" decoding="async" />
+        <LazyImg src={shots.deck} alt={copy.modeFigures[0].alt} />
         <figcaption>
           <strong>{copy.modeFigures[0].label}</strong> — {copy.modeFigures[0].body}
         </figcaption>
       </figure>
       <figure>
-        <img src={shots.hyper} alt={copy.modeFigures[1].alt} loading="lazy" decoding="async" />
+        <LazyImg src={shots.hyper} alt={copy.modeFigures[1].alt} />
         <figcaption>
           <strong>{copy.modeFigures[1].label}</strong> — {copy.modeFigures[1].body}
         </figcaption>
