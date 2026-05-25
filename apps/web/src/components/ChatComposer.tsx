@@ -1001,6 +1001,10 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
           new RegExp(`(^|\\s)@${escapeRegExp(s.id)}(\\s|$)`).test(value),
         ),
       );
+      // Skip mention and slash detection during IME composition (e.g.,
+      // Chinese, Japanese, Korean input) to prevent cursor jumping.
+      // Issue #2851.
+      if (composingRef.current) return;
       // Detect a fresh @ at start or after whitespace; capture the typed
       // query up to the cursor.
       const before = value.slice(0, cursor);
@@ -1139,7 +1143,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
         reset();
         return;
       }
-      if ((!prompt && staged.length === 0 && nextCommentAttachments.length === 0) || streaming) return;
+      if (!prompt && staged.length === 0 && nextCommentAttachments.length === 0) return;
       sendComposedTurn(prompt, staged, nextCommentAttachments, contextMeta);
     }
 
@@ -1214,6 +1218,10 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
           .filter((s) => skillMatchesQuery(s, mentionQuery))
           .sort((a, b) => skillMentionRank(a, mentionQuery) - skillMentionRank(b, mentionQuery))
       : [];
+    const hasComposerPayload =
+      draft.trim().length > 0 || staged.length > 0 || currentCommentAttachments().length > 0;
+    const showStopButton = streaming && !hasComposerPayload;
+    const showSendButton = !streaming || hasComposerPayload;
 
     return (
       <div
@@ -1645,7 +1653,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
             </Button>
             {footerAccessory}
             <span className="composer-spacer" />
-            {streaming ? (
+            {showStopButton ? (
               <button
                 type="button"
                 className="composer-send stop"
@@ -1654,7 +1662,8 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                 <Icon name="stop" size={13} />
                 <span>{t('chat.stop')}</span>
               </button>
-            ) : (
+            ) : null}
+            {showSendButton ? (
               <button
                 type="button"
                 className="composer-send"
@@ -1667,15 +1676,14 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                   });
                   void submit();
                 }}
-                disabled={
-                  sendDisabled ||
-                  (!draft.trim() && staged.length === 0 && currentCommentAttachments().length === 0)
-                }
+                disabled={sendDisabled || !hasComposerPayload}
+                aria-label={t('chat.send')}
+                title={t('chat.send')}
               >
                 <Icon name="send" size={13} />
                 <span>{t('chat.send')}</span>
               </button>
-            )}
+            ) : null}
           </div>
         </div>
         {uploadError ? <span className="composer-hint">{uploadError}</span> : null}

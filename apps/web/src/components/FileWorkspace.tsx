@@ -91,7 +91,7 @@ interface Props {
   onFocusModeChange?: (next: boolean) => void;
   designSystemProject?: DesignSystemSummary | null;
   defaultDesignSystemId?: string | null;
-  onSetDefaultDesignSystem?: (id: string) => void;
+  onSetDefaultDesignSystem?: (id: string | null) => void;
   onDesignSystemsRefresh?: () => Promise<void> | void;
   onDesignSystemNeedsWork?: (
     sectionTitle: string,
@@ -1146,7 +1146,7 @@ function DesignSystemProjectPanel({
   onOpenFile: (name: string) => void;
   onUploadAssets: () => void;
   defaultDesignSystemId?: string | null;
-  onSetDefaultDesignSystem?: (id: string) => void;
+  onSetDefaultDesignSystem?: (id: string | null) => void;
   onDesignSystemsRefresh?: () => Promise<void> | void;
   onNeedsWork?: (
     sectionTitle: string,
@@ -1540,7 +1540,7 @@ function DesignSystemProjectPanel({
                   checked={isDefault}
                   disabled={statusBusy}
                   onChange={(event) => {
-                    if (event.target.checked) onSetDefaultDesignSystem?.(system.id);
+                    onSetDefaultDesignSystem?.(event.target.checked ? system.id : null);
                   }}
                 />
                 Default
