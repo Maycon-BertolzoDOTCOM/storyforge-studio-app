@@ -182,6 +182,11 @@ export function PreviewDrawOverlay({
     redraw();
   }
 
+  function closeOverlay() {
+    setMode('click');
+    onActiveChange?.(false);
+  }
+
   useEffect(() => {
     if (active) return;
     strokesRef.current = [];
@@ -501,6 +506,16 @@ export function PreviewDrawOverlay({
               'Send'
             )}
           </button>
+          <button
+            type="button"
+            onClick={closeOverlay}
+            disabled={sending}
+            aria-label="Close draw toolbar"
+            title="Close"
+            style={iconButtonStyle}
+          >
+            <Icon name="close" size={13} />
+          </button>
         </div>
       ) : null}
     </div>
@@ -532,5 +547,19 @@ const ghostStyle: CSSProperties = {
   alignItems: 'center',
   gap: 6,
   background: 'transparent',
+  color: 'inherit',
+};
+
+const iconButtonStyle: CSSProperties = {
+  border: '1px solid rgba(255,255,255,0.18)',
+  borderRadius: 999,
+  width: 28,
+  height: 28,
+  padding: 0,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(255,255,255,0.06)',
   color: 'inherit',
 };
