@@ -1,0 +1,50 @@
+{
+  "_comment": "Snapshot of TIERS from nexu-io/open-design-bot-sandbox/src/tier.ts. Sync manually if tiers change. sampleCardEventId is one representative card on the bot-cards branch; null = no recipient at this tier yet.",
+  "tiers": [
+    {
+      "key": "spark",
+      "emoji": "✨",
+      "nameEn": "Da Vinci",
+      "threshold": 0,
+      "accent": "#FCD34D",
+      "sloganEn": "Lit the spark.",
+      "sampleCardEventId": "FaigB70-spark-2026-05-18T12-19-16-111Z"
+    },
+    {
+      "key": "signal",
+      "emoji": "📡",
+      "nameEn": "Giotto",
+      "threshold": 30,
+      "accent": "#22D3EE",
+      "sloganEn": "Sending steady signals.",
+      "sampleCardEventId": "Lucky19112002-signal-2026-05-18T14-13-35-692Z"
+    },
+    {
+      "key": "node",
+      "emoji": "🔵",
+      "nameEn": "Praxiteles",
+      "threshold": 150,
+      "accent": "#3B82F6",
+      "sloganEn": "Holding the network together.",
+      "sampleCardEventId": "EthanGuo-coder-node-2026-05-20T03-16-39-341Z"
+    },
+    {
+      "key": "beacon",
+      "emoji": "🗼",
+      "nameEn": "Phidias",
+      "threshold": 700,
+      "accent": "#F59E0B",
+      "sloganEn": "Guiding the way for others.",
+      "sampleCardEventId": "PerishCode-beacon-2026-05-19T03-20-32-441Z"
+    },
+    {
+      "key": "nova",
+      "emoji": "🌟",
+      "nameEn": "Imhotep",
+      "threshold": 2500,
+      "accent": "#67E8F9",
+      "sloganEn": "Bright as a Nova.",
+      "sampleCardEventId": null
+    }
+  ]
+}

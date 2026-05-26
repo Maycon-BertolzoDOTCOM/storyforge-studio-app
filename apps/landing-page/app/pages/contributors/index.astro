@@ -1,0 +1,573 @@
+---
+/*
+ * /contributors/ — recognition + recruitment surface.
+ *
+ * Job: convert a curious visitor into someone who opens their first PR.
+ * Built around the contributor-card system already running on
+ * `nexu-io/open-design` (cards live on the bot-cards branch). Sections:
+ *   01 Hero                — three live numbers + dual CTA.
+ *   02 This Week's Top 10  — merged-PR leaderboard, last 7 days.
+ *   03 Tier system         — five tiers, sample card per tier.
+ *   04 Wall of cards       — every issued card, masonry grid.
+ *   05 Good first issues   — open issues labeled "good first issue".
+ *   06 Path to Maintainer  — distilled from MAINTAINERS.md.
+ *   07 Maintainers + CTA   — current External Maintainers + Discord.
+ *
+ * v1 is English-only; the [locale]/contributors wrapper renders the
+ * same content for all locales. Data fetches happen at build time;
+ * landing-page-deploy.yml has a nightly schedule so the page stays
+ * fresh without a code push.
+ */
+import Layout from '../../_components/sub-page-layout.astro';
+import {
+  getCardEvents,
+  getOpenGoodFirstIssues,
+  getTopContributorsLastWeek,
+} from '../../_lib/github';
+import tiersData from '../../_data/tiers.json';
+import maintainersData from '../../_data/external-maintainers.json';
+
+const REPO = 'https://github.com/nexu-io/open-design';
+const DISCORD = 'https://discord.gg/9ptkbbqRu';
+const BOT_CARDS_RAW =
+  'https://raw.githubusercontent.com/nexu-io/open-design/bot-cards/data/cards';
+const MAINTAINERS_DOC = `${REPO}/blob/main/MAINTAINERS.md`;
+const CONTRIBUTING_DOC = `${REPO}/blob/main/CONTRIBUTING.md`;
+const GOOD_FIRST_ISSUE_LABEL =
+  'https://github.com/nexu-io/open-design/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22';
+
+const [topContributors, goodFirstIssues, cardEvents] = await Promise.all([
+  getTopContributorsLastWeek(10),
+  getOpenGoodFirstIssues(8),
+  getCardEvents(),
+]);
+
+const totalCards = cardEvents.length;
+const uniqueRecipients = new Set(cardEvents.map((e) => e.recipient.toLowerCase())).size;
+const openGfiCount = goodFirstIssues.length;
+
+const tiers = tiersData.tiers;
+const maintainers = maintainersData.maintainers;
+
+function formatRelative(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return '';
+  const diff = Math.max(0, Date.now() - then);
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days < 1) return 'today';
+  if (days < 2) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
+
+const title = 'Contributors — Open Design';
+const description =
+  'Open Design is built in the open. See this week\'s top contributors, the recognition tier system, every certificate card we have ever issued, and where to start your first PR.';
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Open Design', item: 'https://open-design.ai/' },
+      { '@type': 'ListItem', position: 2, name: 'Contributors', item: 'https://open-design.ai/contributors/' },
+    ],
+  },
+];
+---
+
+<Layout title={title} description={description} active="home" jsonLd={jsonLd}>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/">Open Design</a>
+    <span>/</span>
+    <span aria-current="page">Contributors</span>
+  </nav>
+
+  <article class="info-page contributors">
+    <header class="catalog-head">
+      <span class="label">Contributors · Nº 01</span>
+      <h1 class="display"><em>Build</em> Open Design <em>with us</em><span class="dot">.</span></h1>
+      <p class="lead">
+        Open Design is built in the open by people you can name. Every contributor is recognized — first PR to long-term maintainer — with a certificate card posted on their PR. This is the room.
+      </p>
+
+      <div class="contrib-stats">
+        <div class="contrib-stat">
+          <strong>{uniqueRecipients}</strong>
+          <span>recognized contributors</span>
+        </div>
+        <div class="contrib-stat">
+          <strong>{totalCards}</strong>
+          <span>cards issued</span>
+        </div>
+        <div class="contrib-stat">
+          <strong>{openGfiCount}</strong>
+          <span>good first issues open</span>
+        </div>
+      </div>
+
+      <div class="contrib-cta">
+        <a class="btn btn-primary" href="#good-first-issues">Open your first PR →</a>
+        <a class="btn btn-ghost" href={DISCORD} target="_blank" rel="noreferrer noopener">Join Discord</a>
+      </div>
+    </header>
+
+    <section class="info-section" id="this-week">
+      <span class="label section-label">Nº 02 · This week</span>
+      <h2>Top 10 this week</h2>
+      <p>
+        Merged pull requests over the last seven days, ranked by author. The leaderboard rebuilds nightly with the rest of the site.
+      </p>
+      {topContributors.length === 0 ? (
+        <p class="contrib-muted">No PRs merged yet this week — be the first.</p>
+      ) : (
+        <ol class="contrib-top10">
+          {topContributors.map((c, idx) => (
+            <li>
+              <span class="rank">{String(idx + 1).padStart(2, '0')}</span>
+              <a class="row" href={c.htmlUrl} target="_blank" rel="noreferrer noopener">
+                <img src={`${c.avatarUrl}${c.avatarUrl.includes('?') ? '&' : '?'}s=96`} alt={`${c.login} avatar`} loading="lazy" width="48" height="48" />
+                <span class="handle">@{c.login}</span>
+                <span class="count">{c.count} {c.count === 1 ? 'PR' : 'PRs'}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+
+    <section class="info-section" id="tier-system">
+      <span class="label section-label">Nº 03 · Recognition</span>
+      <h2>The tier system</h2>
+      <p>
+        Five tiers, named for artists who built the language others later spoke. Tier-up posts a certificate card on the PR that pushed you over the threshold.
+      </p>
+      <ul class="contrib-tiers">
+        {tiers.map((t) => (
+          <li class="tier" style={`--tier-accent:${t.accent}`}>
+            <div class="tier-meta">
+              <span class="tier-emoji">{t.emoji}</span>
+              <span class="tier-name">{t.nameEn}</span>
+              <span class="tier-key">{t.key}</span>
+              <span class="tier-threshold">{t.threshold} pts</span>
+              <p class="tier-slogan">{t.sloganEn}</p>
+            </div>
+            <div class="tier-card-wrap">
+              {t.sampleCardEventId ? (
+                <img
+                  src={`${BOT_CARDS_RAW}/${t.sampleCardEventId}.png`}
+                  alt={`${t.nameEn} tier example card`}
+                  loading="lazy"
+                />
+              ) : (
+                <div class="tier-card-placeholder">
+                  <span>Awaiting first {t.nameEn}</span>
+                </div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="info-section" id="wall-of-cards">
+      <span class="label section-label">Nº 04 · Wall</span>
+      <h2>Every card we have issued</h2>
+      <p>
+        {totalCards} certificate cards, every one a real PR or issue. Click a card to read the comment thread it was posted in.
+      </p>
+      <div class="contrib-wall">
+        {cardEvents.map((e) => (
+          <a
+            class="contrib-wall-card"
+            href={e.commentUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            title={`@${e.recipient} · ${e.tierName} · ${formatRelative(e.createdAt)}`}
+          >
+            <img src={e.cardUrl} alt={`${e.recipient} ${e.tierName} card`} loading="lazy" />
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section class="info-section" id="good-first-issues">
+      <span class="label section-label">Nº 05 · Start here</span>
+      <h2>Good first issues</h2>
+      <p>
+        Hand-labeled by maintainers as a fair entry point. Pick one, comment to claim, open a PR.
+      </p>
+      {goodFirstIssues.length === 0 ? (
+        <p class="contrib-muted">
+          No open good-first-issues right now. <a class="inline-link" href={GOOD_FIRST_ISSUE_LABEL} target="_blank" rel="noreferrer noopener">Watch the label</a> — fresh ones land most weeks.
+        </p>
+      ) : (
+        <ul class="contrib-issues">
+          {goodFirstIssues.map((i) => (
+            <li>
+              <a href={i.htmlUrl} target="_blank" rel="noreferrer noopener">
+                <span class="issue-num">#{i.number}</span>
+                <span class="issue-title">{i.title}</span>
+                <span class="issue-meta">
+                  {i.labels.slice(0, 3).map((l) => (
+                    <span class="issue-label">{l}</span>
+                  ))}
+                  <span class="issue-age">opened {formatRelative(i.createdAt)}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p class="contrib-muted">
+        <a class="inline-link" href={GOOD_FIRST_ISSUE_LABEL} target="_blank" rel="noreferrer noopener">See all open good-first-issues →</a>
+      </p>
+    </section>
+
+    <section class="info-section" id="path-to-maintainer">
+      <span class="label section-label">Nº 06 · Path</span>
+      <h2>Path to Maintainer</h2>
+      <p>
+        Open Design distinguishes <strong>External Maintainers</strong> — community members promoted by the Core Team — from the Core Team itself. Maintainers can approve PRs, close issues, and self-assign work. Three things have to be true at once:
+      </p>
+      <ul>
+        <li><strong>≥ 20 merged PRs</strong> to <code>nexu-io/open-design</code> — a soft floor, not a guarantee.</li>
+        <li><strong>Account quality</strong> — passes ≥ 5 of 7 anti-sock-puppet checks (account age, public repos, followers, profile completeness, cross-project activity, account standing).</li>
+        <li><strong>Contribution quality</strong> — Core Team judgment on code, reviews, community participation, and how you take feedback.</li>
+      </ul>
+      <p>
+        There is no nomination PR, no public vote, no fixed term. Core Team raises a candidate internally, reaches consensus, reaches out privately, then announces.
+      </p>
+      <p>
+        <a class="inline-link" href={MAINTAINERS_DOC} target="_blank" rel="noreferrer noopener">Read MAINTAINERS.md →</a>
+        {' '}·{' '}
+        <a class="inline-link" href={CONTRIBUTING_DOC} target="_blank" rel="noreferrer noopener">CONTRIBUTING.md →</a>
+      </p>
+    </section>
+
+    <section class="info-section" id="maintainers">
+      <span class="label section-label">Nº 07 · People</span>
+      <h2>Current External Maintainers</h2>
+      <p>The Core Team's roster is intentionally not enumerated here. These are the community-promoted maintainers reviewing your PRs.</p>
+      <ul class="contrib-maintainers">
+        {maintainers.map((m) => (
+          <li>
+            <a href={`https://github.com/${m.login}`} target="_blank" rel="noreferrer noopener">
+              <img src={`https://avatars.githubusercontent.com/${m.login}?s=192&v=4`} alt={`${m.login} avatar`} loading="lazy" width="96" height="96" />
+              <span class="m-name">{m.name}</span>
+              <span class="m-handle">@{m.login}</span>
+              <span class="m-loc">{m.location}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="info-cta" aria-label="Join Open Design">
+      <div>
+        <h2>Your card is one PR away.</h2>
+        <p>Pick a good first issue. Open a PR. The bot meets you there.</p>
+      </div>
+      <div class="info-cta-actions">
+        <a class="btn btn-primary" href="#good-first-issues">Browse issues</a>
+        <a class="btn btn-ghost" href={DISCORD} target="_blank" rel="noreferrer noopener">Join Discord</a>
+        <a class="btn btn-ghost" href={REPO} target="_blank" rel="noreferrer noopener">Star on GitHub</a>
+      </div>
+      <div class="info-cta-meta">
+        <span class="stamp">● Live</span>
+        <span>Apache-2.0</span>
+        <span>Updates nightly</span>
+      </div>
+    </section>
+  </article>
+</Layout>
+
+<style>
+  .contributors .section-label {
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  /* Hero stats */
+  .contrib-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    margin-top: 40px;
+    padding-top: 28px;
+    border-top: 1px solid var(--ink-faint);
+  }
+  .contrib-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .contrib-stat strong {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(34px, 5vw, 56px);
+    line-height: 1;
+    color: var(--ink);
+  }
+  .contrib-stat span {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-mute);
+  }
+  .contrib-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 32px;
+  }
+
+  /* Top 10 */
+  .contrib-top10 {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 24px;
+  }
+  .contrib-top10 li {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+  .contrib-top10 .rank {
+    font-family: var(--serif);
+    font-size: clamp(22px, 2.4vw, 30px);
+    color: var(--ink-mute);
+    width: 36px;
+    flex-shrink: 0;
+  }
+  .contrib-top10 .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .contrib-top10 .row:hover .handle { color: var(--coral); }
+  .contrib-top10 img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .contrib-top10 .handle {
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 16px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .contrib-top10 .count {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-mute);
+    flex-shrink: 0;
+  }
+  @media (max-width: 720px) {
+    .contrib-stats { grid-template-columns: 1fr 1fr; }
+    .contrib-top10 { grid-template-columns: 1fr; }
+  }
+
+  /* Tier system */
+  .contrib-tiers {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .tier {
+    background: var(--bone);
+    border: 1px solid var(--ink);
+    padding: 18px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-top: 4px solid var(--tier-accent);
+  }
+  .tier-meta { display: flex; flex-direction: column; gap: 6px; }
+  .tier-emoji { font-size: 22px; line-height: 1; }
+  .tier-name {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--ink);
+  }
+  .tier-key {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-mute);
+  }
+  .tier-threshold {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-mute);
+  }
+  .tier-slogan {
+    font-family: var(--body);
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--ink-soft);
+    margin: 4px 0 0;
+  }
+  .tier-card-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+  .tier-card-placeholder {
+    aspect-ratio: 9 / 16;
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--ink) 4%, transparent),
+      color-mix(in srgb, var(--ink) 4%, transparent) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-mute);
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    padding: 12px;
+  }
+  @media (max-width: 1024px) {
+    .contrib-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 600px) {
+    .contrib-tiers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* Wall of cards */
+  .contrib-wall {
+    column-count: 4;
+    column-gap: 12px;
+  }
+  .contrib-wall-card {
+    display: block;
+    margin: 0 0 12px;
+    break-inside: avoid;
+    line-height: 0;
+    transition: opacity 0.2s ease;
+  }
+  .contrib-wall-card:hover { opacity: 0.85; }
+  .contrib-wall-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  @media (max-width: 1024px) { .contrib-wall { column-count: 3; } }
+  @media (max-width: 720px) { .contrib-wall { column-count: 2; } }
+
+  /* Good first issues */
+  .contrib-issues {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .contrib-issues li + li { margin-top: 8px; }
+  .contrib-issues a {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 4px 12px;
+    padding: 14px 16px;
+    background: var(--bone);
+    border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .contrib-issues a:hover { border-color: var(--coral); }
+  .issue-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-mute);
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+  .issue-title {
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .issue-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .issue-label {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-mute);
+    padding: 2px 6px;
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+  .issue-age { color: var(--ink-faint); }
+
+  /* Maintainers */
+  .contrib-maintainers {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+  .contrib-maintainers a {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    grid-template-rows: auto auto auto;
+    column-gap: 16px;
+    align-items: center;
+    padding: 18px;
+    background: var(--bone);
+    border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .contrib-maintainers a:hover { border-color: var(--coral); }
+  .contrib-maintainers img {
+    grid-row: 1 / span 3;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+  }
+  .m-name { font-family: var(--serif); font-size: 22px; font-weight: 600; }
+  .m-handle { font-family: var(--mono); font-size: 12px; color: var(--ink-mute); }
+  .m-loc { font-family: var(--body); font-size: 13px; color: var(--ink-soft); }
+  @media (max-width: 600px) {
+    .contrib-maintainers { grid-template-columns: 1fr; }
+  }
+
+  .contrib-muted {
+    color: var(--ink-mute);
+    font-size: 14px;
+  }
+</style>

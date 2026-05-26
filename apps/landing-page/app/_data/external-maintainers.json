@@ -1,0 +1,15 @@
+{
+  "_comment": "Manually maintained list of External Maintainers. Update when the Core Team promotes or removes a maintainer. The nexu-io/maintainers GitHub team is not yet authoritative for this role, so we do not auto-sync.",
+  "maintainers": [
+    {
+      "login": "Nagendhra-web",
+      "name": "Nagendhra Madishetti",
+      "location": "New York, NY"
+    },
+    {
+      "login": "Sid-Qin",
+      "name": "Sid",
+      "location": "Cologne"
+    }
+  ]
+}

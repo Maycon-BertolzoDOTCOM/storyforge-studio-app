@@ -24,6 +24,13 @@ on:
       - package.json
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
+  # Nightly rebuild keeps the /contributors page fresh — Top 10
+  # leaderboard, good-first-issues list, and the wall of cards all
+  # fetch from GitHub at build time. 02:00 UTC sits after the
+  # refresh-contributors-wall workflow at 01:00 UTC so any README
+  # updates land first.
+  schedule:
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 permissions:
