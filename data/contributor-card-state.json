@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-26T06:48:31.952Z",
+  "generatedAt": "2026-05-26T06:52:47.020Z",
   "contributors": {
     "1115052994": {
       "lastAnnouncedTier": "spark",
@@ -183,8 +183,8 @@
     },
     "perishcode": {
       "lastAnnouncedTier": "beacon",
-      "lastKnownScore": 1567,
-      "lastCheckedAt": "2026-05-25T05:21:17.378Z",
+      "lastKnownScore": 1617,
+      "lastCheckedAt": "2026-05-26T06:52:47.020Z",
       "scoreVersion": "weighted-v1",
       "lastAnnouncedAt": "2026-05-19T03:20:37.253Z"
     },
