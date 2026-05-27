@@ -187,20 +187,6 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-.viewer-comment-toggle.active {
-  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
-}
-.viewer-action-active-dot {
-  position: absolute;
-  right: 5px;
-  top: 5px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 2px var(--bg-panel);
-}
 .artifact-tool-menu-anchor {
   position: relative;
   display: inline-flex;
@@ -1139,6 +1125,41 @@
 }
 .annotation-hover-popover {
   pointer-events: none;
+}
+.annotation-style-summary {
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+}
+.annotation-style-row {
+  display: grid;
+  grid-template-columns: minmax(52px, max-content) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 14px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.annotation-style-row span {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.annotation-style-row strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.annotation-style-row strong i {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
 }
 .comment-popover-head {
   display: flex;

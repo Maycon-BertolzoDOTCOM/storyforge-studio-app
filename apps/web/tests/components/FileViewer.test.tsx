@@ -1440,11 +1440,11 @@ describe('FileViewer tweaks toolbar', () => {
     expect(screen.getByRole('button', { name: 'Mark' })).toBeTruthy();
     expect(screen.queryByTestId('screenshot-capture-toggle')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Screenshot' })).toBeNull();
-    expect(screen.queryByPlaceholderText('Add a note for this annotation')).toBeNull();
+    expect(screen.queryByPlaceholderText('Add a note for this mark')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Pods' })).toBeNull();
 
     fireEvent.click(screen.getByTestId('draw-overlay-toggle'));
-    expect(screen.getByPlaceholderText('Add a note for this annotation')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Add a note for this mark')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Box select' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Pen' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Click' })).toBeNull();
@@ -1452,7 +1452,7 @@ describe('FileViewer tweaks toolbar', () => {
     expect(screen.getByRole('button', { name: 'Redo' })).toBeTruthy();
 
     clickAgentTool('draw-overlay-toggle');
-    expect(screen.queryByPlaceholderText('Add a note for this annotation')).toBeNull();
+    expect(screen.queryByPlaceholderText('Add a note for this mark')).toBeNull();
   });
 
   it('keeps the Draw bar open after queueing an annotation', () => {
@@ -1463,15 +1463,15 @@ describe('FileViewer tweaks toolbar', () => {
     );
 
     clickAgentTool('draw-overlay-toggle');
-    const note = screen.getByPlaceholderText('Add a note for this annotation');
+    const note = screen.getByPlaceholderText('Add a note for this mark');
     fireEvent.change(note, { target: { value: 'mark this' } });
     fireEvent.click(screen.getByRole('button', { name: 'Queue' }));
 
-    expect(screen.getByPlaceholderText('Add a note for this annotation')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Add a note for this mark')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Click' })).toBeNull();
 
     clickAgentTool('draw-overlay-toggle');
-    expect(screen.queryByPlaceholderText('Add a note for this annotation')).toBeNull();
+    expect(screen.queryByPlaceholderText('Add a note for this mark')).toBeNull();
   });
 
   it('keeps the preloaded selection bridge mounted while the Draw bar is open', async () => {
@@ -1516,7 +1516,7 @@ describe('FileViewer tweaks toolbar', () => {
     );
 
     clickAgentTool('draw-overlay-toggle');
-    fireEvent.change(screen.getByPlaceholderText('Add a note for this annotation'), {
+    fireEvent.change(screen.getByPlaceholderText('Add a note for this mark'), {
       target: { value: 'mark this' },
     });
 
@@ -1867,7 +1867,7 @@ describe('FileViewer tweaks toolbar', () => {
     render(<Harness />);
 
     const frame = screen.getByTestId('artifact-preview-frame') as HTMLIFrameElement;
-    fireEvent.click(screen.getByTestId('comment-panel-toggle'));
+    fireEvent.click(screen.getByTestId('board-mode-toggle'));
 
     window.dispatchEvent(new MessageEvent('message', {
       source: frame.contentWindow,
@@ -1883,6 +1883,7 @@ describe('FileViewer tweaks toolbar', () => {
     }));
 
     const input = await screen.findByTestId('comment-popover-input');
+    expect(screen.queryByTestId('comment-side-panel')).toBeNull();
     fireEvent.change(input, { target: { value: '加大字号' } });
     fireEvent.click(screen.getByTestId('comment-popover-save'));
 
@@ -1961,8 +1962,8 @@ describe('FileViewer tweaks toolbar', () => {
     }));
 
     expect(await screen.findByTestId('comment-popover-input')).toBeTruthy();
-    expect(screen.getByTestId('comment-panel-toggle').getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByTestId('board-mode-toggle').getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByTestId('comment-panel-toggle').getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByTestId('board-mode-toggle').getAttribute('aria-pressed')).toBe('true');
     expect(screen.queryByTestId('inspect-panel')).toBeNull();
     await waitFor(() => {
       expect(screen.queryByTestId('annotation-hover-popover')).toBeNull();

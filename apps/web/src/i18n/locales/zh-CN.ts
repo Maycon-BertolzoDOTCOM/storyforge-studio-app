@@ -1345,7 +1345,7 @@ export const zhCN: Dict = {
   'chat.comments.pinAtCoords': '位于 {x}, {y}',
   'chat.comments.capturedItems': '{n} 个捕获项',
   'chat.comments.clear': '清除',
-  'chat.annotationNotePlaceholder': '为这条标注添加说明',
+  'chat.annotationNotePlaceholder': '为这个标记添加说明',
   'chat.annotationQueue': '加入队列',
   'chat.annotationQueueing': '加入队列中...',
   'chat.annotationSending': '发送中...',

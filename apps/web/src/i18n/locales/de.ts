@@ -650,7 +650,7 @@ export const de: Dict = {
   'chat.comments.pinAtCoords': 'bei {x}, {y}',
   'chat.comments.capturedItems': '{n} erfasste Elemente',
   'chat.comments.clear': 'Löschen',
-  'chat.annotationNotePlaceholder': 'Add a note for this annotation',
+  'chat.annotationNotePlaceholder': 'Add a note for this mark',
   'chat.annotationQueue': 'Queue',
   'chat.annotationQueueing': 'Queueing...',
   'chat.annotationSending': 'Sending...',

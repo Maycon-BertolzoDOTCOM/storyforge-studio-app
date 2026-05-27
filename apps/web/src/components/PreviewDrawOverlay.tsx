@@ -663,6 +663,16 @@ export function PreviewDrawOverlay({
           </button>
           <button
             type="button"
+            onClick={closeOverlay}
+            disabled={sending}
+            aria-label={t('common.close')}
+            title={t('common.close')}
+            style={closeButtonStyle}
+          >
+            <Icon name="close" size={13} />
+          </button>
+          <button
+            type="button"
             onClick={() => void send('send')}
             disabled={sending || !canSend}
             aria-label={pendingAction === 'send' ? t('chat.annotationSending') : t('chat.send')}
@@ -680,16 +690,6 @@ export function PreviewDrawOverlay({
             ) : (
               <Icon name="send" size={14} />
             )}
-          </button>
-          <button
-            type="button"
-            onClick={closeOverlay}
-            disabled={sending}
-            aria-label={t('common.close')}
-            title={t('common.close')}
-            style={closeButtonStyle}
-          >
-            <Icon name="close" size={13} />
           </button>
           </div>
         </>

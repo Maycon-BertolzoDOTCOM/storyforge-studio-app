@@ -957,7 +957,7 @@ export const zhTW: Dict = {
   'chat.comments.pinAtCoords': 'at {x}, {y}',
   'chat.comments.capturedItems': '{n} captured items',
   'chat.comments.clear': 'Clear',
-  'chat.annotationNotePlaceholder': '為這條標註加入說明',
+  'chat.annotationNotePlaceholder': '為這個標記加入說明',
   'chat.annotationQueue': '加入佇列',
   'chat.annotationQueueing': '加入佇列中...',
   'chat.annotationSending': '傳送中...',

@@ -4895,8 +4895,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
         setActiveCommentTarget((current) => (shouldOpenComposer ? snapshot : current));
         setHoveredCommentTarget(snapshot);
         setLiveCommentTargets((current) => new Map(current).set(snapshot.elementId, snapshot));
-        if (boardMode && shouldOpenComposer) {
-          setCommentCreateMode(true);
+        if (shouldOpenComposer) {
           setActivePreviewCommentId(existing?.id ?? null);
           setCommentDraft(existing?.note ?? '');
           setQueuedBoardNotes([]);
@@ -6384,7 +6383,6 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
                   onClick={activateCommentTool}
                 >
                   <RemixIcon name="chat-new-line" size={15} />
-                  {boardMode && !commentCreateMode && boardTool === 'inspect' ? <span className="viewer-action-active-dot" aria-hidden /> : null}
                 </button>
               </div>
               <button
@@ -6425,7 +6423,6 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
               >
                 <RemixIcon name="message-3-line" size={15} />
                 <span className="viewer-comment-count" aria-hidden>{visibleSideComments.length}</span>
-                {boardMode && commentCreateMode ? <span className="viewer-action-active-dot" aria-hidden /> : null}
               </button>
               {source !== null && mode === 'preview' ? (
                 <div className="zoom-menu viewer-toolbar-zoom" ref={zoomMenuRef}>
