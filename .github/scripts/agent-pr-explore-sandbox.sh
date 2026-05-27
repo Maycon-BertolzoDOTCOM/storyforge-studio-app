@@ -42,7 +42,12 @@ done
 
 root="$RUNNER_TEMP/agent-pr-explore-sandbox"
 artifacts="$root/artifacts"
-pnpm_store="$RUNNER_TEMP/agent-pr-explore-pnpm-store"
+# Persist the pnpm store outside RUNNER_TEMP (which the Actions runner wipes
+# per job) so dependencies are reused across runs instead of being fully
+# re-downloaded every time -- the self-hosted runner's network to the npm
+# registry is as unreliable as its docker.io access. Content-addressed, so
+# sharing across PRs is safe; override with OD_SANDBOX_PNPM_STORE if needed.
+pnpm_store="${OD_SANDBOX_PNPM_STORE:-$HOME/.cache/agent-pr-explore/pnpm-store}"
 context_file="$artifacts/pr-context.md"
 trimmed_context_file="$artifacts/pr-context-trimmed.md"
 changed_files_file="$artifacts/changed-files.txt"
