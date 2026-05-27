@@ -1987,6 +1987,13 @@ function formatCommentTime(ts: number, t: TranslateFn): string {
   return new Date(ts).toLocaleDateString();
 }
 
+function commentActivityAt(comment: PreviewComment): number {
+  return Math.max(
+    Number.isFinite(comment.updatedAt) ? comment.updatedAt : 0,
+    Number.isFinite(comment.createdAt) ? comment.createdAt : 0,
+  );
+}
+
 function commentDisplayLabel(comment: PreviewComment, t: TranslateFn): string {
   if (comment.elementId.startsWith('pin-')) return t('chat.comments.pin');
   const label = String(comment.label || '').trim().toLowerCase();
@@ -2037,7 +2044,7 @@ export function CommentSidePanel({
   composer?: ReactNode;
 }) {
   const [newCommentDraft, setNewCommentDraft] = useState('');
-  const sorted = [...comments].sort((a, b) => b.createdAt - a.createdAt);
+  const sorted = [...comments].sort((a, b) => commentActivityAt(b) - commentActivityAt(a));
   const visibleSelectedIds = new Set(comments.filter((comment) => selectedIds.has(comment.id)).map((comment) => comment.id));
   const selectedCount = visibleSelectedIds.size;
   const allSelected = comments.length > 0 && selectedCount === comments.length;
@@ -2122,7 +2129,7 @@ export function CommentSidePanel({
                 <span className="comment-side-author">
                   <strong>{commentDisplayLabel(comment, t)}</strong>
                 </span>
-                <span className="comment-side-time">{formatCommentTime(comment.createdAt, t)}</span>
+                <span className="comment-side-time">{formatCommentTime(commentActivityAt(comment), t)}</span>
                 <button
                   type="button"
                   className={`comment-side-check${selected ? ' checked' : ''}`}
@@ -6114,7 +6121,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
   const visibleSideComments = useMemo(
     () => previewComments
       .filter((comment) => comment.filePath === file.name && comment.status === 'open')
-      .sort((a, b) => b.createdAt - a.createdAt),
+      .sort((a, b) => commentActivityAt(b) - commentActivityAt(a)),
     [file.name, previewComments],
   );
   const activeSideCommentId = activePreviewCommentId ?? (

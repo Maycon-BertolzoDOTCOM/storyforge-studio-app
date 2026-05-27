@@ -1846,6 +1846,55 @@ describe('FileViewer tweaks toolbar', () => {
     expect(document.querySelector('[data-comment-id="comment-older"]')?.className).not.toContain('active');
   });
 
+  it('orders and timestamps side comments by latest update time', () => {
+    const createdFirstUpdatedLast: PreviewComment = {
+      id: 'comment-updated-last',
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
+      filePath: 'preview.html',
+      elementId: 'hero-title',
+      selector: '[data-od-id="hero-title"]',
+      label: 'Hero title',
+      text: 'Hero',
+      htmlHint: '<h1 data-od-id="hero-title">Hero</h1>',
+      position: { x: 24, y: 32, width: 180, height: 36 },
+      note: 'Latest edit',
+      status: 'open',
+      createdAt: Date.now() - 20 * 60_000,
+      updatedAt: Date.now(),
+    };
+    const createdLastUpdatedFirst: PreviewComment = {
+      ...createdFirstUpdatedLast,
+      id: 'comment-created-last',
+      elementId: 'hero-subtitle',
+      selector: '[data-od-id="hero-subtitle"]',
+      label: 'Hero subtitle',
+      note: 'Older edit',
+      createdAt: Date.now() - 5 * 60_000,
+      updatedAt: Date.now() - 10 * 60_000,
+    };
+
+    render(
+      <FileViewer
+        projectId="project-1"
+        projectKind="prototype"
+        file={htmlPreviewFile()}
+        liveHtml='<html><body><main data-od-id="hero">Hero</main></body></html>'
+        previewComments={[createdLastUpdatedFirst, createdFirstUpdatedLast]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('comment-panel-toggle'));
+
+    const items = screen.getAllByTestId('comment-side-item');
+    const [firstItem, secondItem] = items;
+    expect(firstItem).toBeDefined();
+    expect(secondItem).toBeDefined();
+    expect(firstItem!.textContent).toContain('Latest edit');
+    expect(firstItem!.textContent).toContain('just now');
+    expect(secondItem!.textContent).toContain('Older edit');
+  });
+
   it('does not preload non-open element comments into the picker composer', async () => {
     const applyingElementComment: PreviewComment = {
       id: 'comment-element-applying',

@@ -2018,6 +2018,11 @@ button.ghost.mcp-copy-btn:hover:not(:disabled) {
 .comment-history-attachments {
   gap: 6px;
 }
+.comment-history-attachments .user-attachment.staged-comment {
+  max-height: none;
+  overflow: visible;
+  align-items: flex-start;
+}
 .viewer-source {
   margin: 0;
   padding: 16px;
