@@ -12,6 +12,9 @@
  *                                         login route only care that the
  *                                         config file appears.
  *
+ *   `vela models`                       → prints production-shaped public
+ *                                         model ids from the Vela catalog.
+ *
  *   `vela agent run --runtime opencode` → ACP stdio runtime. Speaks just
  *                                         enough of the protocol to drive
  *                                         Open Design's `detectAcpModels`
@@ -271,4 +274,26 @@ function loginAndExit() {
 
 if (argv[2] === 'login') {
   loginAndExit();
+}
+
+if (argv[2] === 'models') {
+  stdout.write([
+    'public_model_deepseek_v3_2\tvela',
+    'public_model_deepseek_v4_flash\tvela',
+    'public_model_deepseek_v4_pro\tvela',
+    'public_model_gemini_2_5_flash\tvela',
+    'public_model_gemini_3_1_flash_lite_preview\tvela',
+    'public_model_gemini_3_1_pro_preview\tvela',
+    'public_model_gpt_5_4\tvela',
+    'public_model_gpt_5_4_mini\tvela',
+    'public_model_glm_5\tvela',
+    'public_model_glm_5_1\tvela',
+    'public_model_gpt_image_2\tvela',
+    'public_model_kimi_k2_6\tvela',
+    'public_model_minimax_m2_7\tvela',
+    'public_model_qwen3_235b_a22b\tvela',
+    'public_model_seedance_2\tvela',
+    '',
+  ].join('\n'));
+  exit(0);
 }
