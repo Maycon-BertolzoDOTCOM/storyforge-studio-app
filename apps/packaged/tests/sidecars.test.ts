@@ -16,15 +16,16 @@
  * @see https://github.com/nexu-io/open-design/issues/710
  */
 import { EventEmitter } from 'node:events';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { delimiter, join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
   buildPackagedDaemonSpawnEnv,
   resolveDaemonStatusTimeoutMs,
   resolvePackagedChildBaseEnv,
+  resolvePackagedElectronNodeCommand,
   resolvePackagedPathEnv,
   waitForStatus,
 } from '../src/sidecars.js';
@@ -194,6 +195,53 @@ describe('packaged child Vite+ environment forwarding', () => {
   });
 });
 
+describe('resolvePackagedElectronNodeCommand', () => {
+  it('uses the hidden Electron helper as the macOS Electron-as-Node command when available', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'od-packaged-electron-helper-'));
+    try {
+      const appPath = join(root, 'Open Design.app');
+      const execPath = join(appPath, 'Contents', 'MacOS', 'Open Design');
+      const helperPath = join(
+        appPath,
+        'Contents',
+        'Frameworks',
+        'Open Design Helper.app',
+        'Contents',
+        'MacOS',
+        'Open Design Helper',
+      );
+
+      mkdirSync(join(appPath, 'Contents', 'MacOS'), { recursive: true });
+      mkdirSync(dirname(helperPath), { recursive: true });
+      writeFileSync(execPath, '#!/bin/sh\n', 'utf8');
+      writeFileSync(helperPath, '#!/bin/sh\n', 'utf8');
+
+      await expect(resolvePackagedElectronNodeCommand(execPath, 'darwin')).resolves.toBe(helperPath);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to the main executable when the macOS helper is unavailable', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'od-packaged-no-electron-helper-'));
+    try {
+      const execPath = join(root, 'Open Design.app', 'Contents', 'MacOS', 'Open Design');
+      mkdirSync(dirname(execPath), { recursive: true });
+      writeFileSync(execPath, '#!/bin/sh\n', 'utf8');
+
+      await expect(resolvePackagedElectronNodeCommand(execPath, 'darwin')).resolves.toBe(execPath);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps the main executable on non-macOS platforms', async () => {
+    const execPath = '/opt/Open Design/open-design';
+
+    await expect(resolvePackagedElectronNodeCommand(execPath, 'linux')).resolves.toBe(execPath);
+  });
+});
+
 /**
  * Build a child-process stand-in that satisfies the `watch.child`
  * shape `waitForStatus` consumes. We only use `once('exit')`,
@@ -320,6 +368,17 @@ describe('buildPackagedDaemonSpawnEnv', () => {
     expect(env.OPEN_DESIGN_TELEMETRY_RELAY_URL).toBe(
       'https://telemetry.open-design.ai/api/langfuse',
     );
+  });
+
+  it('forwards the packaged AMR profile to the daemon when configured', () => {
+    const env = buildPackagedDaemonSpawnEnv(fakePaths(), {
+      appVersion: null,
+      amrProfile: 'test',
+      daemonCliEntry: null,
+      legacyDataDir: null,
+      requireDesktopAuth: true,
+    });
+    expect(env.OPEN_DESIGN_AMR_PROFILE).toBe('test');
   });
 
   it('forwards POSTHOG_KEY/POSTHOG_HOST to the daemon spawn env when baked into the bundle', () => {
