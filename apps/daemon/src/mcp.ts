@@ -360,6 +360,10 @@ const TOOL_DEFS = [
           type: 'string',
           description: 'What to make or change, in natural language. Optional when a plugin supplies its own brief.',
         },
+        skill: {
+          type: 'string',
+          description: 'Skill id from list_skills to drive the run. Optional.',
+        },
         plugin: {
           type: 'string',
           description: 'Plugin id from list_plugins to drive the run. Optional.',
@@ -481,7 +485,7 @@ export async function runMcpStdio({ daemonUrl }: RunMcpOptions): Promise<void> {
         '    returned list will actually spawn on this machine.',
         ' - create_project(name) first if you need a fresh project to',
         '    generate into; start_run requires an existing project.',
-        ' - start_run(prompt, [plugin], [inputs]) kicks off generation in',
+        ' - start_run(prompt, [skill], [plugin], [inputs]) kicks off generation in',
         '    the active or named project and returns a runId immediately.',
         '    Open Design spawns its own agent to do the work.',
         ' - get_run(runId) polls until status is succeeded/failed/canceled;',
@@ -970,6 +974,7 @@ async function startRun(baseUrl: string, args: McpArgs) {
   const { id, resolved, active } = await resolveProjectArg(baseUrl, args.project);
   const body: JsonObject = { projectId: id };
   if (typeof args.prompt === 'string' && args.prompt.length > 0) body.message = args.prompt;
+  if (typeof args.skill === 'string' && args.skill.length > 0) body.skillId = args.skill;
   if (typeof args.plugin === 'string' && args.plugin.length > 0) body.pluginId = args.plugin;
   if (typeof args.agent === 'string' && args.agent.length > 0) body.agentId = args.agent;
   if (typeof args.model === 'string' && args.model.length > 0) body.model = args.model;
