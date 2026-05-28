@@ -67,8 +67,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('entry chrome exposes the primary home creation surface and settings entry', async ({ page }) => {
-  await page.route('**/api/projects', async (route) => {
-    if (route.request().method() === 'GET') {
+  await page.route('**/api/projects**', async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (route.request().method() === 'GET' && requestUrl.pathname === '/api/projects') {
       await route.fulfill({ json: { projects: [] } });
       return;
     }
