@@ -534,25 +534,23 @@ gh pr create --fill
 
 ## 维护者
 
-外部维护者与核心团队肩并肩进行代码审查、问题分类和社区工作。他们的日常工作是该项目持续交付的重要组成部分。
-
-<!-- TODO(maintainers): 将下方两个占位符替换为当前外部维护者的实际 GitHub 用户名和头像（如 @<jinlong-handle>、@<joey-handle>）。 -->
+他们在日常维护、review 和社区支持里撑起了很多关键工作。
 
 <table>
   <tr>
     <td align="center" valign="top" width="200">
-      <a href="https://github.com/nexu-io/open-design/blob/main/MAINTAINERS.md">
-        <img src="https://github.com/identicons/jinlong.png" width="96" alt="杨金龙——外部维护者" /><br/>
-        <sub><b>杨金龙 (Jinlong Yang)</b></sub>
+      <a href="https://github.com/Nagendhra-web">
+        <img src="https://github.com/Nagendhra-web.png" width="96" alt="@Nagendhra-web" /><br/>
+        <sub><b>@Nagendhra-web</b></sub>
       </a><br/>
-      <sub>外部维护者 · 代码审查 · 插件</sub>
+      <sub>Maintainer</sub>
     </td>
     <td align="center" valign="top" width="200">
-      <a href="https://github.com/nexu-io/open-design/blob/main/MAINTAINERS.md">
-        <img src="https://github.com/identicons/joey.png" width="96" alt="李卓裔——外部维护者" /><br/>
-        <sub><b>李卓裔 (Joey Li)</b></sub>
+      <a href="https://github.com/Sid-Qin">
+        <img src="https://github.com/Sid-Qin.png" width="96" alt="@Sid-Qin" /><br/>
+        <sub><b>@Sid-Qin</b></sub>
       </a><br/>
-      <sub>外部维护者 · 代码审查 · 产品</sub>
+      <sub>Maintainer</sub>
     </td>
   </tr>
 </table>
