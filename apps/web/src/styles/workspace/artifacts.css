@@ -1489,6 +1489,23 @@
 .agent-card-config .hint,
 .agent-model-row .hint { margin: 0; font-size: 11.5px; }
 
+/* Model picker loading row — shown for AMR between sign-in and the moment
+   vela's live catalog arrives, so the dropdown appears immediately rather
+   than popping in seconds later. Mirrors the select's box metrics. */
+.agent-model-select-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .model-select-searchable {
   position: relative;
 }

@@ -1872,6 +1872,65 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     });
   });
 
+  // The live `vela models` catalog lands a beat after sign-in. Rather than
+  // leave the picker blank until then (the "appears seconds later" complaint),
+  // the row renders immediately in a loading state.
+  it('shows a loading state in the AMR model picker between sign-in and the live catalog arriving', async () => {
+    let loggedIn = false;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url === '/api/memory') {
+        return new Response(
+          JSON.stringify({ enabled: true, memories: [], extraction: null }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url === '/api/integrations/vela/status') {
+        return new Response(
+          JSON.stringify({
+            loggedIn,
+            loginInFlight: false,
+            profile: 'local',
+            user: loggedIn ? { id: 'u1', email: 'amr@example.com' } : null,
+            configPath: '/Users/test/.amr/config.json',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const signedOutAmr: AgentInfo = { ...amrAgent, models: [] };
+    // vela's catalog is still empty on the first re-detect after sign-in, so
+    // the picker must stay in its loading state rather than vanish.
+    const onRefreshAgents = vi.fn<OnRefreshAgents>(async () => [
+      { ...amrAgent, models: [] },
+    ]);
+
+    renderSettingsDialog(
+      { mode: 'daemon', agentId: 'amr' },
+      { agents: [signedOutAmr], onRefreshAgents },
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
+    await screen.findByRole('button', { name: 'Authorize' });
+    // Signed out: no picker and no loading row.
+    expect(screen.queryByTestId('settings-agent-model-loading-amr')).toBeNull();
+
+    loggedIn = true;
+    window.dispatchEvent(
+      new CustomEvent('od:amr-login-status-change', {
+        detail: { reason: 'status-changed' },
+      }),
+    );
+
+    // Picker appears immediately in a loading state, before models arrive.
+    expect(
+      await screen.findByTestId('settings-agent-model-loading-amr'),
+    ).toBeTruthy();
+  });
+
   it('renders the signed-in AMR account state inside Settings without leaking vela branding', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = input.toString();

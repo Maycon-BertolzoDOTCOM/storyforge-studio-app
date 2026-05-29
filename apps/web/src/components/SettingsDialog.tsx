@@ -1207,8 +1207,17 @@ export function SettingsDialog({
   // Re-detect agents the moment AMR sign-in completes. The agent list (and
   // thus AMR's model dropdown) was last detected while signed out, so AMR
   // came back with an empty, fail-closed model list; the live `vela models`
-  // catalog only becomes fetchable once the credential lands. Without this
-  // the "live model list" picker stays hidden until an app restart.
+  // catalog only becomes fetchable once the credential lands, and can lag the
+  // credential write by a beat. Poll a few times until the catalog arrives.
+  //
+  // Read `onRefreshAgents` through a ref and depend only on the login edge:
+  // `onRefreshAgents` re-detects via `/api/agents` (the daemon already uses
+  // its persisted CLI env), so we don't thread config through here, and a
+  // changing callback identity must NOT tear this loop down mid-flight — that
+  // is what made the picker's loading row flash and vanish before the catalog
+  // arrived.
+  const onRefreshAgentsRef = useRef(onRefreshAgents);
+  onRefreshAgentsRef.current = onRefreshAgents;
   useEffect(() => {
     const loggedIn = amrCardStatus?.loggedIn ?? null;
     const previouslyLoggedIn = prevAmrLoggedInRef.current;
@@ -1223,14 +1232,17 @@ export function SettingsDialog({
       ) {
         let next: void | AgentInfo[];
         try {
-          next = await onRefreshAgents(agentRefreshOptionsForConfig(cfg));
+          next = await onRefreshAgentsRef.current();
         } catch {
           return;
         }
+        if (cancelled) return;
         const detected = Array.isArray(next) ? next : [];
         const amr = detected.find((agent) => agent.id === 'amr');
-        // Stop once the live catalog has caught up (or AMR vanished); a still
-        // empty list means vela hasn't published the catalog yet, so retry.
+        // Stop once the live catalog has caught up (or AMR vanished); a
+        // still-empty list means vela hasn't published the catalog yet, so
+        // retry. The picker shows its loading state throughout (see
+        // renderAgentModelConfig) so there is no blank gap.
         if (!amr || (amr.models?.length ?? 0) > 0) return;
         await new Promise((resolve) => {
           setTimeout(resolve, AMR_SIGN_IN_RESCAN_RETRY_MS);
@@ -1240,7 +1252,7 @@ export function SettingsDialog({
     return () => {
       cancelled = true;
     };
-  }, [amrCardStatus?.loggedIn, onRefreshAgents, cfg]);
+  }, [amrCardStatus?.loggedIn]);
 
   const handleTestAgent = async () => {
     if (agentTestState.status === 'running') {
@@ -2124,6 +2136,41 @@ export function SettingsDialog({
     const hasReasoning =
       Array.isArray(selected.reasoningOptions) &&
       selected.reasoningOptions.length > 0;
+    // AMR's live catalog only lands a beat after sign-in. While the user is
+    // signed in but the model list hasn't arrived yet, show the picker in a
+    // loading state instead of hiding it — so the dropdown appears at sign-in
+    // and simply fills in, rather than popping in seconds later.
+    if (selected.id === 'amr' && !hasModels && (amrCardStatus?.loggedIn ?? false)) {
+      return (
+        <div className="agent-card-config">
+          <label className="field">
+            <span className="field-label">
+              {t('settings.modelPicker')}
+              <span
+                className="agent-model-source-badge live"
+                aria-hidden="true"
+              >
+                {t('settings.modelSourceLive')}
+              </span>
+            </span>
+            <div className="agent-model-select-wrap">
+              <div
+                className="settings-model-select agent-model-select-loading"
+                role="status"
+                aria-busy="true"
+                data-testid={`settings-agent-model-loading-${selected.id}`}
+              >
+                <Icon name="spinner" size={13} className="icon-spin" />
+                <span>{t('common.loading')}</span>
+              </div>
+            </div>
+          </label>
+          <p className="hint agent-model-row-hint">
+            {t('settings.modelPickerLiveHint')}
+          </p>
+        </div>
+      );
+    }
     if (!hasModels && !hasReasoning) return null;
     const choice = cfg.agentModels?.[selected.id] ?? {};
     const knownModelIds = selected.models?.map((m) => m.id) ?? [];
