@@ -102,6 +102,58 @@ function renderOnboarding(
   return props;
 }
 
+function renderHome(
+  overrides: Partial<React.ComponentProps<typeof EntryShell>> = {},
+) {
+  window.history.replaceState(null, '', '/');
+  const props: React.ComponentProps<typeof EntryShell> = {
+    skills: [],
+    designTemplates: [],
+    designSystems: [],
+    projects: [],
+    templates: [],
+    promptTemplates: [],
+    defaultDesignSystemId: null,
+    connectors: [],
+    connectorsLoading: false,
+    config: baseConfig({
+      agentId: 'claude-code',
+      agentModels: { 'claude-code': { model: 'sonnet' } },
+      theme: 'system',
+    }),
+    agents: [cliAgent()],
+    daemonLive: true,
+    onModeChange: vi.fn(),
+    onAgentChange: vi.fn(),
+    onAgentModelChange: vi.fn(),
+    onApiProtocolChange: vi.fn(),
+    onApiModelChange: vi.fn(),
+    onConfigPersist: vi.fn(),
+    onRefreshAgents: vi.fn(() => [cliAgent()]),
+    onThemeChange: vi.fn(),
+    onCreateProject: vi.fn(),
+    onCreatePluginShareProject: vi.fn(),
+    onImportClaudeDesign: vi.fn(),
+    onOpenProject: vi.fn(),
+    onOpenLiveArtifact: vi.fn(),
+    onDeleteProject: vi.fn(),
+    onRenameProject: vi.fn(),
+    onChangeDefaultDesignSystem: vi.fn(),
+    onPersistComposioKey: vi.fn(),
+    onOpenSettings: vi.fn(),
+    onCompleteOnboarding: vi.fn(),
+    ...overrides,
+  };
+
+  render(
+    <I18nProvider initial="en">
+      <EntryShell {...props} />
+    </I18nProvider>,
+  );
+
+  return props;
+}
+
 afterEach(() => {
   cleanup();
   globalThis.fetch = originalFetch;
@@ -110,6 +162,25 @@ afterEach(() => {
 
 beforeEach(() => {
   globalThis.fetch = originalFetch;
+});
+
+describe('EntryShell settings menu', () => {
+  it('opens quick actions before opening the full settings dialog', () => {
+    const props = renderHome();
+
+    fireEvent.click(screen.getByTestId('entry-settings-menu-trigger'));
+
+    expect(props.onOpenSettings).not.toHaveBeenCalled();
+    expect(screen.getByTestId('entry-settings-menu')).toBeTruthy();
+    expect(screen.getByText('Language')).toBeTruthy();
+    expect(screen.getByText('Appearance')).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: /Join Discord/i })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: /Follow @nexudotio on X/i })).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('entry-settings-open-details'));
+
+    expect(props.onOpenSettings).toHaveBeenCalledWith();
+  });
 });
 
 describe('EntryShell onboarding Open Design AMR runtime', () => {

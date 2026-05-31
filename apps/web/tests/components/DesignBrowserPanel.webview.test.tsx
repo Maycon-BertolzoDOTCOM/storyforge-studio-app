@@ -100,4 +100,37 @@ describe('DesignBrowserPanel <webview> navigation', () => {
     fireEvent.submit(input.closest('form')!);
     expect(webview.getAttribute('src')).toBe('https://unsplash.com');
   });
+
+  it('derives back and forward availability from the committed navigation stack', () => {
+    const { container } = render(
+      <DesignBrowserPanel projectId="proj-webview-3" onOpenFile={() => {}} onRefreshFiles={() => {}} />,
+    );
+
+    const input = screen.getByLabelText('Browser address') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'example.com' } });
+    fireEvent.submit(input.closest('form')!);
+
+    const webview = container.querySelector('webview.db-webview') as HTMLElement & {
+      loadURL?: (url: string) => void;
+    };
+    const loadURL = vi.fn();
+    webview.loadURL = loadURL;
+
+    const backButton = screen.getByRole('button', { name: 'Go Back' }) as HTMLButtonElement;
+    const forwardButton = screen.getByRole('button', { name: 'Go Forward' }) as HTMLButtonElement;
+    expect(backButton.disabled).toBe(true);
+    expect(backButton.parentElement?.getAttribute('data-tooltip')).toBe('Go Back');
+
+    dispatchWebviewNavigate(webview, 'https://example.com/');
+    expect(backButton.disabled).toBe(true);
+
+    dispatchWebviewNavigate(webview, 'https://example.com/docs/');
+    expect(input.value).toBe('https://example.com/docs/');
+    expect(backButton.disabled).toBe(false);
+    expect(forwardButton.disabled).toBe(true);
+
+    fireEvent.click(backButton);
+    expect(loadURL).toHaveBeenCalledWith('https://example.com/');
+    expect(forwardButton.disabled).toBe(false);
+  });
 });

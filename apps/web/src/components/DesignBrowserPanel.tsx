@@ -4,7 +4,9 @@ import {
   useMemo,
   useRef,
   useState,
+  type ButtonHTMLAttributes,
   type FormEvent,
+  type ReactNode,
 } from 'react';
 import {
   clearHostBrowserData,
@@ -22,6 +24,11 @@ type BrowserHistoryEntry = {
   url: string;
   lastVisitedAt: number;
   visitCount: number;
+};
+
+type BrowserNavigationEntry = {
+  title: string;
+  url: string;
 };
 
 type ReferenceSite = {
@@ -55,6 +62,7 @@ type WebviewElement = HTMLElement & {
   goBack(): void;
   goForward(): void;
   isLoading(): boolean;
+  loadURL?(url: string): void | Promise<void>;
   reload(): void;
   reloadIgnoringCache(): void;
 };
@@ -168,15 +176,20 @@ export function DesignBrowserPanel({
   const [currentUrl, setCurrentUrl] = useState(EMPTY_URL);
   const [addressValue, setAddressValue] = useState('');
   const [history, setHistory] = useState<BrowserHistoryEntry[]>(() => loadHistory(projectId));
+  const [navigationStack, setNavigationStack] = useState<BrowserNavigationEntry[]>([]);
+  const [navigationIndex, setNavigationIndex] = useState(-1);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [canGoBack, setCanGoBack] = useState(false);
-  const [canGoForward, setCanGoForward] = useState(false);
   const [webviewNode, setWebviewNode] = useState<WebviewElement | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [savingAction, setSavingAction] = useState<'brief' | 'screenshot' | 'task' | null>(null);
   const chromeRef = useRef<HTMLDivElement | null>(null);
+  const navigationStackRef = useRef<BrowserNavigationEntry[]>([]);
+  const navigationIndexRef = useRef(-1);
+  const pendingLoadTargetRef = useRef<string | null>(null);
+  const canGoBack = navigationIndex > 0;
+  const canGoForward = navigationIndex >= 0 && navigationIndex < navigationStack.length - 1;
   const assignWebviewNode = useCallback((node: HTMLWebViewElement | null) => {
     // Set `allowpopups` imperatively rather than as a JSX prop. React's DOM
     // renderer does not treat `allowpopups` as a known boolean attribute, so
@@ -193,8 +206,11 @@ export function DesignBrowserPanel({
     setLoadUrl(EMPTY_URL);
     setCurrentUrl(EMPTY_URL);
     setAddressValue('');
-    setCanGoBack(false);
-    setCanGoForward(false);
+    setNavigationStack([]);
+    setNavigationIndex(-1);
+    navigationStackRef.current = [];
+    navigationIndexRef.current = -1;
+    pendingLoadTargetRef.current = null;
   }, [projectId]);
 
   useEffect(() => {
@@ -233,33 +249,106 @@ export function DesignBrowserPanel({
     });
   }, []);
 
+  const setNavigationState = useCallback((stack: BrowserNavigationEntry[], index: number) => {
+    navigationStackRef.current = stack;
+    navigationIndexRef.current = index;
+    setNavigationStack(stack);
+    setNavigationIndex(index);
+  }, []);
+
+  const recordNavigation = useCallback((url: string, title?: string, options?: { replacePendingTarget?: boolean }) => {
+    if (url === EMPTY_URL) {
+      pendingLoadTargetRef.current = null;
+      setNavigationState([], -1);
+      return;
+    }
+    if (!isHistoryUrl(url)) return;
+
+    const stack = navigationStackRef.current;
+    const index = navigationIndexRef.current;
+    const nextTitle = title && title.trim() ? title.trim() : labelFromUrl(url);
+    const nextEntry: BrowserNavigationEntry = { title: nextTitle, url };
+    const updateEntry = (entries: BrowserNavigationEntry[], entryIndex: number) => {
+      const existing = entries[entryIndex];
+      const next = entries.slice();
+      next[entryIndex] = {
+        title: nextTitle || existing?.title || labelFromUrl(url),
+        url,
+      };
+      return next;
+    };
+    const currentEntry = index >= 0 ? stack[index] : undefined;
+    const pendingTarget = pendingLoadTargetRef.current;
+    const shouldReplacePending =
+      Boolean(options?.replacePendingTarget && pendingTarget && currentEntry && sameUrl(currentEntry.url, pendingTarget));
+
+    if (currentEntry && (sameUrl(currentEntry.url, url) || shouldReplacePending)) {
+      setNavigationState(updateEntry(stack, index), index);
+      if (options?.replacePendingTarget) pendingLoadTargetRef.current = null;
+      return;
+    }
+
+    const previousIndex = index - 1;
+    if (previousIndex >= 0 && sameUrl(stack[previousIndex]?.url ?? '', url)) {
+      setNavigationState(updateEntry(stack, previousIndex), previousIndex);
+      if (options?.replacePendingTarget) pendingLoadTargetRef.current = null;
+      return;
+    }
+
+    const nextIndex = index + 1;
+    if (nextIndex < stack.length && sameUrl(stack[nextIndex]?.url ?? '', url)) {
+      setNavigationState(updateEntry(stack, nextIndex), nextIndex);
+      if (options?.replacePendingTarget) pendingLoadTargetRef.current = null;
+      return;
+    }
+
+    const base = index >= 0 ? stack.slice(0, index + 1) : [];
+    const nextStack = [...base, nextEntry].slice(-HISTORY_LIMIT);
+    setNavigationState(nextStack, nextStack.length - 1);
+    if (options?.replacePendingTarget) pendingLoadTargetRef.current = null;
+  }, [setNavigationState]);
+
+  const updateCurrentNavigationTitle = useCallback((title?: string) => {
+    const trimmedTitle = title?.trim();
+    const index = navigationIndexRef.current;
+    if (!trimmedTitle || index < 0) return;
+    const stack = navigationStackRef.current;
+    const currentEntry = stack[index];
+    if (!currentEntry || currentEntry.title === trimmedTitle) return;
+    const nextStack = stack.slice();
+    nextStack[index] = { ...currentEntry, title: trimmedTitle };
+    setNavigationState(nextStack, index);
+  }, [setNavigationState]);
+
   const navigateTo = useCallback((rawAddress: string) => {
     const nextUrl = normalizeBrowserAddress(rawAddress);
+    pendingLoadTargetRef.current = isHistoryUrl(nextUrl) ? nextUrl : null;
     setLoadUrl(nextUrl);
     setCurrentUrl(nextUrl);
     setAddressValue(nextUrl === EMPTY_URL ? '' : nextUrl);
     setSuggestionsOpen(false);
     setMenuOpen(false);
-    if (isHistoryUrl(nextUrl)) commitHistory(nextUrl);
-  }, [commitHistory]);
+    if (isHistoryUrl(nextUrl)) {
+      commitHistory(nextUrl);
+      recordNavigation(nextUrl);
+    } else if (nextUrl === EMPTY_URL) {
+      recordNavigation(nextUrl);
+    }
+  }, [commitHistory, recordNavigation]);
 
-  const updateNavigationState = useCallback((node: WebviewElement | null = webviewNode) => {
+  const updateLoadingState = useCallback((node: WebviewElement | null = webviewNode) => {
     if (!node) {
-      setCanGoBack(false);
-      setCanGoForward(false);
       setIsLoading(false);
       return;
     }
     // Electron's <webview> throws ("The WebView must be attached to the DOM and
     // the dom-ready event emitted before this method can be called") when
-    // canGoBack/canGoForward/isLoading run before the guest attaches. The mount
-    // effect calls this immediately, so guard like safeGetWebviewUrl/Title do.
+    // isLoading runs before the guest attaches. The mount effect calls this
+    // immediately, so guard like safeGetWebviewUrl/Title do.
     try {
-      setCanGoBack(Boolean(node.canGoBack()));
-      setCanGoForward(Boolean(node.canGoForward()));
       setIsLoading(Boolean(node.isLoading()));
     } catch {
-      // Pre-dom-ready: keep the existing (default) navigation state.
+      // Pre-dom-ready: keep the existing loading state.
     }
   }, [webviewNode]);
 
@@ -267,19 +356,26 @@ export function DesignBrowserPanel({
     const node = webviewNode;
     if (!node) return;
 
-    const syncFromWebview = (url?: string, title?: string) => {
+    const syncFromWebview = (url?: string, title?: string, options?: { recordNavigation?: boolean }) => {
       const nextUrl = url || safeGetWebviewUrl(node);
       if (nextUrl) {
         setCurrentUrl(nextUrl);
         setAddressValue(nextUrl === EMPTY_URL ? '' : nextUrl);
       }
       const nextTitle = title || safeGetWebviewTitle(node);
-      if (nextUrl) commitHistory(nextUrl, nextTitle);
-      updateNavigationState(node);
+      if (nextUrl) {
+        commitHistory(nextUrl, nextTitle);
+        if (options?.recordNavigation !== false) {
+          recordNavigation(nextUrl, nextTitle, { replacePendingTarget: true });
+        } else {
+          updateCurrentNavigationTitle(nextTitle);
+        }
+      }
+      updateLoadingState(node);
     };
     const onStart = () => {
       setIsLoading(true);
-      updateNavigationState(node);
+      updateLoadingState(node);
     };
     const onStop = () => {
       setIsLoading(false);
@@ -292,13 +388,14 @@ export function DesignBrowserPanel({
     };
     const onTitle = (event: Event) => {
       const titleEvent = event as WebviewTitleEvent;
-      syncFromWebview(undefined, titleEvent.title);
+      syncFromWebview(undefined, titleEvent.title, { recordNavigation: false });
     };
     const onFail = (event: Event) => {
       const navigationEvent = event as WebviewNavigationEvent;
       if (navigationEvent.isMainFrame === false) return;
       setIsLoading(false);
-      updateNavigationState(node);
+      pendingLoadTargetRef.current = null;
+      updateLoadingState(node);
     };
 
     node.addEventListener('did-start-loading', onStart);
@@ -308,7 +405,7 @@ export function DesignBrowserPanel({
     node.addEventListener('page-title-updated', onTitle);
     node.addEventListener('did-fail-load', onFail);
     node.addEventListener('dom-ready', onStop);
-    updateNavigationState(node);
+    updateLoadingState(node);
     return () => {
       node.removeEventListener('did-start-loading', onStart);
       node.removeEventListener('did-stop-loading', onStop);
@@ -318,7 +415,7 @@ export function DesignBrowserPanel({
       node.removeEventListener('did-fail-load', onFail);
       node.removeEventListener('dom-ready', onStop);
     };
-  }, [commitHistory, updateNavigationState, webviewNode]);
+  }, [commitHistory, recordNavigation, updateCurrentNavigationTitle, updateLoadingState, webviewNode]);
 
   const suggestions = useMemo(() => {
     const query = addressValue.trim().toLocaleLowerCase();
@@ -463,6 +560,8 @@ export function DesignBrowserPanel({
       setLoadUrl(EMPTY_URL);
       setCurrentUrl(EMPTY_URL);
       setAddressValue('');
+      setNavigationState([], -1);
+      pendingLoadTargetRef.current = null;
     }
     setMenuOpen(false);
   }
@@ -471,6 +570,33 @@ export function DesignBrowserPanel({
     setHistory([]);
     setStatusMessage('History cleared');
     setMenuOpen(false);
+  }
+
+  function loadWebviewUrl(url: string) {
+    if (!webviewNode) {
+      setLoadUrl(url);
+      return;
+    }
+    try {
+      const result = webviewNode.loadURL?.(url);
+      if (result instanceof Promise) void result.catch(() => setLoadUrl(url));
+      else if (!webviewNode.loadURL) setLoadUrl(url);
+    } catch {
+      setLoadUrl(url);
+    }
+  }
+
+  function navigateHistoryBy(delta: -1 | 1) {
+    const targetIndex = navigationIndex + delta;
+    const entry = navigationStack[targetIndex];
+    if (!entry) return;
+    pendingLoadTargetRef.current = null;
+    setNavigationState(navigationStack.slice(), targetIndex);
+    setCurrentUrl(entry.url);
+    setAddressValue(entry.url);
+    setSuggestionsOpen(false);
+    setMenuOpen(false);
+    loadWebviewUrl(entry.url);
   }
 
   function reload(hard = false) {
@@ -495,36 +621,28 @@ export function DesignBrowserPanel({
     <section className="design-browser" aria-label="Design Browser">
       <div className="db-chrome" ref={chromeRef}>
         <div className="db-nav">
-          <button
-            type="button"
-            className="db-icon-btn"
-            aria-label="Back"
-            title="Back"
+          <IconTooltipButton
+            label="Go Back"
             disabled={!canGoBack}
-            onClick={() => webviewNode?.goBack()}
+            onClick={() => navigateHistoryBy(-1)}
           >
             <Icon name="chevron-left" size={16} />
-          </button>
-          <button
-            type="button"
-            className="db-icon-btn"
-            aria-label="Forward"
-            title="Forward"
+          </IconTooltipButton>
+          <IconTooltipButton
+            label="Go Forward"
             disabled={!canGoForward}
-            onClick={() => webviewNode?.goForward()}
+            onClick={() => navigateHistoryBy(1)}
           >
             <Icon name="chevron-right" size={16} />
-          </button>
-          <button
-            type="button"
-            className={`db-icon-btn ${isLoading ? 'is-spinning' : ''}`}
-            aria-label="Reload"
-            title="Reload"
+          </IconTooltipButton>
+          <IconTooltipButton
+            label={isLoading ? 'Loading...' : 'Reload'}
+            className={isLoading ? 'is-spinning' : ''}
             disabled={isBlank}
             onClick={() => reload(false)}
           >
             <Icon name="reload" size={15} />
-          </button>
+          </IconTooltipButton>
         </div>
         <form className="db-address-form" onSubmit={handleAddressSubmit}>
           <Icon name="globe" size={15} />
@@ -563,25 +681,19 @@ export function DesignBrowserPanel({
           ) : null}
         </form>
         <div className="db-actions">
-          <button
-            type="button"
-            className="db-icon-btn"
-            aria-label="Save page brief"
-            title="Save page brief"
+          <IconTooltipButton
+            label="Save page brief"
             disabled={isBlank || savingAction != null}
             onClick={savePageBrief}
           >
             <Icon name="file-code" size={15} />
-          </button>
-          <button
-            type="button"
-            className="db-icon-btn"
-            aria-label="Browser menu"
-            title="Browser menu"
+          </IconTooltipButton>
+          <IconTooltipButton
+            label="Browser menu"
             onClick={() => setMenuOpen((open) => !open)}
           >
             <Icon name="more-horizontal" size={16} />
-          </button>
+          </IconTooltipButton>
           {menuOpen ? (
             <div className="db-menu" role="menu">
               <button type="button" role="menuitem" onClick={takeScreenshot} disabled={isBlank || savingAction != null}>
@@ -656,6 +768,29 @@ export function DesignBrowserPanel({
         )}
       </div>
     </section>
+  );
+}
+
+function IconTooltipButton({
+  label,
+  className,
+  children,
+  ...buttonProps
+}: {
+  label: string;
+  children: ReactNode;
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <span className="db-tooltip-anchor" data-tooltip={label}>
+      <button
+        {...buttonProps}
+        type="button"
+        className={['db-icon-btn', className].filter(Boolean).join(' ')}
+        aria-label={label}
+      >
+        {children}
+      </button>
+    </span>
   );
 }
 
