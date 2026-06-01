@@ -137,6 +137,7 @@ import {
   commentsToAttachments,
   historyWithCommentAttachmentContext,
   mergeAttachedComments,
+  mergePreviewCommentAttachments,
   removeAttachedComment,
 } from '../comments';
 import { buildPptxExportPrompt } from '../lib/build-pptx-export-prompt';
@@ -1839,15 +1840,19 @@ export function ProjectView({
       // Upload any attached images first so the saved comment carries durable
       // file paths — this is what lets the comment list / re-opened popover
       // re-display the images instead of losing them on echo.
-      let attachments: PreviewCommentAttachment[] | undefined;
+      let uploadedAttachments: PreviewCommentAttachment[] | undefined;
       if (images.length > 0) {
         const result = await uploadProjectFiles(project.id, images);
-        attachments = result.uploaded.map((file) => ({ path: file.path, name: file.name }));
+        uploadedAttachments = result.uploaded.map((file) => ({ path: file.path, name: file.name }));
       }
+      const existing = previewComments.find(
+        (comment) => comment.filePath === target.filePath && comment.elementId === target.elementId,
+      );
+      const attachments = mergePreviewCommentAttachments(existing?.attachments, uploadedAttachments);
       const saved = await upsertPreviewComment(project.id, activeConversationId, {
         target,
         note,
-        ...(attachments && attachments.length > 0 ? { attachments } : {}),
+        ...(attachments.length > 0 ? { attachments } : {}),
       });
       if (!saved) return null;
       setPreviewComments((current) => {
@@ -1859,7 +1864,7 @@ export function ProjectView({
       );
       return saved;
     },
-    [project.id, activeConversationId],
+    [project.id, activeConversationId, previewComments],
   );
 
   const removePreviewComment = useCallback(

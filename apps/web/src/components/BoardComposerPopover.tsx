@@ -373,6 +373,7 @@ export function BoardComposerPopover({
                 <div key={`saved-${item.url}`} className="comment-popover-image">
                   <a
                     className="comment-popover-image-thumb"
+                    data-testid="comment-popover-existing-image"
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -425,8 +426,7 @@ export function BoardComposerPopover({
               if (
                 event.key === 'Enter' &&
                 !event.shiftKey &&
-                !event.altKey &&
-                (event.metaKey || event.ctrlKey)
+                !event.altKey
               ) {
                 event.preventDefault();
                 // Enter triggers the primary CTA: comment (save) for element

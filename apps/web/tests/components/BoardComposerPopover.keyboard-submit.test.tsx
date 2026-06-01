@@ -21,10 +21,20 @@ const target: PreviewCommentSnapshot = {
   selectionKind: 'element',
 };
 
-function renderPopover(onSendBatch: () => void, sending = false) {
+function renderPopover({
+  onSaveComment = () => {},
+  onSendBatch = () => {},
+  sending = false,
+  selectionKind = 'element',
+}: {
+  onSaveComment?: () => void;
+  onSendBatch?: () => void;
+  sending?: boolean;
+  selectionKind?: PreviewCommentSnapshot['selectionKind'];
+} = {}) {
   return render(
     <BoardComposerPopover
-      target={target}
+      target={{ ...target, selectionKind }}
       existing={null}
       draft="Tighten this heading"
       notes={[]}
@@ -32,7 +42,7 @@ function renderPopover(onSendBatch: () => void, sending = false) {
       onAddDraft={() => {}}
       onRemoveQueuedNote={() => {}}
       onClose={() => {}}
-      onSaveComment={() => {}}
+      onSaveComment={onSaveComment}
       onSendBatch={onSendBatch}
       onRemoveMember={() => {}}
       sending={sending}
@@ -42,22 +52,34 @@ function renderPopover(onSendBatch: () => void, sending = false) {
 }
 
 describe('BoardComposerPopover keyboard submit', () => {
-  it('sends the drafted comment with the primary Enter shortcut', () => {
-    const onSendBatch = vi.fn();
-    renderPopover(onSendBatch);
+  it('saves an element comment with Enter and keeps Shift+Enter for multiline text', () => {
+    const onSaveComment = vi.fn();
+    renderPopover({ onSaveComment });
 
-    fireEvent.keyDown(screen.getByTestId('comment-popover-input'), { key: 'Enter', metaKey: true });
+    fireEvent.keyDown(screen.getByTestId('comment-popover-input'), { key: 'Enter' });
+
+    expect(onSaveComment).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(screen.getByTestId('comment-popover-input'), { key: 'Enter', shiftKey: true });
+    expect(onSaveComment).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends a pod comment with Enter', () => {
+    const onSendBatch = vi.fn();
+    renderPopover({ onSendBatch, selectionKind: 'pod' });
+
+    fireEvent.keyDown(screen.getByTestId('comment-popover-input'), { key: 'Enter' });
 
     expect(onSendBatch).toHaveBeenCalledTimes(1);
   });
 
-  it('does not send while disabled or while IME text is composing', () => {
-    const onSendBatch = vi.fn();
-    const { rerender } = renderPopover(onSendBatch, true);
+  it('does not submit while disabled or while IME text is composing', () => {
+    const onSaveComment = vi.fn();
+    const { rerender } = renderPopover({ onSaveComment, sending: true });
     const input = screen.getByTestId('comment-popover-input');
 
-    fireEvent.keyDown(input, { key: 'Enter', metaKey: true });
-    expect(onSendBatch).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSaveComment).not.toHaveBeenCalled();
 
     rerender(
       <BoardComposerPopover
@@ -69,8 +91,8 @@ describe('BoardComposerPopover keyboard submit', () => {
         onAddDraft={() => {}}
         onRemoveQueuedNote={() => {}}
         onClose={() => {}}
-        onSaveComment={() => {}}
-        onSendBatch={onSendBatch}
+        onSaveComment={onSaveComment}
+        onSendBatch={() => {}}
         onRemoveMember={() => {}}
         sending={false}
         t={((key: string) => String(key)) as never}
@@ -78,8 +100,8 @@ describe('BoardComposerPopover keyboard submit', () => {
     );
 
     fireEvent.compositionStart(input);
-    fireEvent.keyDown(input, { key: 'Enter', metaKey: true });
+    fireEvent.keyDown(input, { key: 'Enter' });
 
-    expect(onSendBatch).not.toHaveBeenCalled();
+    expect(onSaveComment).not.toHaveBeenCalled();
   });
 });

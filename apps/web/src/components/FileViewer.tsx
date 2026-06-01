@@ -4319,10 +4319,11 @@ function HtmlViewer({
       });
     });
   }, []);
-const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([]);
+  const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([]);
   const [selectedManualEditTarget, setSelectedManualEditTarget] = useState<ManualEditTarget | null>(null);
   const [manualEditPanelPosition, setManualEditPanelPosition] = useState<{ left: number; top: number } | null>(null);
   const selectedManualEditTargetIdRef = useRef<string | null>(null);
+  const pinnedManualEditTargetIdRef = useRef<string | null>(null);
   const [manualEditDraft, setManualEditDraft] = useState<ManualEditDraft>(() => emptyManualEditDraft());
   const [manualEditHistory, setManualEditHistory] = useState<ManualEditHistoryEntry[]>([]);
   const [manualEditUndone, setManualEditUndone] = useState<ManualEditHistoryEntry[]>([]);
@@ -4696,7 +4697,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
     return () => {
       cancelled = true;
     };
-  }, [source, effectiveDeck, projectId, file.name, useUrlLoadPreview]);
+  }, [source, effectiveDeck, projectId, file.name, reloadKey, useUrlLoadPreview]);
 
   const srcDoc = useMemo(
     () => (previewSource ? buildSrcdoc(previewSource, {
@@ -5275,6 +5276,8 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
       setManualEditTargets([]);
       setSelectedManualEditTarget(null);
       setManualEditPanelPosition(null);
+      selectedManualEditTargetIdRef.current = null;
+      pinnedManualEditTargetIdRef.current = null;
       setManualEditError(null);
       manualEditPendingStyleRef.current = null;
       if (manualEditStyleTimerRef.current) {
@@ -5300,11 +5303,11 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
         return;
       }
       if (data.type === 'od-edit-select') {
-        void selectManualEditTarget(data.target);
+        void selectManualEditTarget(data.target, { pinned: true });
         return;
       }
       if (data.type === 'od-edit-hover') {
-        if (data.target.id !== selectedManualEditTargetIdRef.current) {
+        if (!pinnedManualEditTargetIdRef.current && data.target.id !== selectedManualEditTargetIdRef.current) {
           void selectManualEditTarget(data.target);
         }
         return;
@@ -5448,6 +5451,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
   function cancelManualEditModeAndExit() {
     cancelManualEditStyleDraft();
     selectedManualEditTargetIdRef.current = null;
+    pinnedManualEditTargetIdRef.current = null;
     setSelectedManualEditTarget(null);
     setManualEditPanelPosition(null);
     setManualEditDraft(emptyManualEditDraft(sourceRef.current ?? ''));
@@ -5457,10 +5461,12 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
     postSelectedManualEditTargetToIframe(null);
   }
 
-  async function selectManualEditTarget(target: ManualEditTarget) {
+  async function selectManualEditTarget(target: ManualEditTarget, options?: { pinned?: boolean }) {
     if (manualEditPendingStyleRef.current?.id !== target.id) cancelManualEditStyleDraft();
     const base = sourceRef.current ?? '';
     const fields = readManualEditFields(base, target.id);
+    selectedManualEditTargetIdRef.current = target.id;
+    if (options?.pinned) pinnedManualEditTargetIdRef.current = target.id;
     setSelectedManualEditTarget(target);
     setManualEditDraft({
       text: fields.text ?? target.fields.text ?? target.text,
@@ -5477,6 +5483,8 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
 
   async function clearManualEditTargetSelection() {
     cancelManualEditStyleDraft();
+    selectedManualEditTargetIdRef.current = null;
+    pinnedManualEditTargetIdRef.current = null;
     setSelectedManualEditTarget(null);
     setManualEditPanelPosition(null);
     setManualEditDraft(emptyManualEditDraft(sourceRef.current ?? ''));
@@ -5536,6 +5544,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
           clearManualEditStyleTimer();
         }
         selectedManualEditTargetIdRef.current = null;
+        pinnedManualEditTargetIdRef.current = null;
         setSelectedManualEditTarget(null);
         setManualEditTargets((current) => current.filter((target) => target.id !== patch.id));
         setManualEditDraft(emptyManualEditDraft(result.source));
@@ -6122,6 +6131,19 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
   function presentNewTab() {
     setPresentMenuOpen(false);
     openInNewTab();
+  }
+
+  function reloadHtmlPreview() {
+    fireArtifactToolbarClick('reload');
+    capturePreviewScrollPosition();
+    imageExportSnapshotDataUrlRef.current = null;
+    setInlinedSource(null);
+    setReloadKey((key) => key + 1);
+    if (!useUrlLoadPreview) {
+      activatedSrcDocTransportHtmlRef.current = null;
+      setSrcDocShellReady(false);
+      setSrcDocTransportResetKey((key) => key + 1);
+    }
   }
 
   function selectMode(nextMode: 'preview' | 'source') {
@@ -6953,6 +6975,15 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
     <div className="viewer html-viewer">
       <div className="viewer-toolbar">
         <div className="viewer-toolbar-left">
+          <button
+            type="button"
+            className="icon-only"
+            onClick={reloadHtmlPreview}
+            title={`${t('fileViewer.reload')} ${t('fileViewer.preview')}`}
+            aria-label={`${t('fileViewer.reloadAria')} ${t('fileViewer.preview')}`}
+          >
+            <Icon name="reload" size={14} />
+          </button>
           <div className="viewer-tabs" role="tablist" aria-label="View mode">
             {([
               ['preview', t('fileViewer.preview')],

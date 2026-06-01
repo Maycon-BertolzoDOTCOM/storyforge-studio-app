@@ -101,6 +101,26 @@ describe('preview comment persistence', () => {
     ]);
   });
 
+  it('preserves image attachments when updating an existing comment without new files', () => {
+    const db = seededDb();
+    const first = upsertPreviewComment(db, 'project-1', 'conversation-1', {
+      target: target({ elementId: 'hero-title' }),
+      note: 'Match this reference',
+      attachments: [
+        { path: 'uploads/ref-a.png', name: 'ref-a.png' },
+      ],
+    });
+    const second = upsertPreviewComment(db, 'project-1', 'conversation-1', {
+      target: target({ elementId: 'hero-title' }),
+      note: 'Still match this reference',
+    });
+
+    expect(first?.id).toBe(second?.id);
+    expect(second?.attachments).toEqual([
+      { path: 'uploads/ref-a.png', name: 'ref-a.png' },
+    ]);
+  });
+
   it('defaults attachments to an empty array when none are provided', () => {
     const db = seededDb();
     const saved = upsertPreviewComment(db, 'project-1', 'conversation-1', {

@@ -45,6 +45,7 @@ import type { InspectOverrideMap } from '../../src/components/FileViewer';
 import type { LiveArtifact, LiveArtifactWorkspaceEntry, PreviewComment, ProjectFile } from '../../src/types';
 import { I18nProvider } from '../../src/i18n';
 import type { Dict } from '../../src/i18n/types';
+import { emptyManualEditStyles } from '../../src/edit-mode/types';
 import { readExpandedIndexCss } from '../helpers/read-expanded-css';
 
 const TEST_SNAPSHOT_DATA_URL = 'data:image/png;base64,c25hcHNob3Q=';
@@ -79,6 +80,23 @@ function deferredResponse() {
 
 function clickAgentTool(testId: string) {
   fireEvent.click(screen.getByTestId(testId));
+}
+
+function manualEditTarget(id: string, label: string, x: number) {
+  return {
+    id,
+    kind: 'container',
+    label,
+    tagName: 'div',
+    className: '',
+    text: '',
+    rect: { x, y: 20, width: 180, height: 80 },
+    fields: {},
+    attributes: { 'data-od-label': label },
+    styles: emptyManualEditStyles(),
+    isLayoutContainer: true,
+    outerHtml: `<div data-od-id="${id}">${label}</div>`,
+  };
 }
 
 function installCanvasSnapshotMocks() {
@@ -659,6 +677,77 @@ describe('FileViewer SVG artifacts', () => {
     expect(markup).toContain('sandbox="allow-scripts allow-downloads"');
   });
 
+  it('reloads a URL-loaded HTML preview with a new cache key without replacing the iframe', () => {
+    const file = baseFile({
+      name: 'page.html',
+      path: 'page.html',
+      mime: 'text/html',
+      kind: 'html',
+      artifactManifest: {
+        version: 1,
+        kind: 'html',
+        title: 'Page',
+        entry: 'page.html',
+        renderer: 'html',
+        exports: ['html'],
+      },
+    });
+
+    render(
+      <FileViewer
+        projectId="project-1"
+        projectKind="prototype"
+        file={file}
+        liveHtml="<html><body>hi</body></html>"
+      />,
+    );
+
+    const frame = screen.getByTestId('artifact-preview-frame') as HTMLIFrameElement;
+    expect(frame.getAttribute('src')).toBe('/api/projects/project-1/raw/page.html?v=1710000000&r=0&odPreviewBridge=scroll');
+
+    fireEvent.click(screen.getByRole('button', { name: /reload preview/i }));
+
+    const reloadedFrame = screen.getByTestId('artifact-preview-frame') as HTMLIFrameElement;
+    expect(reloadedFrame).toBe(frame);
+    expect(reloadedFrame.getAttribute('src')).toBe('/api/projects/project-1/raw/page.html?v=1710000000&r=1&odPreviewBridge=scroll');
+  });
+
+  it('remounts the srcDoc HTML preview when reload is requested', () => {
+    const file = baseFile({
+      name: 'deck.html',
+      path: 'deck.html',
+      mime: 'text/html',
+      kind: 'html',
+      artifactManifest: {
+        version: 1,
+        kind: 'html',
+        title: 'Deck',
+        entry: 'deck.html',
+        renderer: 'html',
+        exports: ['html'],
+      },
+    });
+
+    render(
+      <FileViewer
+        projectId="project-1"
+        projectKind="prototype"
+        file={file}
+        isDeck
+        liveHtml={'<html><body><section class="slide">one</section><section class="slide">two</section></body></html>'}
+      />,
+    );
+
+    const frame = screen.getByTestId('artifact-preview-frame') as HTMLIFrameElement;
+    expect(frame.getAttribute('data-od-render-mode')).toBe('srcdoc');
+
+    fireEvent.click(screen.getByRole('button', { name: /reload preview/i }));
+
+    const reloadedFrame = screen.getByTestId('artifact-preview-frame') as HTMLIFrameElement;
+    expect(reloadedFrame).not.toBe(frame);
+    expect(reloadedFrame.getAttribute('data-od-render-mode')).toBe('srcdoc');
+  });
+
   it('offers image export for URL-loaded HTML previews', () => {
     const file = baseFile({
       name: 'workspace.html',
@@ -737,6 +826,56 @@ describe('FileViewer SVG artifacts', () => {
     expect(srcDocFrameAfter?.getAttribute('data-od-active')).toBe('true');
     expect(srcDocFrameAfter?.srcdoc).toContain('__odArtifactBootCount');
     expect(srcDocFrameAfter?.srcdoc).toContain('data-od-edit-bridge');
+  });
+
+  it('keeps the manual edit inspector pinned after clicking a target', async () => {
+    const heroTarget = manualEditTarget('hero-card', 'Hero card', 20);
+    const trendTarget = manualEditTarget('trend-card', 'Trend card', 320);
+    render(
+      <FileViewer
+        projectId="project-1"
+        projectKind="prototype"
+        file={baseFile({
+          name: 'page.html',
+          path: 'page.html',
+          mime: 'text/html',
+          kind: 'html',
+          artifactManifest: {
+            version: 1,
+            kind: 'html',
+            title: 'Page',
+            entry: 'page.html',
+            renderer: 'html',
+            exports: ['html'],
+          },
+        })}
+        liveHtml='<html><body><main data-od-id="hero-card">Hero</main><aside data-od-id="trend-card">Trend</aside></body></html>'
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('manual-edit-mode-toggle'));
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-preview-frame').getAttribute('data-od-render-mode')).toBe('srcdoc');
+    });
+    const frame = screen.getByTestId('artifact-preview-frame') as HTMLIFrameElement;
+
+    window.dispatchEvent(new MessageEvent('message', {
+      source: frame.contentWindow,
+      data: { type: 'od-edit-hover', target: heroTarget },
+    }));
+    expect(await screen.findByText('Hero card')).toBeTruthy();
+
+    window.dispatchEvent(new MessageEvent('message', {
+      source: frame.contentWindow,
+      data: { type: 'od-edit-select', target: heroTarget },
+    }));
+    window.dispatchEvent(new MessageEvent('message', {
+      source: frame.contentWindow,
+      data: { type: 'od-edit-hover', target: trendTarget },
+    }));
+
+    expect(screen.getByText('Hero card')).toBeTruthy();
+    expect(screen.queryByText('Trend card')).toBeNull();
   });
 
   it('renders sandbox-shim artifacts on the srcdoc transport without entering edit mode (#2791)', () => {
@@ -2568,6 +2707,43 @@ describe('FileViewer tweaks toolbar', () => {
     expect(input.value).toBe('');
     expect(screen.queryByText('Existing note should stay in the thread')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+  });
+
+  it('shows saved image attachments when reopening a comment from the list', async () => {
+    const openComment: PreviewComment = {
+      id: 'comment-with-image',
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
+      filePath: 'preview.html',
+      elementId: 'pin-with-image',
+      selector: '[data-od-pin="pin-with-image"]',
+      label: 'pin-with-image',
+      text: '',
+      htmlHint: '',
+      position: { x: 40, y: 52, width: 18, height: 18 },
+      note: 'Use this screenshot',
+      attachments: [{ path: 'uploads/ref-a.png', name: 'ref-a.png' }],
+      status: 'open',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    render(
+      <FileViewer
+        projectId="project-1"
+        projectKind="prototype"
+        file={htmlPreviewFile()}
+        liveHtml='<html><body><main data-od-id="hero">Hero</main></body></html>'
+        previewComments={[openComment]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('comment-panel-toggle'));
+    fireEvent.click(screen.getByText('Use this screenshot').closest('[data-testid="comment-side-item"]')!);
+
+    const imageLink = await screen.findByTestId('comment-popover-existing-image');
+    expect(imageLink.getAttribute('href')).toBe('/api/projects/project-1/raw/uploads/ref-a.png');
+    expect(imageLink.querySelector('img')?.getAttribute('src')).toBe('/api/projects/project-1/raw/uploads/ref-a.png');
   });
 
   it('keeps the comment composer focused on the note after picking an element', async () => {

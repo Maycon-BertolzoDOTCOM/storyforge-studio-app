@@ -109,6 +109,10 @@ const HISTORY_LIMIT = 80;
 const HISTORY_SUGGESTION_LIMIT = 20;
 const warmedOrigins = new Set<string>();
 
+function browserHomeNavigationEntry(): BrowserNavigationEntry {
+  return { title: 'Reference Board', url: EMPTY_URL };
+}
+
 function initialBrowserState(initialUrl?: string, initialTitle?: string): {
   addressValue: string;
   navigationIndex: number;
@@ -121,8 +125,8 @@ function initialBrowserState(initialUrl?: string, initialTitle?: string): {
   if (url === EMPTY_URL) {
     return {
       addressValue: '',
-      navigationIndex: -1,
-      navigationStack: [],
+      navigationIndex: 0,
+      navigationStack: [browserHomeNavigationEntry()],
       url,
     };
   }
@@ -521,16 +525,15 @@ export function DesignBrowserPanel({
   }, []);
 
   const recordNavigation = useCallback((url: string, title?: string, options?: { replacePendingTarget?: boolean }) => {
-    if (url === EMPTY_URL) {
-      pendingLoadTargetRef.current = null;
-      setNavigationState([], -1);
-      return;
-    }
-    if (!isHistoryUrl(url)) return;
+    if (url !== EMPTY_URL && !isHistoryUrl(url)) return;
 
     const stack = navigationStackRef.current;
     const index = navigationIndexRef.current;
-    const nextTitle = title && title.trim() ? title.trim() : labelFromUrl(url);
+    const nextTitle = url === EMPTY_URL
+      ? browserHomeNavigationEntry().title
+      : title && title.trim()
+        ? title.trim()
+        : labelFromUrl(url);
     const nextEntry: BrowserNavigationEntry = { title: nextTitle, url };
     const updateEntry = (entries: BrowserNavigationEntry[], entryIndex: number) => {
       const existing = entries[entryIndex];
@@ -949,7 +952,7 @@ export function DesignBrowserPanel({
       setCurrentUrl(EMPTY_URL);
       setAddressValue('');
       setAddressEditing(false);
-      setNavigationState([], -1);
+      setNavigationState([browserHomeNavigationEntry()], 0);
       pendingLoadTargetRef.current = null;
       saveHistory(projectId, []);
     }
@@ -970,10 +973,15 @@ export function DesignBrowserPanel({
     pendingLoadTargetRef.current = null;
     setNavigationState(navigationStack.slice(), targetIndex);
     setCurrentUrl(entry.url);
-    setAddressValue(entry.url);
+    setAddressValue(entry.url === EMPTY_URL ? '' : entry.url);
     setAddressEditing(false);
     setSuggestionsOpen(false);
     setMenuOpen(false);
+    if (entry.url === EMPTY_URL) {
+      pendingLoadTargetRef.current = null;
+      setLoadUrl(EMPTY_URL);
+      return;
+    }
     if (webviewNode && canUseNativeHistoryNavigation(webviewNode, delta)) {
       if (delta < 0) webviewNode.goBack();
       else webviewNode.goForward();

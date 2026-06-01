@@ -3,6 +3,7 @@ import type {
   ChatCommentSelectionKind,
   ChatMessage,
   PreviewAnnotationStyle,
+  PreviewCommentAttachment,
   PreviewCommentMember,
   PreviewComment,
   PreviewCommentSelectionKind,
@@ -275,6 +276,22 @@ export function removeAttachedComment(
   commentId: string,
 ): PreviewComment[] {
   return current.filter((comment) => comment.id !== commentId);
+}
+
+export function mergePreviewCommentAttachments(
+  existing: PreviewCommentAttachment[] | undefined,
+  incoming: PreviewCommentAttachment[] | undefined,
+): PreviewCommentAttachment[] {
+  const merged: PreviewCommentAttachment[] = [];
+  const seen = new Set<string>();
+  for (const item of [...(existing ?? []), ...(incoming ?? [])]) {
+    const path = String(item.path || '').trim();
+    if (!path || seen.has(path)) continue;
+    seen.add(path);
+    const name = String(item.name || '').trim() || path.split('/').pop() || path;
+    merged.push({ path, name });
+  }
+  return merged;
 }
 
 export function simplePositionLabel(position: PreviewComment['position']): string {

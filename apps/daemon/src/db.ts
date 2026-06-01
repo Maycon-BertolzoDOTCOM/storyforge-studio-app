@@ -1134,9 +1134,8 @@ export function listPreviewComments(db: SqliteDb, projectId: string, conversatio
 export function upsertPreviewComment(db: SqliteDb, projectId: string, conversationId: string, input: DbRow) {
   const target = input?.target ?? {};
   const note = typeof input?.note === 'string' ? input.note.trim() : '';
-  const attachments = normalizePreviewCommentAttachments(input?.attachments);
-  // A comment must carry either a note or at least one image attachment.
-  if (!note && attachments.length === 0) throw new Error('comment note required');
+  const attachmentsProvided = Object.prototype.hasOwnProperty.call(input ?? {}, 'attachments');
+  const incomingAttachments = normalizePreviewCommentAttachments(input?.attachments);
   const filePath = cleanRequiredString(target.filePath, 'filePath');
   const elementId = cleanRequiredString(target.elementId, 'elementId');
   const selector = cleanRequiredString(target.selector, 'selector');
@@ -1157,13 +1156,17 @@ export function upsertPreviewComment(db: SqliteDb, projectId: string, conversati
   const now = Date.now();
   const existing = db
     .prepare(
-      `SELECT id, created_at AS createdAt
+      `SELECT id, created_at AS createdAt, attachments_json AS attachmentsJson
          FROM preview_comments
         WHERE project_id = ? AND conversation_id = ? AND file_path = ? AND element_id = ?`,
     )
     .get(projectId, conversationId, filePath, elementId) as DbRow | undefined;
   const id = existing?.id ?? randomCommentId();
   const createdAt = existing?.createdAt ?? now;
+  const existingAttachments = normalizePreviewCommentAttachments(parseJsonOrUndef(existing?.attachmentsJson));
+  const attachments = attachmentsProvided ? incomingAttachments : existingAttachments;
+  // A comment must carry either a note or at least one image attachment.
+  if (!note && attachments.length === 0) throw new Error('comment note required');
   db.prepare(
     `INSERT INTO preview_comments
        (id, project_id, conversation_id, file_path, element_id, selector, label,

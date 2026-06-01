@@ -6,6 +6,7 @@ import {
   historyWithCommentAttachmentContext,
   liveSnapshotForComment,
   mergeAttachedComments,
+  mergePreviewCommentAttachments,
   messageContentWithCommentAttachments,
   overlayBoundsFromSnapshot,
   removeAttachedComment,
@@ -49,6 +50,25 @@ describe('preview comment attachment helpers', () => {
     expect(attachments).toMatchObject([
       { id: 'c1', order: 1, elementId: 'hero-title', comment: 'Shorten this title' },
       { id: 'c2', order: 2, elementId: 'chart', comment: 'Make it feel real' },
+    ]);
+  });
+
+  it('merges saved preview comment image attachments without duplicates', () => {
+    expect(
+      mergePreviewCommentAttachments(
+        [
+          { path: 'uploads/ref-a.png', name: 'ref-a.png' },
+          { path: 'uploads/ref-b.png', name: 'ref-b.png' },
+        ],
+        [
+          { path: 'uploads/ref-b.png', name: 'duplicate.png' },
+          { path: 'uploads/ref-c.png', name: '' },
+        ],
+      ),
+    ).toEqual([
+      { path: 'uploads/ref-a.png', name: 'ref-a.png' },
+      { path: 'uploads/ref-b.png', name: 'ref-b.png' },
+      { path: 'uploads/ref-c.png', name: 'ref-c.png' },
     ]);
   });
 

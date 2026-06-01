@@ -133,11 +133,11 @@ describe('DesignBrowserPanel <webview> navigation', () => {
 
     const backButton = screen.getByRole('button', { name: 'Go Back' }) as HTMLButtonElement;
     const forwardButton = screen.getByRole('button', { name: 'Go Forward' }) as HTMLButtonElement;
-    expect(backButton.disabled).toBe(true);
+    expect(backButton.disabled).toBe(false);
     expect(backButton.parentElement?.getAttribute('data-tooltip')).toBe('Go Back');
 
     dispatchWebviewNavigate(webview, 'https://example.com/');
-    expect(backButton.disabled).toBe(true);
+    expect(backButton.disabled).toBe(false);
 
     dispatchWebviewNavigate(webview, 'https://example.com/docs/');
     expect(getAddressDisplay(container).url).toBe('https://example.com/docs/');
@@ -147,6 +147,38 @@ describe('DesignBrowserPanel <webview> navigation', () => {
     fireEvent.click(backButton);
     expect(loadURL).toHaveBeenCalledWith('https://example.com/');
     expect(forwardButton.disabled).toBe(false);
+  });
+
+  it('treats the start page as the previous browser step after the first address navigation', () => {
+    const { container } = render(
+      <DesignBrowserPanel projectId="proj-webview-home-back" onOpenFile={() => {}} onRefreshFiles={() => {}} />,
+    );
+
+    expect(screen.getByText('Reference Board')).toBeTruthy();
+
+    const input = screen.getByLabelText('Browser address') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'https://dribbble.com/' } });
+    fireEvent.submit(input.closest('form')!);
+
+    const webview = container.querySelector('webview.db-webview') as HTMLElement | null;
+    expect(webview?.getAttribute('src')).toBe('https://dribbble.com/');
+
+    const backButton = screen.getByRole('button', { name: 'Go Back' }) as HTMLButtonElement;
+    const forwardButton = screen.getByRole('button', { name: 'Go Forward' }) as HTMLButtonElement;
+    expect(backButton.disabled).toBe(false);
+    expect(forwardButton.disabled).toBe(true);
+
+    fireEvent.click(backButton);
+
+    expect(screen.getByText('Reference Board')).toBeTruthy();
+    expect(container.querySelector('webview.db-webview')).toBeNull();
+    expect((screen.getByLabelText('Browser address') as HTMLInputElement).value).toBe('');
+    expect(backButton.disabled).toBe(true);
+    expect(forwardButton.disabled).toBe(false);
+
+    fireEvent.click(forwardButton);
+
+    expect(container.querySelector('webview.db-webview')?.getAttribute('src')).toBe('https://dribbble.com/');
   });
 
   it('uses native webview history for back navigation when Chromium has it cached', () => {
