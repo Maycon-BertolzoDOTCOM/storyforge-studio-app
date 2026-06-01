@@ -694,6 +694,12 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       return { ...(meta ?? {}), queueOnly: true };
     }
 
+    function replaceEditorDraft(text: string) {
+      draftRef.current = text;
+      setDraft(text);
+      editorRef.current?.setText(text);
+    }
+
     async function insertSkillMention(skill: SkillSummary) {
       const applied = await applyProjectSkill(skill);
       if (!applied) return;
@@ -712,15 +718,28 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }
 
     function removeStagedSkill(id: string) {
+      const skill = stagedSkills.find((s) => s.id === id) ?? null;
       setStagedSkills((prev) => prev.filter((s) => s.id !== id));
-      // Also strip the matching `@<id>` token from the draft so the chip
-      // and the editor stay in sync. We allow trailing whitespace to be
-      // collapsed too, then push the stripped text back into the editor.
-      const stripped = draft
-        .replace(new RegExp(`(^|\\s)@${escapeRegExp(id)}(\\s|$)`, 'g'), '$1$2')
-        .replace(/\s{2,}/g, ' ');
-      setDraft(stripped);
-      editorRef.current?.setText(stripped);
+      const labels = [id, skill?.name ?? ''];
+      replaceEditorDraft(stripInlineMentionLabels(draft, labels));
+    }
+
+    function removeStagedMcpServer(id: string) {
+      const server = stagedMcpServers.find((item) => item.id === id) ?? null;
+      setStagedMcpServers((prev) => prev.filter((item) => item.id !== id));
+      replaceEditorDraft(stripInlineMentionLabels(draft, [
+        id,
+        server?.label ?? '',
+      ]));
+    }
+
+    function removeStagedConnector(id: string) {
+      const connector = stagedConnectors.find((item) => item.id === id) ?? null;
+      setStagedConnectors((prev) => prev.filter((item) => item.id !== id));
+      replaceEditorDraft(stripInlineMentionLabels(draft, [
+        id,
+        connector?.name ?? '',
+      ]));
     }
 
     async function ensureProject(): Promise<string | null> {
@@ -1243,9 +1262,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       setStagedVisualComments((current) => current.filter((attachment) => attachment.screenshotPath !== p));
       // Strip the `@<path>` token from the draft and push the result back into
       // the editor so the pill disappears in lockstep with the chip.
-      const stripped = stripInlineMentionToken(draft, p);
-      setDraft(stripped);
-      editorRef.current?.setText(stripped);
+      replaceEditorDraft(stripInlineMentionToken(draft, p));
     }
 
     function removeCommentAttachment(id: string) {
@@ -1380,10 +1397,43 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
         onDrop={handleDrop}
       >
         <div className="composer-shell">
-          {stagedSkills.length > 0 ? (
-            <StagedSkills
+          {/*
+            Spec §8.4 — context bar above the composer input. The
+            section now behaves as a pure context bar: it renders the
+            active plugin's chips + inputs form when one is applied,
+            but never the always-on rail. Plugins are picked from the
+            tools-menu Plugins tab or the @-mention popover so the
+            composer chrome stays out of the way until the user wants
+            to attach context.
+          */}
+          {projectId ? (
+            <PluginsSection
+              ref={pluginsSectionRef}
+              projectId={projectId}
+              showRail={false}
+              onApplied={(brief) => {
+                // Use functional setState so stale closures from the @-mention
+                // flow (which awaits applyById after setDraft) still see the
+                // latest draft value before deciding whether to seed.
+                if (typeof brief === 'string' && brief.length > 0) {
+                  setDraft((cur) => (cur.trim().length === 0 ? brief : cur));
+                }
+              }}
+              onChipDetails={(item: ContextItem) => {
+                if (item.kind !== 'plugin') return;
+                const record = installedPlugins.find((p) => p.id === item.id);
+                if (record) setDetailsRecord(record);
+              }}
+            />
+          ) : null}
+          {stagedSkills.length > 0 || stagedMcpServers.length > 0 || stagedConnectors.length > 0 ? (
+            <StagedRunContexts
               skills={stagedSkills}
-              onRemove={removeStagedSkill}
+              mcpServers={stagedMcpServers}
+              connectors={stagedConnectors}
+              onRemoveSkill={removeStagedSkill}
+              onRemoveMcp={removeStagedMcpServer}
+              onRemoveConnector={removeStagedConnector}
               t={t}
             />
           ) : null}
@@ -1468,35 +1518,6 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                 )}
               </select>
             </div>
-          ) : null}
-          {/*
-            Spec §8.4 — context bar above the composer input. The
-            section now behaves as a pure context bar: it renders the
-            active plugin's chips + inputs form when one is applied,
-            but never the always-on rail. Plugins are picked from the
-            tools-menu Plugins tab or the @-mention popover so the
-            composer chrome stays out of the way until the user wants
-            to attach context.
-          */}
-          {projectId ? (
-            <PluginsSection
-              ref={pluginsSectionRef}
-              projectId={projectId}
-              showRail={false}
-              onApplied={(brief) => {
-                // Use functional setState so stale closures from the @-mention
-                // flow (which awaits applyById after setDraft) still see the
-                // latest draft value before deciding whether to seed.
-                if (typeof brief === 'string' && brief.length > 0) {
-                  setDraft((cur) => (cur.trim().length === 0 ? brief : cur));
-                }
-              }}
-              onChipDetails={(item: ContextItem) => {
-                if (item.kind !== 'plugin') return;
-                const record = installedPlugins.find((p) => p.id === item.id);
-                if (record) setDetailsRecord(record);
-              }}
-            />
           ) : null}
           <div className="composer-input-wrap">
             <LexicalComposerInput
@@ -2002,36 +2023,89 @@ function StagedAttachments({
   );
 }
 
-function StagedSkills({
+function StagedRunContexts({
   skills,
-  onRemove,
+  mcpServers,
+  connectors,
+  onRemoveSkill,
+  onRemoveMcp,
+  onRemoveConnector,
   t,
 }: {
   skills: SkillSummary[];
-  onRemove: (id: string) => void;
+  mcpServers: McpServerConfig[];
+  connectors: ConnectorDetail[];
+  onRemoveSkill: (id: string) => void;
+  onRemoveMcp: (id: string) => void;
+  onRemoveConnector: (id: string) => void;
   t: TranslateFn;
 }) {
   return (
     <div
-      className="staged-row staged-skills-row"
-      data-testid="staged-skills"
+      className="staged-row staged-context-row"
+      data-testid="staged-contexts"
     >
       {skills.map((s) => (
         <div
           key={s.id}
-          className={`staged-chip staged-skill staged-skill-${s.source ?? 'built-in'}`}
+          className={`staged-chip staged-context staged-context--skill staged-skill-${s.source ?? 'built-in'}`}
         >
           <span className="staged-icon" aria-hidden>
             <Icon name="sparkles" size={12} />
           </span>
           <span className="staged-name" title={s.description || s.name}>
-            @{s.id}
+            @{s.name}
           </span>
           <button
             className="staged-remove"
-            onClick={() => onRemove(s.id)}
+            onClick={() => onRemoveSkill(s.id)}
             title={t('common.delete')}
-            aria-label={`Remove skill ${s.id}`}
+            aria-label={t('chat.removeAria', { name: s.name })}
+          >
+            <Icon name="close" size={11} />
+          </button>
+        </div>
+      ))}
+      {mcpServers.map((server) => {
+        const label = server.label || server.id;
+        return (
+          <div
+            key={server.id}
+            className="staged-chip staged-context staged-context--mcp"
+          >
+            <span className="staged-icon" aria-hidden>
+              <Icon name="link" size={12} />
+            </span>
+            <span className="staged-name" title={server.command || server.url || server.id}>
+              @{label}
+            </span>
+            <button
+              className="staged-remove"
+              onClick={() => onRemoveMcp(server.id)}
+              title={t('common.delete')}
+              aria-label={t('chat.removeAria', { name: label })}
+            >
+              <Icon name="close" size={11} />
+            </button>
+          </div>
+        );
+      })}
+      {connectors.map((connector) => (
+        <div
+          key={connector.id}
+          className="staged-chip staged-context staged-context--connector"
+        >
+          <span className="staged-icon" aria-hidden>
+            <Icon name="link" size={12} />
+          </span>
+          <span className="staged-name" title={connector.accountLabel ?? connector.provider}>
+            @{connector.name}
+          </span>
+          <button
+            className="staged-remove"
+            onClick={() => onRemoveConnector(connector.id)}
+            title={t('common.delete')}
+            aria-label={t('chat.removeAria', { name: connector.name })}
           >
             <Icon name="close" size={11} />
           </button>
@@ -2653,65 +2727,66 @@ function MentionPopover({
           </div>
         ) : null}
         {showFiles && files.length > 0 ? (
-        <>
-          <div className="mention-section-label">{t('chat.mentionSectionFiles')}</div>
-          {files.map((f) => {
-            const key = f.path ?? f.name;
-            const flat = optionIndex;
-            optionIndex += 1;
-            const active = flat === activeIndex;
-            return (
-              <button
-                key={`file-${key}`}
-                id={`mention-opt-${flat}`}
-                role="option"
-                aria-selected={active}
-                className={`mention-item${active ? ' is-active' : ''}`}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => onPickFile(key)}
-              >
-                <Icon name="file" size={12} />
-                <code>{key}</code>
-                {f.size != null ? (
-                  <span className="mention-meta">{prettySize(f.size)}</span>
-                ) : null}
-              </button>
-            );
-          })}
-        </>
-      ) : null}
+          <>
+            <div className="mention-section-label">{t('chat.mentionSectionFiles')}</div>
+            {files.map((f) => {
+              const key = f.path ?? f.name;
+              const flat = optionIndex;
+              optionIndex += 1;
+              const active = flat === activeIndex;
+              return (
+                <button
+                  key={`file-${key}`}
+                  id={`mention-opt-${flat}`}
+                  role="option"
+                  aria-selected={active}
+                  className={`mention-item${active ? ' is-active' : ''}`}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onPickFile(key)}
+                >
+                  <Icon name="file" size={12} />
+                  <code>{key}</code>
+                  {f.size != null ? (
+                    <span className="mention-meta">{prettySize(f.size)}</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </>
+        ) : null}
         {showPlugins && plugins.length > 0 ? (
-        <>
-          <div className="mention-section-label">{t('chat.mentionSectionPlugins')}</div>
-          {plugins.map((p) => {
-            const flat = optionIndex;
-            optionIndex += 1;
-            const active = flat === activeIndex;
-            return (
-            <button
-              key={`plugin-${p.id}`}
-              id={`mention-opt-${flat}`}
-              role="option"
-              aria-selected={active}
-              className={`mention-item mention-item--plugin${active ? ' is-active' : ''}`}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onPickPlugin(p)}
-              title={p.manifest?.description ?? p.title}
-            >
-              <Icon name="sparkles" size={12} />
-              <span className="mention-item-body">
-                <strong>{p.title}</strong>
-                <span className="mention-meta mention-meta--desc">
-                  {p.manifest?.description ?? p.id}
-                </span>
-              </span>
-              <span className="mention-meta">{pluginSourceLabel(p, t)}</span>
-            </button>
-          );})}
-        </>
-      ) : null}
+          <>
+            <div className="mention-section-label">{t('chat.mentionSectionPlugins')}</div>
+            {plugins.map((p) => {
+              const flat = optionIndex;
+              optionIndex += 1;
+              const active = flat === activeIndex;
+              return (
+                <button
+                  key={`plugin-${p.id}`}
+                  id={`mention-opt-${flat}`}
+                  role="option"
+                  aria-selected={active}
+                  className={`mention-item mention-item--plugin${active ? ' is-active' : ''}`}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onPickPlugin(p)}
+                  title={p.manifest?.description ?? p.title}
+                >
+                  <Icon name="sparkles" size={12} />
+                  <span className="mention-item-body">
+                    <strong>{p.title}</strong>
+                    <span className="mention-meta mention-meta--desc">
+                      {p.manifest?.description ?? p.id}
+                    </span>
+                  </span>
+                  <span className="mention-meta">{pluginSourceLabel(p, t)}</span>
+                </button>
+              );
+            })}
+          </>
+        ) : null}
         {showSkills && skills.length > 0 ? (
           <>
             <div className="mention-section-label">{t('chat.mentionSectionSkills')}</div>
@@ -2753,27 +2828,28 @@ function MentionPopover({
               optionIndex += 1;
               const active = flat === activeIndex;
               return (
-              <button
-                key={`mcp-${server.id}`}
-                id={`mention-opt-${flat}`}
-                role="option"
-                aria-selected={active}
-                className={`mention-item${active ? ' is-active' : ''}`}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => onPickMcp(server)}
-                title={t('chat.mentionUseMcpTitle', { name: server.label || server.id })}
-              >
-                <Icon name="link" size={12} />
-                <span className="mention-item-body">
-                  <strong>{server.label || server.id}</strong>
-                  <span className="mention-meta mention-meta--desc">
-                    {server.url || server.command || server.id}
+                <button
+                  key={`mcp-${server.id}`}
+                  id={`mention-opt-${flat}`}
+                  role="option"
+                  aria-selected={active}
+                  className={`mention-item${active ? ' is-active' : ''}`}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onPickMcp(server)}
+                  title={t('chat.mentionUseMcpTitle', { name: server.label || server.id })}
+                >
+                  <Icon name="link" size={12} />
+                  <span className="mention-item-body">
+                    <strong>{server.label || server.id}</strong>
+                    <span className="mention-meta mention-meta--desc">
+                      {server.url || server.command || server.id}
+                    </span>
                   </span>
-                </span>
-                <span className="mention-meta">{server.transport}</span>
-              </button>
-            );})}
+                  <span className="mention-meta">{server.transport}</span>
+                </button>
+              );
+            })}
           </>
         ) : null}
         {showConnectors && connectors.length > 0 ? (
@@ -2784,27 +2860,28 @@ function MentionPopover({
               optionIndex += 1;
               const active = flat === activeIndex;
               return (
-              <button
-                key={`connector-${connector.id}`}
-                id={`mention-opt-${flat}`}
-                role="option"
-                aria-selected={active}
-                className={`mention-item${active ? ' is-active' : ''}`}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => onPickConnector(connector)}
-                title={t('chat.mentionUseConnectorTitle', { name: connector.name })}
-              >
-                <Icon name="link" size={12} />
-                <span className="mention-item-body">
-                  <strong>{connector.name}</strong>
-                  <span className="mention-meta mention-meta--desc">
-                    {connector.description || connector.provider || connector.id}
+                <button
+                  key={`connector-${connector.id}`}
+                  id={`mention-opt-${flat}`}
+                  role="option"
+                  aria-selected={active}
+                  className={`mention-item${active ? ' is-active' : ''}`}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onPickConnector(connector)}
+                  title={t('chat.mentionUseConnectorTitle', { name: connector.name })}
+                >
+                  <Icon name="link" size={12} />
+                  <span className="mention-item-body">
+                    <strong>{connector.name}</strong>
+                    <span className="mention-meta mention-meta--desc">
+                      {connector.description || connector.provider || connector.id}
+                    </span>
                   </span>
-                </span>
-                <span className="mention-meta">{connector.accountLabel ?? connector.provider}</span>
-              </button>
-            );})}
+                  <span className="mention-meta">{connector.accountLabel ?? connector.provider}</span>
+                </button>
+              );
+            })}
           </>
         ) : null}
       </div>
@@ -2821,6 +2898,14 @@ function stripInlineMentionToken(text: string, label: string): string {
   return text.replace(
     new RegExp(`(^|[\\s([{"'])${escapeRegExp(token)}(?=$|\\s|[.,;:!?)}\\]"'])([^\\S\\r\\n])?`, 'g'),
     '$1',
+  );
+}
+
+function stripInlineMentionLabels(text: string, labels: string[]): string {
+  const uniqueLabels = Array.from(new Set(labels.map((label) => label.trim()).filter(Boolean)));
+  return uniqueLabels.reduce(
+    (current, label) => stripInlineMentionToken(current, label),
+    text,
   );
 }
 

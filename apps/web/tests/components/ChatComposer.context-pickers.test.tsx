@@ -309,6 +309,11 @@ describe('ChatComposer context pickers', () => {
       .querySelector('.composer-inline-mention');
     expect(pill?.textContent).toBe('@Slack MCP');
     expect(pill?.getAttribute('data-mention-kind')).toBe('mcp');
+    expect(screen.getByTestId('staged-contexts').textContent).toContain('@Slack MCP');
+
+    fireEvent.click(screen.getByLabelText('Remove Slack MCP'));
+    await waitFor(() => expect(composerText().trim()).toBe(''));
+    expect(screen.queryByTestId('staged-contexts')).toBeNull();
   });
 
   it('applies a skill from @ search and reports the active project skill', async () => {
@@ -328,6 +333,11 @@ describe('ChatComposer context pickers', () => {
       .querySelector('.composer-inline-mention');
     expect(pill?.textContent).toBe('@Deck Builder');
     expect(pill?.getAttribute('data-mention-kind')).toBe('skill');
+    expect(screen.getByTestId('staged-contexts').textContent).toContain('@Deck Builder');
+
+    fireEvent.click(screen.getByLabelText('Remove Deck Builder'));
+    await waitFor(() => expect(composerText().trim()).toBe(''));
+    expect(screen.queryByTestId('staged-contexts')).toBeNull();
   });
 
   it('shows all matching skills and ranks exact prefix matches first', async () => {

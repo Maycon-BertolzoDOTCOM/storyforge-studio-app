@@ -448,7 +448,7 @@ export const fr: Dict = {
   'homeHero.contextSurfaces': 'Surfaces de contexte',
   'homeHero.loadingContext': 'Chargement du contexte…',
   'homeHero.noResults': 'Aucun résultat pour « {query} ».',
-  'homeHero.searchPrompt': 'Rechercher des plugins, compétences, serveurs MCP et connecteurs.',
+  'homeHero.searchPrompt': 'Rechercher des fichiers, plugins, compétences, serveurs MCP et connecteurs.',
   'homeHero.parameters': '{n} paramètres',
   'homeHero.details': 'Détails',
   'homeHero.toRun': 'pour lancer',

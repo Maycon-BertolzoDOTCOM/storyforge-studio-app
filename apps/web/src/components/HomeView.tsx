@@ -1022,6 +1022,18 @@ export function HomeView({
     focusPromptAtEnd();
   }
 
+  function removeMcpContext(serverId: string) {
+    const server = selectedMcpContexts.find((item) => item.server.id === serverId)?.server ?? null;
+    setSelectedMcpContexts((current) => current.filter((item) => item.server.id !== serverId));
+    if (server) {
+      setPrompt((current) => removeContextMentionsFromPrompt(current, [
+        server.label || server.id,
+        server.id,
+      ]));
+      setPromptEditedByUser(true);
+    }
+  }
+
   function useConnector(connector: ConnectorDetail, nextPrompt: string) {
     setSelectedConnectorContexts((current) => (
       current.some((item) => item.connector.id === connector.id)
@@ -1032,6 +1044,18 @@ export function HomeView({
     setPromptEditedByUser(false);
     setError(null);
     focusPromptAtEnd();
+  }
+
+  function removeConnectorContext(connectorId: string) {
+    const connector = selectedConnectorContexts.find((item) => item.connector.id === connectorId)?.connector ?? null;
+    setSelectedConnectorContexts((current) => current.filter((item) => item.connector.id !== connectorId));
+    if (connector) {
+      setPrompt((current) => removeContextMentionsFromPrompt(current, [
+        connector.name,
+        connector.id,
+      ]));
+      setPromptEditedByUser(true);
+    }
   }
 
   function queuePluginAuthoring(chipId: string | null, goal?: string) {
@@ -1300,7 +1324,11 @@ export function HomeView({
         onClearActiveChip={clearActiveChipSelection}
         onClearActiveSkill={() => setActiveSkill(null)}
         selectedPluginContexts={selectedPluginContexts.map((item) => item.record)}
+        selectedMcpContexts={selectedMcpContexts.map((item) => item.server)}
+        selectedConnectorContexts={selectedConnectorContexts.map((item) => item.connector)}
         onRemovePluginContext={removePluginContext}
+        onRemoveMcpContext={removeMcpContext}
+        onRemoveConnectorContext={removeConnectorContext}
         onOpenPluginDetails={setDetailsRecord}
         pluginInputFields={active?.inputFields ?? []}
         pluginInputValues={active?.inputs ?? {}}
@@ -1908,6 +1936,17 @@ function removePluginMentionFromPrompt(prompt: string, record: InstalledPluginRe
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/\n[ \t]+/g, '\n')
     .trim();
+}
+
+function removeContextMentionsFromPrompt(prompt: string, labels: string[]): string {
+  const uniqueLabels = Array.from(new Set(labels.filter(Boolean)));
+  return uniqueLabels.reduce((current, label) => {
+    const token = inlineMentionToken(label);
+    return current.replace(
+      new RegExp(`(^|[\\s([{"'])${escapeRegExp(token)}(?=$|\\s|[.,;:!?)}\\]"'])([^\\S\\r\\n])?`, 'g'),
+      '$1',
+    );
+  }, prompt);
 }
 
 function appendPromptQuery(current: string, query: string): string {

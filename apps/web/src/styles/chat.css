@@ -555,7 +555,10 @@
 /* Single-paragraph + LineBreakNode model: collapse paragraph margins so a
    serialized "\n" reads as a single visual line break (no \n\n gap). */
 .composer-input-editor p,
-.composer-editor-paragraph { margin: 0; }
+.composer-editor-paragraph {
+  margin: 0;
+  line-height: inherit;
+}
 
 /* -------- Mention pill — real Lexical atomic node ------------------- */
 /* Each @mention is a <span class="composer-inline-mention
@@ -578,11 +581,11 @@
   font: inherit;
   font-size: 0.94em;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  vertical-align: baseline;
+  vertical-align: middle;
   cursor: default;
   /* user-select:none keeps the node atomic — the caret lands beside it,
      never inside the "@token" glyphs. */
@@ -1081,6 +1084,33 @@
   transition: border-color 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .staged-chip:hover { border-color: var(--border-strong); }
+.staged-context-row {
+  padding-top: 2px;
+}
+.staged-context {
+  background: color-mix(in srgb, var(--accent-tint) 44%, var(--bg-panel));
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+.staged-context .staged-icon {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-subtle));
+  color: var(--accent);
+}
+.staged-context--mcp {
+  background: color-mix(in srgb, var(--purple-bg) 52%, var(--bg-panel));
+  border-color: color-mix(in srgb, var(--purple) 26%, var(--border));
+}
+.staged-context--mcp .staged-icon {
+  background: color-mix(in srgb, var(--purple) 10%, var(--bg-subtle));
+  color: var(--purple);
+}
+.staged-context--connector {
+  background: color-mix(in srgb, var(--green-bg) 52%, var(--bg-panel));
+  border-color: color-mix(in srgb, var(--green) 24%, var(--border));
+}
+.staged-context--connector .staged-icon {
+  background: color-mix(in srgb, var(--green) 10%, var(--bg-subtle));
+  color: var(--green);
+}
 .staged-chip img {
   width: 28px;
   height: 28px;

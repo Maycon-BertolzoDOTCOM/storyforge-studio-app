@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type {
   InputFieldSpec,
@@ -163,11 +164,65 @@ describe('HomeHero plugin picker', () => {
     );
 
     expect(screen.getByTestId('home-hero-plugin-picker')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: /design files/i })).toBeTruthy();
     expect(screen.getByRole('tab', { name: /plugins/i })).toBeTruthy();
     expect(screen.getByRole('tab', { name: /skills/i })).toBeTruthy();
     expect(screen.getByRole('tab', { name: /mcp/i })).toBeTruthy();
     expect(screen.getByRole('tab', { name: /connectors/i })).toBeTruthy();
-    expect(screen.getByText('Search plugins, skills, MCP servers, and connectors.')).toBeTruthy();
+    expect(screen.getByText('Search files, plugins, skills, MCP servers, and connectors.')).toBeTruthy();
+  });
+
+  it('can mention staged files from the home @ picker and keeps removal in sync', () => {
+    const onPromptChange = vi.fn();
+    const onRemoveFile = vi.fn();
+    const stagedFile = new File(['<html></html>'], 'brief.html', { type: 'text/html' });
+    const baseProps = {
+      onPromptChange,
+      onSubmit: () => undefined,
+      activePluginTitle: null,
+      activeChipId: null,
+      onClearActivePlugin: () => undefined,
+      stagedFiles: [stagedFile],
+      onRemoveFile,
+      pluginOptions: [],
+      pluginsLoading: false,
+      skillOptions: [],
+      skillsLoading: false,
+      mcpOptions: [],
+      mcpLoading: false,
+      pendingPluginId: null,
+      pendingChipId: null,
+      onPickPlugin: () => undefined,
+      onPickChip: () => undefined,
+      contextItemCount: 1,
+      error: null,
+    } satisfies Omit<ComponentProps<typeof HomeHero>, 'prompt'>;
+
+    const { rerender } = render(
+      <HomeHero
+        {...baseProps}
+        prompt="Use @br"
+      />,
+    );
+
+    fireEvent.mouseDown(screen.getByRole('option', { name: /brief\.html/i }));
+    expect(onPromptChange).toHaveBeenCalledWith('Use @brief.html');
+
+    rerender(
+      <HomeHero
+        {...baseProps}
+        prompt="Use @brief.html"
+      />,
+    );
+
+    const mention = screen
+      .getByTestId('home-hero-prompt-highlight')
+      .querySelector('[data-mention-kind="file"]');
+    expect(mention?.textContent).toBe('@brief.html');
+
+    fireEvent.click(screen.getByLabelText('Remove brief.html'));
+    expect(onPromptChange).toHaveBeenLastCalledWith('Use ');
+    expect(onRemoveFile).toHaveBeenCalledWith(0);
   });
 
   it('can pick skills and MCP servers from the home @ picker', () => {

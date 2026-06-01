@@ -78,7 +78,11 @@ interface Props {
   activeSkillTitle?: string | null;
   onClearActiveSkill?: () => void;
   selectedPluginContexts?: InstalledPluginRecord[];
+  selectedMcpContexts?: McpServerConfig[];
+  selectedConnectorContexts?: ConnectorDetail[];
   onRemovePluginContext?: (pluginId: string) => void;
+  onRemoveMcpContext?: (serverId: string) => void;
+  onRemoveConnectorContext?: (connectorId: string) => void;
   onOpenPluginDetails?: (record: InstalledPluginRecord) => void;
   pluginInputFields?: InputFieldSpec[];
   pluginInputValues?: Record<string, unknown>;
@@ -125,7 +129,7 @@ interface HomeHeroDesignSystemOption {
   logoUrl?: string;
 }
 
-type HomeMentionTab = 'all' | 'plugins' | 'skills' | 'mcp' | 'connectors';
+type HomeMentionTab = 'all' | 'files' | 'plugins' | 'skills' | 'mcp' | 'connectors';
 
 interface HomeMentionOption {
   id: string;
@@ -165,7 +169,11 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
     onClearActiveChip = onClearActivePlugin,
     onClearActiveSkill = () => undefined,
     selectedPluginContexts = [],
+    selectedMcpContexts = [],
+    selectedConnectorContexts = [],
     onRemovePluginContext = () => undefined,
+    onRemoveMcpContext = () => undefined,
+    onRemoveConnectorContext = () => undefined,
     onOpenPluginDetails = () => undefined,
     pluginInputFields = [],
     pluginInputValues = {},
@@ -222,6 +230,16 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
   const mention = getContextMention(prompt);
   const mentionActive = Boolean(mention);
   const mentionQuery = mention?.query ?? '';
+  const fileMatches = useMemo(
+    () =>
+      mentionActive
+        ? stagedFiles
+            .map((file, index) => ({ file, index }))
+            .filter(({ file }) => fileMatchesQuery(file, mentionQuery))
+            .slice(0, 6)
+        : [],
+    [mentionActive, mentionQuery, stagedFiles],
+  );
   const pluginMatches = useMemo(
     () =>
       mentionActive
@@ -252,17 +270,33 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
   );
   const pickerOpen = mentionActive;
   const tabs: Array<{ id: HomeMentionTab; label: string; count: number }> = [
-    { id: 'all', label: t('common.all'), count: pluginMatches.length + skillMatches.length + mcpMatches.length + connectorMatches.length },
+    { id: 'all', label: t('common.all'), count: fileMatches.length + pluginMatches.length + skillMatches.length + mcpMatches.length + connectorMatches.length },
+    { id: 'files', label: t('chat.mentionTabFiles'), count: fileMatches.length },
     { id: 'plugins', label: t('entry.navPlugins'), count: pluginMatches.length },
     { id: 'skills', label: t('homeHero.skills'), count: skillMatches.length },
     { id: 'mcp', label: 'MCP', count: mcpMatches.length },
     { id: 'connectors', label: 'Connectors', count: connectorMatches.length },
   ];
+  const showFiles = mentionTab === 'all' || mentionTab === 'files';
   const showPlugins = mentionTab === 'all' || mentionTab === 'plugins';
   const showSkills = mentionTab === 'all' || mentionTab === 'skills';
   const showMcp = mentionTab === 'all' || mentionTab === 'mcp';
   const showConnectors = mentionTab === 'all' || mentionTab === 'connectors';
   const visibleSections: HomeMentionSection[] = [
+    showFiles
+      ? {
+          id: 'files',
+          label: t('chat.mentionSectionFiles'),
+          options: fileMatches.map(({ file, index }) => ({
+            id: `file-${index}-${file.name}`,
+            icon: isImageFile(file) ? 'image' : 'file',
+            title: file.name,
+            description: file.type || t('chat.mentionTabFiles'),
+            meta: formatFileSize(file.size),
+            onPick: () => pickFile(file),
+          })),
+        }
+      : null,
     showPlugins
       ? {
           id: 'plugins',
@@ -338,6 +372,7 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
         pluginOptions,
         connectorOptions,
         selectedPluginContexts,
+        stagedFiles,
         skillOptions,
       }),
     [
@@ -348,6 +383,7 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
       pluginOptions,
       connectorOptions,
       selectedPluginContexts,
+      stagedFiles,
       skillOptions,
     ],
   );
@@ -506,6 +542,15 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
     onPickPlugin(record, nextPrompt);
   }
 
+  function pickFile(file: File) {
+    const nextPrompt = mention
+      ? replaceMentionTokenWithText(prompt, mention, inlineMentionToken(file.name))
+      : prompt;
+    onPromptChange(nextPrompt);
+    setSelectedIndex(0);
+    focusInputAtEnd();
+  }
+
   function pickSkill(skill: SkillSummary) {
     const nextPrompt = mention
       ? replaceMentionTokenWithText(prompt, mention, inlineMentionToken(skill.name))
@@ -542,6 +587,22 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
   function handleFiles(files: File[]) {
     if (files.length === 0) return;
     onAddFiles(files);
+  }
+
+  function removeFileChip(index: number, file: File) {
+    const nextPrompt = stripHomeMentionToken(prompt, file.name);
+    if (nextPrompt !== prompt) onPromptChange(nextPrompt);
+    onRemoveFile(index);
+  }
+
+  function focusInputAtEnd() {
+    requestAnimationFrame(() => {
+      const input = inputElementRef.current;
+      if (!input) return;
+      input.focus();
+      const position = input.value.length;
+      input.setSelectionRange(position, position);
+    });
   }
 
   function clearSelectedPromptExample() {
@@ -635,7 +696,9 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
     (showActivePluginChip && activePluginTitle) ||
     activeSkillTitle ||
     selectedPromptExample ||
-    selectedPluginContexts.length > 0;
+    selectedPluginContexts.length > 0 ||
+    selectedMcpContexts.length > 0 ||
+    selectedConnectorContexts.length > 0;
 
   let optionRenderIndex = 0;
 
@@ -695,6 +758,47 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
                   onClick={() => onRemovePluginContext(plugin.id)}
                   aria-label={t('homeHero.removePluginAria', { title: plugin.title })}
                   title={t('homeHero.removePlugin')}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {selectedMcpContexts.map((server) => {
+              const label = server.label || server.id;
+              return (
+                <span
+                  key={server.id}
+                  className="home-hero__active-chip home-hero__active-chip--context"
+                  data-testid={`home-hero-context-mcp-${server.id}`}
+                >
+                  <span className="home-hero__active-dot" aria-hidden />
+                  <span>{label}</span>
+                  <button
+                    type="button"
+                    className="home-hero__active-clear"
+                    onClick={() => onRemoveMcpContext(server.id)}
+                    aria-label={t('chat.removeAria', { name: label })}
+                    title={t('common.delete')}
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
+            {selectedConnectorContexts.map((connector) => (
+              <span
+                key={connector.id}
+                className="home-hero__active-chip home-hero__active-chip--context"
+                data-testid={`home-hero-context-connector-${connector.id}`}
+              >
+                <span className="home-hero__active-dot" aria-hidden />
+                <span>{connector.name}</span>
+                <button
+                  type="button"
+                  className="home-hero__active-clear"
+                  onClick={() => onRemoveConnectorContext(connector.id)}
+                  aria-label={t('chat.removeAria', { name: connector.name })}
+                  title={t('common.delete')}
                 >
                   ×
                 </button>
@@ -935,7 +1039,7 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
                 <button
                   type="button"
                   className="home-hero__attachment-remove"
-                  onClick={() => onRemoveFile(index)}
+                  onClick={() => removeFileChip(index, file)}
                   aria-label={t('chat.removeAria', { name: file.name })}
                   title={t('homeHero.removeFile')}
                 >
@@ -1517,6 +1621,7 @@ function buildHomeMentionEntities({
   mcpOptions,
   pluginOptions,
   selectedPluginContexts,
+  stagedFiles,
   skillOptions,
 }: {
   activePluginRecord: InstalledPluginRecord | null;
@@ -1526,9 +1631,22 @@ function buildHomeMentionEntities({
   mcpOptions: McpServerConfig[];
   pluginOptions: InstalledPluginRecord[];
   selectedPluginContexts: InstalledPluginRecord[];
+  stagedFiles: File[];
   skillOptions: SkillSummary[];
 }): InlineMentionEntity[] {
   const entities: InlineMentionEntity[] = [];
+  const fileSeen = new Set<string>();
+  for (const file of stagedFiles) {
+    if (fileSeen.has(file.name)) continue;
+    fileSeen.add(file.name);
+    entities.push({
+      id: file.name,
+      kind: 'file',
+      label: file.name,
+      token: inlineMentionToken(file.name),
+      title: `File: ${file.name}`,
+    });
+  }
   const pluginSeen = new Set<string>();
   for (const plugin of [...selectedPluginContexts, ...pluginOptions]) {
     if (pluginSeen.has(plugin.id)) continue;
@@ -2353,6 +2471,23 @@ function replaceMentionTokenWithText(
   return [before, replacement.trim(), after].filter(Boolean).join(' ').trim();
 }
 
+function stripHomeMentionToken(value: string, label: string): string {
+  const token = inlineMentionToken(label);
+  return value.replace(
+    new RegExp(`(^|[\\s([{"'])${escapeRegExp(token)}(?=$|\\s|[.,;:!?)}\\]"'])([^\\S\\r\\n])?`, 'g'),
+    '$1',
+  );
+}
+
+function fileMatchesQuery(file: File, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [file.name, file.type || '']
+    .join(' ')
+    .toLowerCase()
+    .includes(q);
+}
+
 function pluginMatchesQuery(plugin: InstalledPluginRecord, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -2413,6 +2548,10 @@ function connectorMatchesQuery(connector: ConnectorDetail, query: string): boole
     .join(' ')
     .toLowerCase()
     .includes(q);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function getPluginSourceLabel(plugin: InstalledPluginRecord): string {
