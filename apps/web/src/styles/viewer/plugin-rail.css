@@ -553,3 +553,107 @@ select.plugin-inputs-form__input {
 .plugin-inputs-form__field[data-filled='true'] .plugin-inputs-form__label {
   color: var(--text);
 }
+
+/* Chat composer mount: the active plugin block behaves like a compact
+   tool configuration surface, not a full settings card. */
+.composer-shell .plugins-section {
+  gap: 0;
+  margin-top: -1px;
+}
+.composer-shell .plugins-section__active {
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 10%, var(--border-soft));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-subtle) 64%, var(--bg-panel));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-panel) 82%, transparent);
+}
+.composer-shell .context-chip-strip {
+  gap: 6px;
+}
+.composer-shell .context-chip-strip__chip {
+  min-height: 30px;
+  max-width: 100%;
+  gap: 0;
+  padding: 0 4px 0 0;
+  background: color-mix(in srgb, var(--bg-panel) 80%, var(--c-tint));
+  border-color: color-mix(in srgb, var(--c-hue) 18%, var(--border-soft));
+  box-shadow: var(--shadow-xs);
+}
+.composer-shell .context-chip-strip__body {
+  gap: 5px;
+  min-width: 0;
+  padding: 4px 7px 4px 8px;
+}
+.composer-shell .context-chip-strip__icon {
+  min-width: 24px;
+  height: 18px;
+  padding: 0 5px;
+  justify-content: center;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--c-hue) 10%, var(--bg-panel));
+}
+.composer-shell .context-chip-strip__icon::before {
+  width: 4px;
+  height: 4px;
+  margin-right: 4px;
+}
+.composer-shell .context-chip-strip__kind {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+.composer-shell .context-chip-strip__label {
+  max-width: 142px;
+}
+.composer-shell .context-chip-strip__remove {
+  width: 20px;
+  height: 20px;
+  opacity: 0.72;
+}
+.composer-shell .plugin-inputs-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(154px, 1fr));
+  gap: 8px;
+  margin-top: 0;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.composer-shell .plugin-inputs-form__field {
+  min-width: 0;
+  gap: 5px;
+}
+.composer-shell .plugin-inputs-form__field[data-field-type='text'],
+.composer-shell .plugin-inputs-form__field[data-field-type='file'] {
+  grid-column: 1 / -1;
+}
+.composer-shell .plugin-inputs-form__label {
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.07em;
+  color: var(--text-soft);
+}
+.composer-shell .plugin-inputs-form__input {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-color: color-mix(in srgb, var(--border) 82%, var(--border-strong));
+  border-radius: 7px;
+  background-color: color-mix(in srgb, var(--bg-panel) 96%, var(--bg-subtle));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-panel) 88%, transparent);
+}
+.composer-shell .plugin-inputs-form__input:hover:not(:focus) {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border-strong));
+}
+.composer-shell .plugin-inputs-form__input:focus {
+  border-color: var(--selected);
+  background-color: var(--bg-panel);
+  box-shadow: 0 0 0 3px var(--selected-soft);
+}
+.composer-shell .plugin-inputs-form__input--textarea {
+  min-height: 70px;
+}
+.composer-shell .plugin-inputs-form__field[data-field-type='boolean'] .plugin-inputs-form__input {
+  width: 16px;
+  min-height: 16px;
+  height: 16px;
+}

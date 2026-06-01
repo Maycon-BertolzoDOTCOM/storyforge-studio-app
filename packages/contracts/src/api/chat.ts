@@ -9,6 +9,7 @@ import type {
 import type { ResearchOptions } from './research';
 import type { RunContextSelection } from './context.js';
 import type { MediaExecutionPolicy } from './media.js';
+import type { AppliedPluginSnapshot } from '../plugins/apply.js';
 
 export type ChatRole = 'user' | 'assistant';
 export type ChatSessionMode = 'design' | 'chat';
@@ -41,6 +42,7 @@ export interface ChatRequest {
   locale?: string;
   research?: ResearchOptions;
   context?: RunContextSelection;
+  appliedPluginSnapshotId?: string | null;
   /**
    * Run-scoped media execution policy. Omitted means current Open Design
    * behavior: media generation is enabled and OD may execute its configured
@@ -310,6 +312,8 @@ export interface ChatMessage {
   lastRunEventId?: string;
   startedAt?: number;
   endedAt?: number;
+  sessionMode?: ChatSessionMode;
+  appliedPluginSnapshot?: AppliedPluginSnapshot;
   attachments?: ChatAttachment[];
   commentAttachments?: ChatCommentAttachment[];
   producedFiles?: ProjectFile[];

@@ -2377,6 +2377,10 @@ export function ProjectView({
         role: 'user',
         content: prompt,
         createdAt: startedAt,
+        sessionMode: runSessionMode,
+        ...(meta?.appliedPluginSnapshot
+          ? { appliedPluginSnapshot: meta.appliedPluginSnapshot }
+          : {}),
         attachments: attachments.length > 0 ? attachments : undefined,
         commentAttachments: commentAttachments.length > 0 ? commentAttachments : undefined,
       };
@@ -2843,6 +2847,8 @@ export function ProjectView({
           attachments: runAttachments.map((a) => a.path),
           commentAttachments: runCommentAttachments,
           sessionMode: runSessionMode,
+          appliedPluginSnapshotId:
+            meta?.appliedPluginSnapshotId ?? meta?.appliedPluginSnapshot?.snapshotId ?? null,
           research: meta?.research,
           mediaExecution: mediaExecutionPolicyForProjectMetadata(project.metadata),
           model: choice?.model ?? null,

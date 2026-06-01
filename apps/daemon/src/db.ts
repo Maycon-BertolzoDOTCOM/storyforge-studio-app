@@ -98,6 +98,8 @@ function migrate(db: SqliteDb): void {
       produced_files_json TEXT,
       feedback_json TEXT,
       pre_turn_file_names_json TEXT,
+      session_mode TEXT,
+      applied_plugin_snapshot_json TEXT,
       started_at INTEGER,
       ended_at INTEGER,
       position INTEGER NOT NULL,
@@ -254,6 +256,12 @@ function migrate(db: SqliteDb): void {
   }
   if (!messageCols.some((c: DbRow) => c.name === 'pre_turn_file_names_json')) {
     db.exec(`ALTER TABLE messages ADD COLUMN pre_turn_file_names_json TEXT`);
+  }
+  if (!messageCols.some((c: DbRow) => c.name === 'session_mode')) {
+    db.exec(`ALTER TABLE messages ADD COLUMN session_mode TEXT`);
+  }
+  if (!messageCols.some((c: DbRow) => c.name === 'applied_plugin_snapshot_json')) {
+    db.exec(`ALTER TABLE messages ADD COLUMN applied_plugin_snapshot_json TEXT`);
   }
   const routineRunCols = db.prepare(`PRAGMA table_info(routine_runs)`).all() as DbRow[];
   if (!routineRunCols.some((c: DbRow) => c.name === 'error_code')) {
@@ -924,6 +932,8 @@ export function listMessages(db: SqliteDb, conversationId: string) {
               produced_files_json AS producedFilesJson,
               feedback_json AS feedbackJson,
               pre_turn_file_names_json AS preTurnFileNamesJson,
+              session_mode AS sessionMode,
+              applied_plugin_snapshot_json AS appliedPluginSnapshotJson,
               created_at AS createdAt, started_at AS startedAt, ended_at AS endedAt,
               position
          FROM messages
@@ -947,6 +957,7 @@ export function upsertMessage(db: SqliteDb, conversationId: string, m: DbRow) {
               events_json = ?, attachments_json = ?, comment_attachments_json = ?,
               produced_files_json = ?, feedback_json = ?,
               pre_turn_file_names_json = ?,
+              session_mode = ?, applied_plugin_snapshot_json = ?,
               started_at = ?, ended_at = ?
         WHERE id = ?`,
     ).run(
@@ -963,6 +974,8 @@ export function upsertMessage(db: SqliteDb, conversationId: string, m: DbRow) {
       m.producedFiles ? JSON.stringify(m.producedFiles) : null,
       m.feedback ? JSON.stringify(m.feedback) : null,
       m.preTurnFileNames ? JSON.stringify(m.preTurnFileNames) : null,
+      normalizeMessageSessionModeForStorage(m.sessionMode),
+      m.appliedPluginSnapshot ? JSON.stringify(m.appliedPluginSnapshot) : null,
       m.startedAt ?? null,
       m.endedAt ?? null,
       m.id,
@@ -974,18 +987,20 @@ export function upsertMessage(db: SqliteDb, conversationId: string, m: DbRow) {
       )
       .get(conversationId) as DbRow | undefined;
     const position = (max?.m ?? -1) + 1;
-    // 19 values: id, conversation_id, role, content, agent_id, agent_name,
+    // 21 values: id, conversation_id, role, content, agent_id, agent_name,
     // run_id, run_status, last_run_event_id, events_json, attachments_json,
     // comment_attachments_json, produced_files_json, feedback_json,
-    // pre_turn_file_names_json, started_at, ended_at, position, created_at.
+    // pre_turn_file_names_json, session_mode, applied_plugin_snapshot_json,
+    // started_at, ended_at, position, created_at.
     db.prepare(
       `INSERT INTO messages
          (id, conversation_id, role, content, agent_id, agent_name,
           run_id, run_status, last_run_event_id, events_json,
           attachments_json, comment_attachments_json, produced_files_json,
           feedback_json, pre_turn_file_names_json,
+          session_mode, applied_plugin_snapshot_json,
           started_at, ended_at, position, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       m.id,
       conversationId,
@@ -1002,6 +1017,8 @@ export function upsertMessage(db: SqliteDb, conversationId: string, m: DbRow) {
       m.producedFiles ? JSON.stringify(m.producedFiles) : null,
       m.feedback ? JSON.stringify(m.feedback) : null,
       m.preTurnFileNames ? JSON.stringify(m.preTurnFileNames) : null,
+      normalizeMessageSessionModeForStorage(m.sessionMode),
+      m.appliedPluginSnapshot ? JSON.stringify(m.appliedPluginSnapshot) : null,
       m.startedAt ?? null,
       m.endedAt ?? null,
       position,
@@ -1024,6 +1041,8 @@ export function upsertMessage(db: SqliteDb, conversationId: string, m: DbRow) {
               produced_files_json AS producedFilesJson,
               feedback_json AS feedbackJson,
               pre_turn_file_names_json AS preTurnFileNamesJson,
+              session_mode AS sessionMode,
+              applied_plugin_snapshot_json AS appliedPluginSnapshotJson,
               created_at AS createdAt, started_at AS startedAt, ended_at AS endedAt,
               position
          FROM messages WHERE id = ?`,
@@ -1346,10 +1365,20 @@ function normalizeMessage(row: DbRow) {
     producedFiles: parseJsonOrUndef(row.producedFilesJson),
     feedback: parseJsonOrUndef(row.feedbackJson),
     preTurnFileNames: parseJsonOrUndef(row.preTurnFileNamesJson),
+    sessionMode: normalizeMessageSessionMode(row.sessionMode),
+    appliedPluginSnapshot: parseJsonOrUndef(row.appliedPluginSnapshotJson),
     createdAt: row.createdAt ?? undefined,
     startedAt: row.startedAt ?? undefined,
     endedAt: row.endedAt ?? undefined,
   };
+}
+
+function normalizeMessageSessionMode(value: unknown): ChatSessionMode | undefined {
+  return value === 'chat' || value === 'design' ? value : undefined;
+}
+
+function normalizeMessageSessionModeForStorage(value: unknown): ChatSessionMode | null {
+  return value === 'chat' || value === 'design' ? value : null;
 }
 
 function parseJsonOrUndef(s: unknown): any {

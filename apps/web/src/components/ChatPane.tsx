@@ -26,6 +26,7 @@ import {
   type ChatComposerHandle,
   type ChatSendMeta,
 } from './ChatComposer';
+import { ContextChipStrip } from './ContextChipStrip';
 import type { PluginFolderAgentAction } from './design-files/pluginFolderActions';
 import { Icon } from './Icon';
 import { repoConnectCopy } from './design-system-github-evidence';
@@ -1803,6 +1804,8 @@ function UserMessage({
 }) {
   const attachments = message.attachments ?? [];
   const commentAttachments = message.commentAttachments ?? [];
+  const messagePluginSnapshot = message.appliedPluginSnapshot ?? activePluginSnapshot ?? null;
+  const hasRunContext = Boolean(message.sessionMode || messagePluginSnapshot || activeDesignSystem);
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -1832,11 +1835,18 @@ function UserMessage({
         <span>{t('chat.you')}</span>
         <MessageTimestamp message={message} t={t} />
       </div>
-      {activePluginSnapshot ? (
-        <ActivePluginChip snapshot={activePluginSnapshot} t={t} />
-      ) : null}
-      {activeDesignSystem ? (
-        <ActiveDesignSystemChip system={activeDesignSystem} />
+      {hasRunContext ? (
+        <div className="msg-run-context-row" data-testid="msg-run-context-row">
+          {message.sessionMode ? (
+            <MessageSessionModeChip mode={message.sessionMode} t={t} />
+          ) : null}
+          {messagePluginSnapshot ? (
+            <ActivePluginChip snapshot={messagePluginSnapshot} t={t} />
+          ) : null}
+          {activeDesignSystem ? (
+            <ActiveDesignSystemChip system={activeDesignSystem} />
+          ) : null}
+        </div>
       ) : null}
       {attachments.length > 0 ? (
         <div className="user-attachments">
@@ -1925,17 +1935,47 @@ function ActivePluginChip({
   const title = snapshot.pluginTitle ?? snapshot.pluginId;
   const version = snapshot.pluginVersion;
   const taskKind = snapshot.taskKind;
+  const contextItems = (snapshot.resolvedContext?.items ?? []).filter(
+    (item) => !(item.kind === 'plugin' && item.id === snapshot.pluginId),
+  );
   return (
-    <div className="msg-plugin-chip" data-testid="msg-plugin-chip">
-      <span className="msg-plugin-chip__dot" aria-hidden />
-      <span className="msg-plugin-chip__label">
-        <span className="msg-plugin-chip__kind">Plugin</span>
-        <span className="msg-plugin-chip__title">{title}</span>
-        <span className="msg-plugin-chip__version">@{version}</span>
-      </span>
-      {taskKind ? (
-        <span className="msg-plugin-chip__task">{taskKind}</span>
+    <div className="msg-plugin-context" data-testid="msg-plugin-context">
+      <div className="msg-plugin-chip" data-testid="msg-plugin-chip">
+        <span className="msg-plugin-chip__dot" aria-hidden />
+        <span className="msg-plugin-chip__label">
+          <span className="msg-plugin-chip__kind">Plugin</span>
+          <span className="msg-plugin-chip__title">{title}</span>
+          <span className="msg-plugin-chip__version">@{version}</span>
+        </span>
+        {taskKind ? (
+          <span className="msg-plugin-chip__task">{taskKind}</span>
+        ) : null}
+      </div>
+      {contextItems.length > 0 ? (
+        <ContextChipStrip items={contextItems} />
       ) : null}
+    </div>
+  );
+}
+
+function MessageSessionModeChip({
+  mode,
+  t,
+}: {
+  mode: ChatSessionMode;
+  t: TranslateFn;
+}) {
+  const label = mode === 'chat'
+    ? t('chat.mode.chat.label')
+    : t('chat.mode.design.label');
+  return (
+    <div
+      className={`msg-mode-chip msg-mode-chip--${mode}`}
+      data-testid="msg-session-mode-chip"
+      title={label}
+    >
+      <Icon name={mode === 'chat' ? 'comment' : 'sparkles'} size={12} />
+      <span>{label}</span>
     </div>
   );
 }

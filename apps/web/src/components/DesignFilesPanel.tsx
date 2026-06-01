@@ -918,7 +918,11 @@ export function DesignFilesPanel({
             >
               <span className="df-row-name-wrap">
                 <span className="df-row-name">{displayNameForFile(f.name)}</span>
-                <span className="df-row-sub">{humanBytes(f.size)}</span>
+                <span className="df-row-sub">
+                  <span>{humanBytes(f.size)}</span>
+                  <span className="df-row-sub-kind">{kindLabel(f.kind, t)}</span>
+                  <span className="df-row-sub-time">{relativeTime(f.mtime, t)}</span>
+                </span>
               </span>
             </button>
           )}

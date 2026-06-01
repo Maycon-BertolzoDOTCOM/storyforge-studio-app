@@ -16,6 +16,8 @@ const composerMocks = vi.hoisted(() => ({
 }));
 
 const translations: Record<string, string> = {
+  'chat.mode.chat.label': 'Chat',
+  'chat.mode.design.label': 'Design Agent',
   'chat.queuedHeader': 'Queued',
   'chat.queuedToSend': 'to Send',
   'chat.queuedEditQueuedTaskAria': 'Edit queued task',
@@ -187,6 +189,68 @@ describe('ChatPane streaming state', () => {
     const bubble = screen.getByText('Generate a simple sign-in page');
     expect(bubble.classList.contains('user-bubble')).toBe(true);
     expect(bubble.closest('.msg.user')).not.toBeNull();
+  });
+
+  it('shows the sent mode and applied plugin context on user turns', () => {
+    const messages: ChatMessage[] = [
+      {
+        id: 'user-1',
+        role: 'user',
+        content: 'Generate the refinement glow-up deck',
+        createdAt: 1,
+        sessionMode: 'design',
+        appliedPluginSnapshot: {
+          snapshotId: 'snap-refinement',
+          pluginId: 'refinement-plugin',
+          pluginVersion: '1.0.0',
+          manifestSourceDigest: 'a'.repeat(64),
+          inputs: {},
+          resolvedContext: {
+            items: [
+              {
+                kind: 'asset',
+                path: 'template.json',
+                label: 'template.json',
+              },
+            ],
+          },
+          capabilitiesGranted: ['prompt:inject'],
+          capabilitiesRequired: ['prompt:inject'],
+          assetsStaged: [],
+          taskKind: 'new-generation',
+          appliedAt: 1,
+          connectorsRequired: [],
+          connectorsResolved: [],
+          mcpServers: [],
+          status: 'fresh',
+          pluginTitle: 'A Decade of Refinement Glow-Up',
+        },
+      },
+    ];
+
+    render(
+      <ChatPane
+        projectKindForTracking="prototype"
+        messages={messages}
+        streaming={false}
+        error={null}
+        projectId="project-1"
+        projectFiles={[]}
+        onEnsureProject={async () => 'project-1'}
+        onSend={vi.fn()}
+        onStop={vi.fn()}
+        conversations={conversations}
+        activeConversationId="conv-1"
+        onSelectConversation={vi.fn()}
+        onDeleteConversation={vi.fn()}
+        projectMetadata={projectMetadata}
+      />,
+    );
+
+    expect(screen.getByTestId('msg-session-mode-chip').textContent).toContain('Design Agent');
+    expect(screen.getByTestId('msg-plugin-chip').textContent)
+      .toContain('A Decade of Refinement Glow-Up');
+    expect(screen.getByText('template.json')).toBeTruthy();
   });
 
   it('hides internal path ids from comment attachment chips', () => {

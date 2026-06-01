@@ -31,6 +31,7 @@ import { listPlugins } from "../state/projects";
 import type { AppConfig, ChatAttachment, ChatCommentAttachment, ProjectFile, ProjectMetadata, SkillSummary } from "../types";
 import type {
   ContextItem,
+  AppliedPluginSnapshot,
   ChatSessionMode,
   ConnectorDetail,
   InstalledPluginRecord,
@@ -170,6 +171,8 @@ export interface ChatSendMeta {
   queueOnly?: boolean;
   research?: ResearchOptions;
   context?: RunContextSelection;
+  appliedPluginSnapshot?: AppliedPluginSnapshot;
+  appliedPluginSnapshotId?: string;
   // Per-turn skill ids picked via the @-mention popover. The chat layer
   // forwards these to the daemon's `skillIds` field so the system prompt
   // for this run only is composed with the extra skill bodies, without
@@ -279,6 +282,8 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     // Detail modal — opened from a context chip click (kind === 'plugin')
     // or from the tools-menu "Details" affordance.
     const [detailsRecord, setDetailsRecord] = useState<InstalledPluginRecord | null>(null);
+    const [activeAppliedPlugin, setActiveAppliedPlugin] =
+      useState<AppliedPluginSnapshot | null>(null);
     const pluginsSectionRef = useRef<PluginsSectionHandle | null>(null);
     // Consolidated "tools" popover — a single dropdown anchored to the
     // leading sliders icon that hosts project context, MCP, Import actions,
@@ -663,15 +668,23 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
 
     function currentRunContextMeta(): ChatSendMeta | undefined {
       const skillIds = stagedSkills.map((s) => s.id);
+      const pluginIds = activeAppliedPlugin ? [activeAppliedPlugin.pluginId] : [];
       const mcpServerIds = stagedMcpServers.map((s) => s.id);
       const connectorIds = stagedConnectors.map((c) => c.id);
       const context: RunContextSelection = {
         ...(skillIds.length > 0 ? { skillIds } : {}),
+        ...(pluginIds.length > 0 ? { pluginIds } : {}),
         ...(mcpServerIds.length > 0 ? { mcpServerIds } : {}),
         ...(connectorIds.length > 0 ? { connectorIds } : {}),
       };
       const meta: ChatSendMeta = {
         ...(skillIds.length > 0 ? { skillIds } : {}),
+        ...(activeAppliedPlugin
+          ? {
+              appliedPluginSnapshot: activeAppliedPlugin,
+              appliedPluginSnapshotId: activeAppliedPlugin.snapshotId,
+            }
+          : {}),
         ...(Object.keys(context).length > 0 ? { context } : {}),
       };
       return Object.keys(meta).length > 0 ? meta : undefined;
@@ -1411,7 +1424,8 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
               ref={pluginsSectionRef}
               projectId={projectId}
               showRail={false}
-              onApplied={(brief) => {
+              onApplied={(brief, applied) => {
+                setActiveAppliedPlugin(applied.appliedPlugin);
                 // Use functional setState so stale closures from the @-mention
                 // flow (which awaits applyById after setDraft) still see the
                 // latest draft value before deciding whether to seed.
@@ -1419,6 +1433,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                   setDraft((cur) => (cur.trim().length === 0 ? brief : cur));
                 }
               }}
+              onCleared={() => setActiveAppliedPlugin(null)}
               onChipDetails={(item: ContextItem) => {
                 if (item.kind !== 'plugin') return;
                 const record = installedPlugins.find((p) => p.id === item.id);
@@ -1663,7 +1678,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                     {toolsTab === 'plugins' ? (
                       <ToolsPluginsPanel
                         plugins={pluginsForComposer}
-                        activePluginId={pinnedPluginId}
+                        activePluginId={activeAppliedPlugin?.pluginId ?? pinnedPluginId}
                         onApply={async (record) => {
                           const result = await pluginsSectionRef.current?.applyById(
                             record.id,

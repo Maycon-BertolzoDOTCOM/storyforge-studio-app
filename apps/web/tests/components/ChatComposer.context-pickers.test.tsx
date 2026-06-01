@@ -396,6 +396,35 @@ describe('ChatComposer context pickers', () => {
     expect(pill?.getAttribute('data-mention-kind')).toBe('plugin');
   });
 
+  it('sends the applied plugin snapshot as per-turn context', async () => {
+    const onSend = vi.fn();
+    renderComposer({ onSend });
+    await flushMounts();
+
+    await typeAndSettle('@export');
+
+    await waitFor(() => expect(screen.getByText('My Export')).toBeTruthy());
+    fireEvent.click(screen.getByText('My Export'));
+
+    await waitFor(() => expect(composerText()).toBe('@My Export '));
+    await waitFor(() =>
+      expect(screen.getByTestId('context-chip-strip').textContent).toContain('My Export'),
+    );
+
+    fireEvent.click(screen.getByTestId('chat-send'));
+
+    await waitFor(() => expect(onSend).toHaveBeenCalledTimes(1));
+    const meta = onSend.mock.calls[0]?.[3];
+    expect(meta).toMatchObject({
+      appliedPluginSnapshotId: 'snap-1',
+      appliedPluginSnapshot: expect.objectContaining({
+        snapshotId: 'snap-1',
+        pluginId: USER_PLUGIN.id,
+      }),
+      context: { pluginIds: [USER_PLUGIN.id] },
+    });
+  });
+
   it('removes the inline design file token when its staged chip is removed', async () => {
     renderComposer({
       projectFiles: [
