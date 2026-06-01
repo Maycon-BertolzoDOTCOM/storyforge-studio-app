@@ -826,7 +826,15 @@
 }
 /* ---- Reference-board start page ------------------------------------------ */
 .db-start {
+  /* PreviewDrawOverlay wraps the browser content in a `position: absolute;
+     inset: 0` div that is NOT a flex container, so `flex: 1 1 auto` can't bound
+     this element's height (only the webview/fallback siblings fill it, via
+     `height: 100%`). Without a bound the reference grid grows to its content
+     height and the `overflow-y: auto` below has nothing to scroll — and the
+     sticky `.db-reference-toolbar` never pins. Fill the overlay the same way
+     the webview does so the board scrolls and the toolbar sticks to the top. */
   flex: 1 1 auto;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   max-width: 100%;
