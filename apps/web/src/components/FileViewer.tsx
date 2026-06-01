@@ -774,7 +774,7 @@ interface Props {
   previewComments?: PreviewComment[];
   onSavePreviewComment?: (target: PreviewCommentTarget, note: string, attachAfterSave: boolean) => Promise<PreviewComment | null>;
   onRemovePreviewComment?: (commentId: string) => Promise<void>;
-  onSendBoardCommentAttachments?: (attachments: ChatCommentAttachment[]) => Promise<void> | void;
+  onSendBoardCommentAttachments?: (attachments: ChatCommentAttachment[], images?: File[]) => Promise<void> | void;
   onFileSaved?: () => Promise<void> | void;
   // Open `openName` as a tab (focusing it) and close `closeName` in one
   // atomic tab-state update. The React module pointer uses this to jump to the
@@ -3947,7 +3947,7 @@ function HtmlViewer({
   previewComments?: PreviewComment[];
   onSavePreviewComment?: (target: PreviewCommentTarget, note: string, attachAfterSave: boolean) => Promise<PreviewComment | null>;
   onRemovePreviewComment?: (commentId: string) => Promise<void>;
-  onSendBoardCommentAttachments?: (attachments: ChatCommentAttachment[]) => Promise<void> | void;
+  onSendBoardCommentAttachments?: (attachments: ChatCommentAttachment[], images?: File[]) => Promise<void> | void;
   onFileSaved?: () => Promise<void> | void;
   commentPortalId?: string;
   onCommentModeChange?: (active: boolean) => void;
@@ -4351,7 +4351,20 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
   const [inspectSavedAt, setInspectSavedAt] = useState<number | null>(null);
   const [inspectError, setInspectError] = useState<string | null>(null);
   const [queuedBoardNotes, setQueuedBoardNotes] = useState<string[]>([]);
+  // Images attached to an element comment ("评论此元素"). Kept as raw Files
+  // (uploaded on send) with object-URL thumbnails for preview/remove, mirroring
+  // the markup overlay's image tray.
+  const [boardImages, setBoardImages] = useState<File[]>([]);
+  const [boardImagePreviews, setBoardImagePreviews] = useState<{ file: File; url: string }[]>([]);
+  const [boardPreviewIndex, setBoardPreviewIndex] = useState<number | null>(null);
   const [sendingBoardBatch, setSendingBoardBatch] = useState(false);
+  useEffect(() => {
+    const next = boardImages.map((file) => ({ file, url: URL.createObjectURL(file) }));
+    setBoardImagePreviews(next);
+    return () => {
+      next.forEach((item) => URL.revokeObjectURL(item.url));
+    };
+  }, [boardImages]);
   const [commentSavedToast, setCommentSavedToast] = useState<string | null>(null);
   const [templateSavedToast, setTemplateSavedToast] = useState<string | null>(null);
   const [deploySavedToast, setDeploySavedToast] = useState<{ message: string; details: string } | null>(null);
@@ -6116,7 +6129,19 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
     setActivePreviewCommentId(null);
     setCommentDraft('');
     setQueuedBoardNotes([]);
+    setBoardImages([]);
+    setBoardPreviewIndex(null);
     setStrokePoints([]);
+  }
+
+  function addBoardImages(files: File[]) {
+    const imgs = files.filter((file) => file.type.startsWith('image/'));
+    if (imgs.length > 0) setBoardImages((current) => [...current, ...imgs]);
+  }
+
+  function removeBoardImage(index: number) {
+    setBoardImages((current) => current.filter((_, i) => i !== index));
+    setBoardPreviewIndex(null);
   }
 
   function closeArtifactToolMenus() {
@@ -6242,7 +6267,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
     if (!activeCommentTarget || !onSendBoardCommentAttachments) return;
     const nextNotes = [...queuedBoardNotes];
     if (commentDraft.trim()) nextNotes.push(commentDraft.trim());
-    if (nextNotes.length === 0) return;
+    if (nextNotes.length === 0 && boardImages.length === 0) return;
     setSendingBoardBatch(true);
     try {
       await onSendBoardCommentAttachments(
@@ -6250,6 +6275,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
           target: targetFromSnapshot(activeCommentTarget),
           notes: nextNotes,
         }),
+        boardImages,
       );
       clearBoardComposer();
     } finally {
@@ -6751,6 +6777,10 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
       onClose={clearBoardComposer}
       onSaveComment={() => { fireCommentPopoverClick('save_comment'); return savePersistentComment(); }}
       onSendBatch={() => { fireCommentPopoverClick('send_to_chat'); return sendBoardBatch(); }}
+      images={boardImagePreviews}
+      onAttachImages={addBoardImages}
+      onRemoveImage={removeBoardImage}
+      onPreviewImage={setBoardPreviewIndex}
       onRemoveMember={(elementId) => {
         setActiveCommentTarget((current) => {
           const { next, shouldClose } = applyPodMemberRemoval(current, elementId);
@@ -6780,6 +6810,38 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
       commenting
     />
   ) : null;
+  const boardPreviewImage =
+    boardPreviewIndex !== null ? boardImagePreviews[boardPreviewIndex] ?? null : null;
+  const boardImagePreviewModal = boardPreviewImage
+    ? createPortal(
+        <div
+          className="staged-preview-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={boardPreviewImage.file.name}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setBoardPreviewIndex(null);
+          }}
+        >
+          <div className="staged-preview-card">
+            <div className="staged-preview-head">
+              <span title={boardPreviewImage.file.name}>{boardPreviewImage.file.name}</span>
+              <button
+                type="button"
+                className="icon-only"
+                onClick={() => setBoardPreviewIndex(null)}
+                aria-label={t('common.close')}
+                title={t('common.close')}
+              >
+                <Icon name="close" size={14} />
+              </button>
+            </div>
+            <img src={boardPreviewImage.url} alt={boardPreviewImage.file.name} />
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
   const commentSidePanel = commentPanelOpen ? (
     <CommentSidePanel
       comments={visibleSideComments}
@@ -7524,6 +7586,7 @@ const [manualEditTargets, setManualEditTargets] = useState<ManualEditTarget[]>([
               </div>
             ) : null}
             {commentComposer}
+            {boardImagePreviewModal}
             {boardMode && !commentCreateMode && hoveredCommentTarget && (!activeCommentTarget || commentPortalHost) ? (
               <AnnotationHoverPopover target={hoveredCommentTarget} scale={overlayPreviewScale} />
             ) : null}
