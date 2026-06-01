@@ -1145,7 +1145,7 @@ export function upsertPreviewComment(db: SqliteDb, projectId: string, conversati
   const selectionKind = target.selectionKind === 'pod' ? 'pod' : 'element';
   const podMembers = selectionKind === 'pod' ? normalizePodMembers(target.podMembers) : [];
   const style = normalizeAnnotationStyle(target.style);
-  const attachments = normalizeCommentAttachments(input?.attachments);
+  const attachments = normalizePreviewCommentAttachments(input?.attachments);
   const memberCount = selectionKind === 'pod'
     ? (podMembers.length > 0
         ? podMembers.length
@@ -1269,14 +1269,14 @@ function normalizePreviewComment(row: DbRow) {
           : undefined,
     podMembers: normalizedPodMembers,
     note: row.note,
-    attachments: normalizeCommentAttachments(parseJsonOrUndef(row.attachmentsJson)),
+    attachments: normalizePreviewCommentAttachments(parseJsonOrUndef(row.attachmentsJson)),
     status: row.status,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
 }
 
-function normalizeCommentAttachments(input: unknown) {
+function normalizePreviewCommentAttachments(input: unknown) {
   if (!Array.isArray(input)) return [];
   return input
     .map((item) => {

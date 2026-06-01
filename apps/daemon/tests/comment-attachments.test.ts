@@ -76,6 +76,40 @@ describe('preview comment persistence', () => {
     expect(listPreviewComments(db, 'project-1', 'conversation-1')).toHaveLength(1);
   });
 
+  it('round-trips image attachments through save and list (echo bug #regression)', () => {
+    const db = seededDb();
+    const saved = upsertPreviewComment(db, 'project-1', 'conversation-1', {
+      target: target({ elementId: 'hero-title' }),
+      note: 'Match this reference',
+      attachments: [
+        { path: 'uploads/ref-a.png', name: 'ref-a.png' },
+        { path: 'uploads/ref-b.png', name: 'ref-b.png' },
+      ],
+    });
+    expect(saved).not.toBeNull();
+    if (!saved) throw new Error('comment upsert failed');
+    // Attachments survive the save itself...
+    expect(saved.attachments).toEqual([
+      { path: 'uploads/ref-a.png', name: 'ref-a.png' },
+      { path: 'uploads/ref-b.png', name: 'ref-b.png' },
+    ]);
+    // ...and the re-fetch (the "回显" path that previously dropped images).
+    const [listed] = listPreviewComments(db, 'project-1', 'conversation-1');
+    expect(listed?.attachments).toEqual([
+      { path: 'uploads/ref-a.png', name: 'ref-a.png' },
+      { path: 'uploads/ref-b.png', name: 'ref-b.png' },
+    ]);
+  });
+
+  it('defaults attachments to an empty array when none are provided', () => {
+    const db = seededDb();
+    const saved = upsertPreviewComment(db, 'project-1', 'conversation-1', {
+      target: target({}),
+      note: 'No images here',
+    });
+    expect(saved?.attachments).toEqual([]);
+  });
+
   it('patches status and deletes comments', () => {
     const db = seededDb();
     const saved = upsertPreviewComment(db, 'project-1', 'conversation-1', {
