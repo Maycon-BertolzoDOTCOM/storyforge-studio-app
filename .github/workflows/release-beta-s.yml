@@ -35,11 +35,10 @@ on:
         type: string
         default: ""
       smoke_mode:
-        description: "Windows smoke coverage. Default to core gate; use full for updater acceptance."
+        description: "Windows smoke coverage. Core gates install/start/cleanup; full adds the real upgrade lifecycle."
         required: true
         type: choice
         options:
-          - fast
           - core
           - full
         default: core

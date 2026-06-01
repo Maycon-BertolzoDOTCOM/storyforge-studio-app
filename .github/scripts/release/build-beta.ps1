@@ -7,7 +7,7 @@ param(
   [string]$Root = "",
   [string]$ReleaseVersion = "",
   [string]$MetadataUrl = "https://releases.open-design.ai/beta/latest/metadata.json",
-  [ValidateSet("full", "fast", "core")]
+  [ValidateSet("full", "core")]
   [string]$SmokeMode = "full",
   [ValidateSet("all", "dir", "nsis", "zip")]
   [string]$Target = "all",
@@ -63,6 +63,14 @@ function Format-Duration([int64]$Milliseconds) {
     return "$([Math]::Round($Milliseconds / 60000, 1))m"
   }
   return "$([Math]::Round($Milliseconds / 1000, 1))s"
+}
+
+function Get-NextBetaFixtureVersion([string]$Version) {
+  $match = [System.Text.RegularExpressions.Regex]::Match($Version, '^(?<base>\d+\.\d+\.\d+)-beta\.(?<number>\d+)$')
+  if (-not $match.Success) {
+    throw "release-beta-s full smoke requires a beta version like x.y.z-beta.N; got $Version"
+  }
+  return "$($match.Groups['base'].Value)-beta.$([int]$match.Groups['number'].Value + 1)"
 }
 
 function Measure-Step([string]$Name, [scriptblock]$Script) {
@@ -250,7 +258,6 @@ function Test-WorkspaceInstallReusable {
       state = $null
     }
   }
-
   $state = Get-WorkspaceInstallState
   $stamp = Read-JsonFile $stampPath
   if ($stamp -eq $null) {
@@ -565,6 +572,7 @@ if ([string]::IsNullOrWhiteSpace($Root)) {
 
 $platformRoot = Join-Path $Root $Platform
 $toolsPackDir = Join-Path $platformRoot "tools-pack"
+$updateFixtureToolsPackDir = Join-Path $platformRoot "tools-pack-update-fixture"
 $cacheDir = Join-Path $platformRoot "tools-pack-cache"
 $reportDir = Join-Path $platformRoot "release-report"
 $indexDir = Join-Path $platformRoot "index"
@@ -573,7 +581,7 @@ $indexPath = Join-Path $indexDir "index.json"
 $summaryPath = Join-Path $platformRoot "summary.md"
 $metadataOutputPath = Join-Path $platformRoot "metadata.outputs"
 
-New-Item -ItemType Directory -Force -Path $platformRoot, $toolsPackDir, $cacheDir, $reportDir, $indexDir | Out-Null
+New-Item -ItemType Directory -Force -Path $platformRoot, $toolsPackDir, $updateFixtureToolsPackDir, $cacheDir, $reportDir, $indexDir | Out-Null
 Remove-Item -LiteralPath $buildJsonPath -Force -ErrorAction SilentlyContinue
 $script:windowsSigningEnabled = $false
 $env:OD_PACKAGED_E2E_REPORT_DIR = Join-Path $reportDir "win"
@@ -696,14 +704,61 @@ try {
     $buildResult.stdoutLines | Set-Content -Path $buildJsonPath -Encoding utf8
   }
 
+  $localUpdateArtifactPath = $null
+  $localUpdateVersion = $null
+  if ($SmokeMode -eq "full") {
+    $updateFixtureVersion = Get-NextBetaFixtureVersion $ReleaseVersion
+    $updateFixtureBuildJsonPath = Join-Path $platformRoot "windows-tools-pack-update-build.json"
+    Remove-Item -LiteralPath $updateFixtureBuildJsonPath -Force -ErrorAction SilentlyContinue
+    $updateBuildArgs = @(
+      "pnpm.cmd", "exec", "tools-pack", "win", "build",
+      "--dir", $updateFixtureToolsPackDir,
+      "--cache-dir", $cacheDir,
+      "--namespace", $Namespace,
+      "--app-version", $updateFixtureVersion,
+      "--to", "nsis",
+      "--json"
+    )
+    if ($script:windowsSigningEnabled) {
+      $updateBuildArgs += "--signed"
+    }
+
+    Measure-Step "tools-pack win build update fixture" {
+      $updateBuildResult = Invoke-ToolsPackWinBuild -Arguments $updateBuildArgs
+      if ($updateBuildResult.exitCode -ne 0) {
+        throw "tools-pack win build update fixture failed with exit code $($updateBuildResult.exitCode)"
+      }
+      $updateBuildResult.stdoutLines | Set-Content -Path $updateFixtureBuildJsonPath -Encoding utf8
+      $updateBuild = Get-Content -LiteralPath $updateFixtureBuildJsonPath -Raw | ConvertFrom-Json
+      $localUpdateArtifactPath = [string]$updateBuild.installerPath
+      if ([string]::IsNullOrWhiteSpace($localUpdateArtifactPath)) {
+        throw "tools-pack win build update fixture did not report installerPath"
+      }
+      $localUpdateVersion = $updateFixtureVersion
+    }
+  }
+
   $env:OD_PACKAGED_E2E_BUILD_JSON_PATH = $buildJsonPath
   $env:OD_PACKAGED_E2E_WIN = "1"
-  $env:OD_PACKAGED_E2E_WIN_VERIFY_REINSTALL = "0"
   $env:OD_PACKAGED_E2E_WIN_SMOKE_PROFILE = $SmokeMode
-  $env:OD_PACKAGED_E2E_WIN_UPDATER_VIOLENT = if ($SmokeMode -eq "full") { "1" } else { "0" }
   $env:OD_PACKAGED_E2E_NAMESPACE = $Namespace
   $env:OD_PACKAGED_E2E_RELEASE_CHANNEL = "beta"
   $env:OD_PACKAGED_E2E_RELEASE_VERSION = $ReleaseVersion
+  if ([string]::IsNullOrWhiteSpace($localUpdateArtifactPath)) {
+    Remove-Item Env:OD_PACKAGED_E2E_WIN_UPDATE_ARTIFACT_PATH -ErrorAction SilentlyContinue
+  } else {
+    $env:OD_PACKAGED_E2E_WIN_UPDATE_ARTIFACT_PATH = $localUpdateArtifactPath
+  }
+  if ([string]::IsNullOrWhiteSpace($localUpdateVersion)) {
+    Remove-Item Env:OD_PACKAGED_E2E_WIN_UPDATE_VERSION -ErrorAction SilentlyContinue
+  } else {
+    $env:OD_PACKAGED_E2E_WIN_UPDATE_VERSION = $localUpdateVersion
+  }
+  if ($SmokeMode -eq "full") {
+    $env:OD_PACKAGED_E2E_WIN_UPDATE_BUILD_JSON_PATH = (Join-Path $platformRoot "windows-tools-pack-update-build.json")
+  } else {
+    Remove-Item Env:OD_PACKAGED_E2E_WIN_UPDATE_BUILD_JSON_PATH -ErrorAction SilentlyContinue
+  }
 
   Measure-Step "release smoke win" {
     Remove-Item -LiteralPath $env:OD_PACKAGED_E2E_REPORT_DIR -Recurse -Force -ErrorAction SilentlyContinue
