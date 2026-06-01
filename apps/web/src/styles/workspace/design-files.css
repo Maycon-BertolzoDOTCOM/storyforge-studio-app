@@ -2112,12 +2112,72 @@
 }
 
 @container design-files-main (max-width: 760px) {
+  .df-table,
+  .df-table thead,
+  .df-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .df-table thead tr,
+  .df-file-row {
+    display: grid;
+    grid-template-columns: 40px 42px minmax(0, 1fr) 40px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .df-section-row,
+  .df-section-row td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .df-th-check,
+  .df-th-icon,
+  .df-th-name,
+  .df-th-menu,
+  .df-cell-check,
+  .df-cell-icon,
+  .df-cell-name,
+  .df-cell-menu {
+    width: auto;
+    box-sizing: border-box;
+  }
+
+  .df-th-check,
+  .df-cell-check {
+    padding-left: 12px;
+    padding-right: 0;
+  }
+
+  .df-th-icon,
+  .df-cell-icon {
+    padding-inline: 0;
+  }
+
+  .df-th-name,
+  .df-cell-name {
+    padding-right: 8px;
+  }
+
+  .df-th-menu,
+  .df-cell-menu {
+    justify-self: end;
+    padding-right: 12px;
+    padding-left: 0;
+  }
+
   .df-th-kind,
-  .df-cell-kind {
+  .df-cell-kind,
+  .df-th-time,
+  .df-cell-time {
     display: none;
   }
 
-  .df-row-sub-kind {
+  .df-row-sub-kind,
+  .df-row-sub-time {
     display: inline;
   }
 

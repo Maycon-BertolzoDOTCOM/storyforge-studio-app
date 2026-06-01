@@ -1480,6 +1480,8 @@ export const zhCN: Dict = {
   'chat.comments.targetPage': '页面',
   'chat.comments.targetArea': '区域',
   'chat.annotationNotePlaceholder': '为这个标记添加说明',
+  'chat.annotationAddToInput': '发送到输入框',
+  'chat.annotationAddingToInput': '正在添加...',
   'chat.annotationQueue': '加入队列',
   'chat.annotationQueueing': '加入队列中...',
   'chat.annotationSending': '发送中...',

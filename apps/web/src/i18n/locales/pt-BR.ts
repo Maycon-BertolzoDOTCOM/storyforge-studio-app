@@ -846,6 +846,8 @@ export const ptBR: Dict = {
   'chat.comments.targetPage': 'Page',
   'chat.comments.targetArea': 'Area',
   'chat.annotationNotePlaceholder': 'Add a note for this mark',
+  'chat.annotationAddToInput': 'Add to input',
+  'chat.annotationAddingToInput': 'Adding...',
   'chat.annotationQueue': 'Queue',
   'chat.annotationQueueing': 'Queueing...',
   'chat.annotationSending': 'Sending...',

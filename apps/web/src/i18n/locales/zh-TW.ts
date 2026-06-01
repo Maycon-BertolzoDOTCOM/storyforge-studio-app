@@ -1080,6 +1080,8 @@ export const zhTW: Dict = {
   'chat.comments.targetPage': '頁面',
   'chat.comments.targetArea': '區域',
   'chat.annotationNotePlaceholder': '為這個標記加入說明',
+  'chat.annotationAddToInput': '送到輸入框',
+  'chat.annotationAddingToInput': '正在加入...',
   'chat.annotationQueue': '加入佇列',
   'chat.annotationQueueing': '加入佇列中...',
   'chat.annotationSending': '傳送中...',

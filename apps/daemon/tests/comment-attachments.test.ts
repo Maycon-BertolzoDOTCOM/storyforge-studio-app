@@ -129,6 +129,49 @@ describe('preview comment persistence', () => {
     expect(listMessages(db, 'conversation-1')[0]?.commentAttachments).toEqual([attachment]);
   });
 
+  it('persists user message session mode and plugin context snapshot', () => {
+    const db = seededDb();
+    const appliedPluginSnapshot = {
+      snapshotId: 'snap-1',
+      pluginId: 'deck-plugin',
+      pluginVersion: '1.0.0',
+      manifestSourceDigest: 'a'.repeat(64),
+      inputs: {},
+      resolvedContext: {
+        items: [
+          {
+            kind: 'asset',
+            path: 'template.json',
+            label: 'template.json',
+          },
+        ],
+      },
+      capabilitiesGranted: ['prompt:inject'],
+      capabilitiesRequired: ['prompt:inject'],
+      assetsStaged: [],
+      taskKind: 'new-generation',
+      appliedAt: 1,
+      connectorsRequired: [],
+      connectorsResolved: [],
+      mcpServers: [],
+      status: 'fresh',
+      pluginTitle: 'Deck Plugin',
+    };
+
+    upsertMessage(db, 'conversation-1', {
+      id: 'message-1',
+      role: 'user',
+      content: 'make the deck',
+      sessionMode: 'design',
+      appliedPluginSnapshot,
+    });
+
+    expect(listMessages(db, 'conversation-1')[0]).toMatchObject({
+      sessionMode: 'design',
+      appliedPluginSnapshot,
+    });
+  });
+
   it('persists assistant feedback on messages', () => {
     const db = seededDb();
     const feedback = {

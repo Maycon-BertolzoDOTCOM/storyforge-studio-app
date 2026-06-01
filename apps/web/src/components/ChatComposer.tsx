@@ -896,6 +896,34 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
             }
             setUploading(false);
 
+            const appendAnnotationToComposer = () => {
+              if (uploaded.length > 0) setStaged((s) => [...s, ...uploaded]);
+              if (visualAttachmentInput) {
+                setStagedVisualComments((current) => [
+                  ...current,
+                  buildVisualAnnotationAttachment({
+                    ...visualAttachmentInput!,
+                    order: commentAttachments.length + current.length + 1,
+                  }),
+                ]);
+              }
+              if (detail.note) {
+                // Accumulate through draftRef so two annotations resolving
+                // concurrently compose (each reads the other's write) instead
+                // of both starting from the same stale closure. Mirror the
+                // result into the editor with setText so the now-non-empty
+                // editor does not fire an onChange('') that would clobber the
+                // accumulated draft back to empty.
+                const nextDraft = draftRef.current
+                  ? `${draftRef.current}\n${detail.note}`
+                  : detail.note;
+                draftRef.current = nextDraft;
+                setDraft(nextDraft);
+                editorRef.current?.setText(nextDraft);
+              }
+              editorRef.current?.focus();
+            };
+
             if (detail.action === 'queue') {
               if (visualAttachmentInput) {
                 visualAttachment = buildVisualAnnotationAttachment({
@@ -913,32 +941,8 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
 
             if (detail.action === 'send') {
               if (streaming) {
-                if (uploaded.length > 0) setStaged((s) => [...s, ...uploaded]);
-                if (visualAttachmentInput) {
-                  setStagedVisualComments((current) => [
-                    ...current,
-                    buildVisualAnnotationAttachment({
-                      ...visualAttachmentInput!,
-                      order: commentAttachments.length + current.length + 1,
-                    }),
-                  ]);
-                }
-                if (detail.note) {
-                  // Accumulate through draftRef so two annotations resolving
-                  // concurrently compose (each reads the other's write) instead
-                  // of both starting from the same stale closure. Mirror the
-                  // result into the editor with setText so the now-non-empty
-                  // editor does not fire an onChange('') that would clobber the
-                  // accumulated draft back to empty before the queued send.
-                  const nextDraft = draftRef.current
-                    ? `${draftRef.current}\n${detail.note}`
-                    : detail.note;
-                  draftRef.current = nextDraft;
-                  setDraft(nextDraft);
-                  editorRef.current?.setText(nextDraft);
-                }
+                appendAnnotationToComposer();
                 setStreamingAnnotationSendPending(true);
-                editorRef.current?.focus();
                 ack({ ok: true });
                 return;
               }
@@ -956,17 +960,13 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
               return;
             }
 
-            if (detail.note) {
-              // Same accumulate-via-ref + editor-sync as the streaming branch.
-              const nextDraft = draftRef.current
-                ? `${draftRef.current}\n${detail.note}`
-                : detail.note;
-              draftRef.current = nextDraft;
-              setDraft(nextDraft);
-              editorRef.current?.setText(nextDraft);
-              editorRef.current?.focus();
+            if (detail.action === 'draft') {
+              appendAnnotationToComposer();
+              ack({ ok: true });
+              return;
             }
-            ack({ ok: true });
+
+            ack({ ok: false, message: t('chat.annotationFailed') });
           } catch (err) {
             console.warn('Could not send annotation', err);
             setUploadError(err instanceof Error ? err.message : t('chat.annotationFailed'));

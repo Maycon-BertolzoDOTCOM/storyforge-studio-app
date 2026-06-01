@@ -91,9 +91,11 @@ describe('PreviewDrawOverlay', () => {
 
       const sendButton = getByRole('button', { name: 'Send' }) as HTMLButtonElement;
       const queueButton = getByRole('button', { name: 'Queue' }) as HTMLButtonElement;
+      const addToInputButton = getByRole('button', { name: 'Add to input' }) as HTMLButtonElement;
       expect(sendButton.disabled).toBe(true);
       expect(sendButton.title).toBe('Task running');
       expect(queueButton.disabled).toBe(false);
+      expect(addToInputButton.disabled).toBe(false);
 
       fireEvent.keyDown(input!, { key: 'Enter' });
       await waitFor(() => expect(annotation).toHaveBeenCalledTimes(1));
@@ -107,6 +109,38 @@ describe('PreviewDrawOverlay', () => {
       fireEvent.change(input!, { target: { value: 'Queue another note.' } });
       fireEvent.click(queueButton);
       await waitFor(() => expect(annotation).toHaveBeenCalledTimes(2));
+    } finally {
+      window.removeEventListener('opendesign:annotation', annotation);
+    }
+  });
+
+  it('can append a note to the composer input instead of queueing or sending it', async () => {
+    const annotation = vi.fn((event: Event) => {
+      const detail = (event as CustomEvent<{ ack?: (result: { ok: boolean }) => void }>).detail;
+      detail.ack?.({ ok: true });
+    });
+    window.addEventListener('opendesign:annotation', annotation);
+
+    try {
+      const { container, getByRole } = render(
+        <PreviewDrawOverlay active>
+          <div style={{ width: 320, height: 200 }} />
+        </PreviewDrawOverlay>,
+      );
+
+      const input = container.querySelector<HTMLInputElement>('.preview-draw-note-input');
+      expect(input).toBeTruthy();
+      fireEvent.change(input!, { target: { value: 'Keep this in the input.' } });
+
+      fireEvent.click(getByRole('button', { name: 'Add to input' }));
+
+      await waitFor(() => expect(annotation).toHaveBeenCalledTimes(1));
+      expect(annotation.mock.calls[0]?.[0]).toMatchObject({
+        detail: expect.objectContaining({
+          action: 'draft',
+          note: 'Keep this in the input.',
+        }),
+      });
     } finally {
       window.removeEventListener('opendesign:annotation', annotation);
     }

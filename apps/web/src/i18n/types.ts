@@ -1800,6 +1800,8 @@ export interface Dict {
   'chat.comments.targetPage': string;
   'chat.comments.targetArea': string;
   'chat.annotationNotePlaceholder': string;
+  'chat.annotationAddToInput': string;
+  'chat.annotationAddingToInput': string;
   'chat.annotationQueue': string;
   'chat.annotationQueueing': string;
   'chat.annotationSending': string;

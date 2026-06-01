@@ -266,6 +266,56 @@ describe('ChatComposer /search command', () => {
     });
   });
 
+  it('stages draw annotations into the composer input without sending', async () => {
+    const onSend = vi.fn();
+    mockedUploadProjectFiles.mockResolvedValue({
+      uploaded: [{ path: 'uploads/drawing.png', name: 'drawing.png', kind: 'image' }],
+      failed: [],
+    });
+
+    render(
+      <ChatComposer
+        projectId="project-1"
+        projectFiles={[]}
+        streaming={false}
+        onEnsureProject={async () => 'project-1'}
+        onSend={onSend}
+        onStop={vi.fn()}
+      />,
+    );
+
+    window.dispatchEvent(new CustomEvent(ANNOTATION_EVENT, {
+      detail: {
+        file: new File(['drawing'], 'drawing.png', { type: 'image/png' }),
+        note: 'review this before sending',
+        action: 'draft',
+        filePath: 'index.html',
+        markKind: 'stroke',
+        bounds: { x: 12, y: 24, width: 140, height: 80 },
+      },
+    }));
+
+    await waitFor(() => expect(mockedUploadProjectFiles).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(composerText()).toContain('review this before sending'));
+    expect(screen.getByText('drawing.png')).toBeTruthy();
+    expect(screen.queryByText('Visual mark')).toBeNull();
+    expect(onSend).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('chat-send'));
+
+    await waitFor(() => expect(onSend).toHaveBeenCalledTimes(1));
+    const [prompt, attachments, commentAttachments] = onSend.mock.calls[0]!;
+    expect(prompt).toBe('review this before sending');
+    expect(attachments).toEqual([{ path: 'uploads/drawing.png', name: 'drawing.png', kind: 'image' }]);
+    expect(commentAttachments).toHaveLength(1);
+    expect(commentAttachments[0]).toMatchObject({
+      selectionKind: 'visual',
+      screenshotPath: 'uploads/drawing.png',
+      markKind: 'stroke',
+      comment: 'review this before sending',
+    });
+  });
+
   it('auto-sends queued draw screenshots with hidden visual target context when streaming ends', async () => {
     const onSend = vi.fn();
     mockedUploadProjectFiles.mockResolvedValue({

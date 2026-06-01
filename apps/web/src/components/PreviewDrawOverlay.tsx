@@ -27,11 +27,12 @@ interface PreviewSnapshot {
 }
 
 export const ANNOTATION_EVENT = 'opendesign:annotation';
+export type AnnotationAction = 'draft' | 'queue' | 'send';
 
 export interface AnnotationEventDetail {
   file: File | null;
   note: string;
-  action: 'queue' | 'send';
+  action: AnnotationAction;
   filePath?: string;
   markKind?: PreviewVisualMarkKind;
   bounds?: { x: number; y: number; width: number; height: number };
@@ -81,9 +82,9 @@ export function PreviewDrawOverlay({
   const [hasBox, setHasBox] = useState(false);
   const [undoCount, setUndoCount] = useState(0);
   const [redoCount, setRedoCount] = useState(0);
-  const [pendingAction, setPendingAction] = useState<'queue' | 'send' | null>(null);
+  const [pendingAction, setPendingAction] = useState<AnnotationAction | null>(null);
   const [captureWarning, setCaptureWarning] = useState<{
-    action: 'queue' | 'send';
+    action: AnnotationAction;
     message: string;
   } | null>(null);
   const sending = pendingAction !== null;
@@ -449,7 +450,7 @@ export function PreviewDrawOverlay({
     return new Promise((resolve) => out.toBlob((b) => resolve(b), 'image/png'));
   }
 
-  async function send(action: 'queue' | 'send') {
+  async function send(action: AnnotationAction) {
     const hasTarget = Boolean(captureTarget);
     const shouldCapture = hasInk || hasBox || hasTarget || captureViewport;
     const canSubmit = shouldCapture || Boolean(note.trim());
@@ -518,6 +519,7 @@ export function PreviewDrawOverlay({
   const overlayPointer = active ? 'auto' : 'none';
   const showCanvas = active || hasInk || hasBox;
   const canSubmit = hasInk || hasBox || Boolean(captureTarget) || captureViewport || Boolean(note.trim());
+  const canAddToInput = canSubmit;
   const canSend = canSubmit && !sendDisabled;
   const canUndo = (undoCount > 0 || hasBox) && !sending;
   const canRedo = redoCount > 0 && !sending;
@@ -684,6 +686,26 @@ export function PreviewDrawOverlay({
               if (e.key === 'Enter') void send('queue');
             }}
           />
+          <button
+            type="button"
+            onClick={() => void send('draft')}
+            disabled={sending || !canAddToInput}
+            aria-label={pendingAction === 'draft' ? t('chat.annotationAddingToInput') : t('chat.annotationAddToInput')}
+            title={pendingAction === 'draft' ? t('chat.annotationAddingToInput') : t('chat.annotationAddToInput')}
+            data-tooltip={pendingAction === 'draft' ? t('chat.annotationAddingToInput') : t('chat.annotationAddToInput')}
+            className="preview-draw-icon-action"
+            style={{
+              ...drawActionButtonStyle(false),
+              opacity: canAddToInput ? 1 : 0.4,
+              cursor: sending ? 'wait' : (canAddToInput ? 'pointer' : 'not-allowed'),
+            }}
+          >
+            {pendingAction === 'draft' ? (
+              <Icon name="spinner" size={14} />
+            ) : (
+              <RemixIcon name="input-field" size={15} />
+            )}
+          </button>
           <button
             type="button"
             onClick={() => void send('queue')}
