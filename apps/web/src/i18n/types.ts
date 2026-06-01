@@ -2083,6 +2083,7 @@ export interface Dict {
   'manualEdit.title': string;
   'manualEdit.fallbackTitle': string;
   'manualEdit.movePanel': string;
+  'manualEdit.editParams': string;
   'manualEdit.closePanel': string;
   'manualEdit.selectLayer': string;
   'manualEdit.empty': string;
