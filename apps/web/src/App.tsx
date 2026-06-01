@@ -415,8 +415,8 @@ function AppInner() {
       setAgents((current) => mergeAmrModelsIntoAgents(current, result));
       const shouldPollPreset =
         result.source === 'preset' &&
-        !result.remoteError &&
-        presetPolls < maxPresetPolls;
+        presetPolls < maxPresetPolls &&
+        (result.refreshing || !result.remoteError);
       if (shouldPollPreset) {
         presetPolls += 1;
         timer = window.setTimeout(() => {

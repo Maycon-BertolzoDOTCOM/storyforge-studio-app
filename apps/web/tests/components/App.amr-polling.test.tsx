@@ -258,7 +258,9 @@ describe('App AMR polling', () => {
     });
   });
 
-  it('stops polling after the remote refresh reports a preset-side error', { timeout: 10_000 }, async () => {
+  it('keeps polling while a preset response is still refreshing despite a stale remote error', {
+    timeout: 10_000,
+  }, async () => {
     mockedFetchAmrModels.mockReset();
     mockedFetchAmrModels
       .mockResolvedValueOnce({
@@ -271,6 +273,11 @@ describe('App AMR polling', () => {
         refreshing: true,
         remoteError: 'remote unavailable',
         models: [{ id: 'preset-a', label: 'preset-a' }],
+      })
+      .mockResolvedValueOnce({
+        source: 'remote',
+        refreshing: false,
+        models: [{ id: 'remote-a', label: 'remote-a' }],
       });
 
     render(<App />);
@@ -278,6 +285,35 @@ describe('App AMR polling', () => {
     await waitFor(() => {
       expect(mockedFetchAmrModels).toHaveBeenCalledTimes(1);
     });
+
+    await waitFor(() => {
+      expect(mockedFetchAmrModels).toHaveBeenCalledTimes(2);
+    }, { timeout: 4_000 });
+
+    await waitFor(() => {
+      expect(mockedFetchAmrModels).toHaveBeenCalledTimes(3);
+      expect(screen.getByTestId('amr-model').textContent).toBe('remote-a');
+    }, { timeout: 4_000 });
+  });
+
+  it('stops polling after a preset response reports a remote error and refresh is no longer running', {
+    timeout: 10_000,
+  }, async () => {
+    mockedFetchAmrModels.mockReset();
+    mockedFetchAmrModels
+      .mockResolvedValueOnce({
+        source: 'preset',
+        refreshing: true,
+        models: [{ id: 'preset-a', label: 'preset-a' }],
+      })
+      .mockResolvedValueOnce({
+        source: 'preset',
+        refreshing: false,
+        remoteError: 'remote unavailable',
+        models: [{ id: 'preset-a', label: 'preset-a' }],
+      });
+
+    render(<App />);
 
     await waitFor(() => {
       expect(mockedFetchAmrModels).toHaveBeenCalledTimes(2);
