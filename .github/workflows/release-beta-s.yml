@@ -62,18 +62,18 @@ on:
         required: true
         type: choice
         options:
-          - auto
-          - off
-          - on
-        default: auto
+          - "auto"
+          - "off"
+          - "on"
+        default: "auto"
       mac_sign_mode:
         description: "mac arm64 signing mode. Keep off for cold-start validation."
         required: true
         type: choice
         options:
-          - off
-          - on
-        default: off
+          - "off"
+          - "on"
+        default: "off"
 
 permissions:
   contents: read

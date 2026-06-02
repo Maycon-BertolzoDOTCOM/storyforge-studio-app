@@ -111,7 +111,7 @@ describe("packaged smoke workflow", () => {
 
     expect(workflow).toContain("enable_mac:");
     expect(workflow).toContain("mac_sign_mode:");
-    expect(workflow).toContain("default: off");
+    expect(workflow).toContain('default: "off"');
     expect(workflow).toContain("name: Prepare beta metadata");
     expect(workflow).toContain("OPEN_DESIGN_BETA_METADATA_URL: ${{ inputs.s3_public_origin }}/beta/latest/metadata.json");
     expect(workflow).toContain("release-beta-s requires at least one self-hosted platform");
