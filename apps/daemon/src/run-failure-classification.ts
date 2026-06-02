@@ -209,11 +209,12 @@ export function classifyRunFailure(
     errorCode === 'TIMEOUT' ||
     errorCode.startsWith('AGENT_SIGNAL_')
   ) {
+    const retryable = retryableHint ?? true;
     return classification(
       'timeout',
       'first_token_wait',
-      retryableHint ?? true,
-      'retry',
+      retryable,
+      retryable ? 'retry' : 'none',
     );
   }
 

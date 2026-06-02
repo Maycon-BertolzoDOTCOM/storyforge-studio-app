@@ -362,6 +362,104 @@ describe('scanRunEventsForUsageAnalytics', () => {
     expect(result).toMatchObject(expected);
   });
 
+  it('prefers the latest usage event and latest reported model when multiple usage snapshots exist', () => {
+    const result = scanRunEventsForUsageAnalytics(
+      [
+        {
+          event: 'agent',
+          data: {
+            type: 'status',
+            label: 'initializing',
+            model: 'claude-sonnet-4-5',
+          },
+        },
+        {
+          event: 'agent',
+          data: {
+            type: 'usage',
+            usage: {
+              input_tokens: 120,
+              output_tokens: 12,
+              cached_read_tokens: 20,
+            },
+          },
+        },
+        {
+          event: 'agent',
+          data: {
+            type: 'status',
+            label: 'model',
+            detail: 'claude-opus-4-1',
+          },
+        },
+        {
+          event: 'agent',
+          data: {
+            type: 'usage',
+            usage: {
+              input_tokens: 240,
+              output_tokens: 24,
+              cached_read_tokens: 60,
+              cached_write_tokens: 5,
+            },
+          },
+        },
+      ],
+      '',
+      20,
+    );
+
+    expect(result).toMatchObject({
+      input_tokens_provider: 240,
+      input_tokens_effective: 240,
+      output_tokens: 24,
+      total_tokens: 264,
+      cache_read_input_tokens: 60,
+      cache_creation_input_tokens: 5,
+      uncached_input_tokens: 180,
+      estimated_context_tokens: 220,
+      cache_token_source: 'openai',
+      token_count_source: 'provider_usage',
+      agent_reported_model: 'claude-opus-4-1',
+    });
+    expect(result.cache_hit_ratio).toBeCloseTo(60 / 240);
+  });
+
+  it('falls back to modelUsage and totalTokens aliases when usage is nested under modelUsage', () => {
+    const result = scanRunEventsForUsageAnalytics(
+      [
+        {
+          event: 'agent',
+          data: {
+            type: 'usage',
+            modelUsage: {
+              prompt_tokens: 150,
+              completion_tokens: 30,
+              totalTokens: 180,
+              prompt_tokens_details: { cached_tokens: 50 },
+            },
+          },
+        },
+      ],
+      'gpt-5.5',
+      25,
+    );
+
+    expect(result).toMatchObject({
+      input_tokens_provider: 150,
+      input_tokens_effective: 150,
+      output_tokens: 30,
+      total_tokens: 180,
+      cache_read_input_tokens: 50,
+      uncached_input_tokens: 100,
+      estimated_context_tokens: 125,
+      cache_token_source: 'openai',
+      token_count_source: 'provider_usage',
+      agent_reported_model: null,
+    });
+    expect(result.cache_hit_ratio).toBeCloseTo(50 / 150);
+  });
+
   it('reports unknown token source for plain mock agents without usage events', () => {
     const result = scanRunEventsForUsageAnalytics(
       [{ event: 'agent', data: { type: 'text_delta', delta: 'plain output' } }],
@@ -430,5 +528,41 @@ describe('summarizeRunTimingAnalytics', () => {
       finalize_duration_ms: 20,
       total_duration_ms: 7020,
     });
+  });
+
+  it('drops negative timing segments and ignores orphan tool results', () => {
+    const result = summarizeRunTimingAnalytics({
+      runCreatedAt: 5_000,
+      runUpdatedAt: 7_500,
+      analyticsCapturedAt: 7_450,
+      telemetry: {
+        startRequestedAt: 4_900,
+        startChatRunStartedAt: 5_100,
+        processSpawnStartedAt: 5_080,
+        processSpawnedAt: 5_070,
+        firstTokenAt: 5_060,
+      },
+      events: [
+        {
+          id: 1,
+          event: 'agent',
+          timestamp: 6_000,
+          data: { type: 'tool_result', toolUseId: 'orphan-tool' },
+        },
+      ],
+    });
+
+    expect(result).toEqual({
+      queue_duration_ms: 100,
+      generation_duration_ms: 2440,
+      tool_call_count: 0,
+      total_duration_ms: 2450,
+    });
+    expect(result.pre_spawn_duration_ms).toBeUndefined();
+    expect(result.process_spawn_duration_ms).toBeUndefined();
+    expect(result.time_to_first_token_ms).toBeUndefined();
+    expect(result.spawn_to_first_token_ms).toBeUndefined();
+    expect(result.tool_duration_ms).toBeUndefined();
+    expect(result.finalize_duration_ms).toBeUndefined();
   });
 });

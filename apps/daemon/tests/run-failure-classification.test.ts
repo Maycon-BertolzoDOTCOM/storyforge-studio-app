@@ -78,6 +78,32 @@ describe('classifyRunFailure', () => {
     });
   });
 
+
+  it('lets explicit auth classification win over a generic execution-failed code', () => {
+    expect(
+      classify(
+        'AGENT_EXECUTION_FAILED',
+        'Authentication required before starting the session.',
+      ),
+    ).toMatchObject({
+      failure_category: 'auth',
+      failure_stage: 'session_init',
+      retryable: false,
+      user_action: 'login',
+    });
+  });
+
+  it('recognizes model-not-found text even when the outer error code is generic', () => {
+    expect(
+      classify('AGENT_EXECUTION_FAILED', 'Model not found: vela/deepseek-v3-2'),
+    ).toMatchObject({
+      failure_category: 'model_unavailable',
+      failure_stage: 'model_select',
+      retryable: false,
+      user_action: 'switch_model',
+    });
+  });
+
   it('recovers rate-limit and session-limit signals from generic error codes', () => {
     expect(
       classify(
@@ -167,6 +193,67 @@ describe('classifyRunFailure', () => {
     ).toMatchObject({
       failure_category: 'timeout',
       failure_stage: 'first_token_wait',
+      retryable: true,
+      user_action: 'retry',
+    });
+  });
+
+
+  it('honors the latest explicit non-retryable hint for timeout failures', () => {
+    expect(
+      classifyRunFailure({
+        result: 'failed',
+        status: {
+          status: 'failed',
+          error: 'Agent stalled without emitting any new output for 120s.',
+          signal: 'SIGTERM',
+          exitCode: null,
+          errorCode: null,
+        },
+        errorCode: 'AGENT_SIGNAL_SIGTERM',
+        agentId: 'claude',
+        events: [
+          errorEvent('AGENT_EXECUTION_FAILED', 'transient upstream hiccup', true),
+          errorEvent(
+            'AGENT_SIGNAL_SIGTERM',
+            'Agent stalled without emitting any new output for 120s.',
+            false,
+          ),
+        ],
+      }),
+    ).toMatchObject({
+      failure_category: 'timeout',
+      failure_stage: 'first_token_wait',
+      retryable: false,
+      user_action: 'none',
+    });
+  });
+
+  it('uses the latest retryable hint for tool execution failures', () => {
+    expect(
+      classifyRunFailure({
+        result: 'failed',
+        status: {
+          status: 'failed',
+          error: 'Tool error: MCP connector failed while listing files.',
+          exitCode: 1,
+          signal: null,
+          errorCode: 'AGENT_EXECUTION_FAILED',
+        },
+        errorCode: 'AGENT_EXECUTION_FAILED',
+        agentId: 'claude',
+        events: [
+          errorEvent('AGENT_EXECUTION_FAILED', 'tool bootstrap failed', false),
+          errorEvent(
+            'AGENT_EXECUTION_FAILED',
+            'Tool error: MCP connector failed while listing files.',
+            true,
+          ),
+        ],
+      }),
+    ).toMatchObject({
+      failure_category: 'tool_error',
+      failure_stage: 'tool_execution',
       retryable: true,
       user_action: 'retry',
     });
