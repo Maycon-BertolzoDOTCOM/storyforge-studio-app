@@ -1085,7 +1085,9 @@ describe('SettingsDialog execution settings BYOK interactions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Test' }));
 
-    expect(screen.getByRole('alert').textContent).toContain('Invalid API key.');
+    expect(
+      screen.getByText('This looks like an OpenAI key, not an Anthropic key.'),
+    ).toBeTruthy();
     await waitFor(() => {
       const testConnectionCalls = fetchMock.mock.calls.filter(
         ([input]) => input.toString() === '/api/test/connection',
@@ -1137,6 +1139,47 @@ describe('SettingsDialog execution settings BYOK interactions', () => {
     expect(testConnectionCalls).toHaveLength(1);
     // The malformed value must never reach the wire.
     expect(sentApiKey).toBe('sk-ant-test-provider');
+  });
+
+  it('shows a BYOK API key cleaned notice after blur cleanup', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url === '/api/memory') {
+        return new Response(
+          JSON.stringify({ enabled: true, memories: [], extraction: null }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      expect(url).toBe('/api/test/connection');
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          kind: 'ok',
+          latencyMs: 7,
+          model: 'claude-sonnet-4-5',
+          sample: 'pong',
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderSettingsDialog();
+
+    const apiKeyInput = screen.getByLabelText('API key') as HTMLInputElement;
+    fireEvent.change(apiKeyInput, {
+      target: { value: ' \u200Bsk-ant-test-provider\n' },
+    });
+    fireEvent.blur(apiKeyInput);
+
+    await waitFor(() => {
+      expect(apiKeyInput.value).toBe('sk-ant-test-provider');
+    });
+    expect(screen.getByText(en['settings.apiKeyCleaned'])).toBeTruthy();
+    const testConnectionCalls = fetchMock.mock.calls.filter(
+      ([input]) => input.toString() === '/api/test/connection',
+    );
+    expect(testConnectionCalls).toHaveLength(1);
   });
 
   it('lets users retry a failed BYOK connection test without editing the API key', async () => {

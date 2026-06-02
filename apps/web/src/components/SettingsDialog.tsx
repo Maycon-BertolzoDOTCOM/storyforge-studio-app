@@ -3287,6 +3287,7 @@ export function SettingsDialog({
                 labels={{
                   apiHint: t('settings.apiHint'),
                   apiKey: t('settings.apiKey'),
+                  apiKeyCleaned: t('settings.apiKeyCleaned'),
                   apiKeyGetLink: t('settings.apiKeyGetLink', {
                     host: apiKeyConsoleLink.host,
                   }),
@@ -3302,6 +3303,7 @@ export function SettingsDialog({
                   testTitle: t('settings.testTitle'),
                 }}
                 providerTestState={providerTestState}
+                draftValidation={byokDraftValidation}
                 renderTestMessage={(result) => renderTestMessage(result, 'api')}
                 requiresApiKey={byokRequiresApiKey}
                 showApiKey={showApiKey}
