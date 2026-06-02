@@ -18,6 +18,7 @@ import {
   getLocaleDefinition,
   localePath,
   localizedHref,
+  stripLocaleFromPath,
   type HeaderCopy,
   type LandingLocaleCode,
 } from '../i18n';
@@ -75,6 +76,16 @@ export interface HeaderProps {
   copy?: HeaderCopy;
   /** Brand link target — `#top` on the homepage, `/` on sub-pages. */
   brandHref?: string;
+  /**
+   * Current request pathname (e.g. `/zh/blog/x/`). Used to build the
+   * language-switcher hrefs server-side so each option points at the
+   * localized version of the CURRENT page rather than the homepage.
+   * Defaults to `/` (correct for the homepage); sub-page callers thread
+   * `Astro.url.pathname` through. The client script in
+   * `locale-switcher-script.astro` then only handles persistence + menu
+   * behavior instead of patching wrong hrefs.
+   */
+  currentPath?: string;
 }
 
 export function Header({
@@ -84,6 +95,7 @@ export function Header({
   locale = DEFAULT_LOCALE,
   copy,
   brandHref = '#top',
+  currentPath = '/',
 }: HeaderProps) {
   const linkClass = (key: NonNullable<HeaderProps['active']>) =>
     active === key ? 'is-active' : undefined;
@@ -92,9 +104,10 @@ export function Header({
   const homeBrandHref = brandHref === '/' ? href('/') : brandHref;
   const productMenuCopy = getHeaderProductMenuCopy(locale);
   const localeDef = getLocaleDefinition(locale);
+  const localeBasePath = stripLocaleFromPath(currentPath).pathname;
   const localeOptions = LANDING_LOCALES.map((entry) => ({
     ...entry,
-    href: localePath(entry.code, '/'),
+    href: localePath(entry.code, localeBasePath),
   }));
 
   return (
