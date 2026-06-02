@@ -61,7 +61,7 @@ Open Design 是這樣誕生的：當 Anthropic 隨 Claude Design 推出的那套
 <table>
 <tr>
 <td valign="top">
-<img src="docs/screenshots/product/home.png" alt="Home page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/home.png" alt="Home page" /><br/>
 <sub><b>首頁</b>——總覽入口。選一個 skill 與一套設計系統，輸入需求，從一處啟動一切。</sub>
 </td>
 </tr>
@@ -70,21 +70,21 @@ Open Design 是這樣誕生的：當 Anthropic 隨 Claude Design 推出的那套
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/automation.png" alt="Automation page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/automation.png" alt="Automation page" /><br/>
 <sub><b>自動化</b>——把重複性的設計工作流程編排成可重複使用、可排程的自動化任務。</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/design-system.png" alt="Design System page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/design-system.png" alt="Design System page" /><br/>
 <sub><b>設計系統</b>——把團隊的 <code>DESIGN.md</code> 提煉成一份品牌契約，塑形每一份產出。</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/plugin.png" alt="Plugin page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/plugin.png" alt="Plugin page" /><br/>
 <sub><b>外掛</b>——瀏覽、安裝並散布工作流程外掛，隨需擴充生成能力。</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/integrations.png" alt="Integrations page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/integrations.png" alt="Integrations page" /><br/>
 <sub><b>整合</b>——連接外部系統與 MCP 工具，並從任何 IDE、腳本或自動化流程使用 Open Design。</sub>
 </td>
 </tr>
@@ -97,21 +97,21 @@ Open Design 是這樣誕生的：當 Anthropic 隨 Claude Design 推出的那套
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-prototype.png" alt="Prototype" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-prototype.png" alt="Prototype" /><br/>
 <sub><b>原型</b>——單頁 HTML artifact，讀取你的設計系統並在沙箱化 iframe 中渲染，可即時預覽，也可下載原始碼。</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
 <sub><b>HyperFrame</b>——程式化動態與動畫圖像，渲染成真實的 MP4（例如 1920×1080 · 30fps）。</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-ppt.png" alt="Deck" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-ppt.png" alt="Deck" /><br/>
 <sub><b>簡報</b>——可翻頁、可用鍵盤瀏覽，並可匯出成 PPTX / PDF 的 pitch deck。</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-image.png" alt="Image" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-image.png" alt="Image" /><br/>
 <sub><b>圖片</b>——品牌級圖片與視覺素材，支援高解析度生成與下載。</sub>
 </td>
 </tr>
@@ -144,7 +144,7 @@ Open Design 是這樣誕生的：當 Anthropic 隨 Claude Design 推出的那套
 `od mcp install <agent> --print` 可預覽 dry-run · `--uninstall` 可移除 · 完整清單請執行 `od mcp install --help`。
 
 <p align="center">
-  <img src="docs/assets/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
+  <img src="https://repo-assets.open-design.ai/resources/images/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
 </p>
 
 **沒有安裝任何 CLI？** 位於 `POST /api/proxy/{anthropic,openai,azure,google,ollama,senseaudio}/stream` 的 BYOK 代理可提供相同的迴圈（不需衍生程序）——貼上 `baseUrl` + `apiKey` + `model` 即可，支援 OpenAI、Anthropic、Azure OpenAI、Google Gemini、Ollama、LM Studio、vLLM，或任何相容 OpenAI 的端點。逐目標的 SSRF 防護會在 daemon 邊界阻擋內部 IP／link-local／CGNAT。

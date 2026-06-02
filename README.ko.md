@@ -61,7 +61,7 @@ Open Design가 무엇이고 무엇을 하는지 빠르게 살펴봅니다. **Hom
 <table>
 <tr>
 <td valign="top">
-<img src="docs/screenshots/product/home.png" alt="Home page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/home.png" alt="Home page" /><br/>
 <sub><b>Home</b> — 개요 진입점. 스킬과 디자인 시스템을 고르고, 브리프를 입력한 뒤, 한곳에서 모든 것을 시작하세요.</sub>
 </td>
 </tr>
@@ -70,21 +70,21 @@ Open Design가 무엇이고 무엇을 하는지 빠르게 살펴봅니다. **Hom
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/automation.png" alt="Automation page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/automation.png" alt="Automation page" /><br/>
 <sub><b>Automation</b> — 반복적인 디자인 워크플로를 재사용 가능하고 예약 가능한 자동화로 조율합니다.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/design-system.png" alt="Design System page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/design-system.png" alt="Design System page" /><br/>
 <sub><b>Design System</b> — 팀의 <code>DESIGN.md</code>를 모든 출력물을 빚어내는 브랜드 계약으로 정제합니다.</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/plugin.png" alt="Plugin page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/plugin.png" alt="Plugin page" /><br/>
 <sub><b>Plugin</b> — 워크플로 플러그인을 둘러보고, 설치하고, 배포하여 필요에 따라 생성 기능을 확장합니다.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/integrations.png" alt="Integrations page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/integrations.png" alt="Integrations page" /><br/>
 <sub><b>Integrations</b> — 외부 시스템과 MCP 도구를 연결하고, 어떤 IDE, 스크립트, 자동화에서든 Open Design를 사용합니다.</sub>
 </td>
 </tr>
@@ -97,21 +97,21 @@ Open Design가 무엇이고 무엇을 하는지 빠르게 살펴봅니다. **Hom
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-prototype.png" alt="Prototype" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-prototype.png" alt="Prototype" /><br/>
 <sub><b>Prototype</b> — 당신의 디자인 시스템을 읽어 샌드박스 iframe에 렌더링되는 단일 페이지 HTML 아티팩트로, 즉시 미리보고 소스로 다운로드할 수 있습니다.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
 <sub><b>HyperFrame</b> — 프로그래밍 방식의 모션과 애니메이션 그래픽으로, 실제 MP4(예: 1920×1080 · 30fps)로 렌더링됩니다.</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-ppt.png" alt="Deck" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-ppt.png" alt="Deck" /><br/>
 <sub><b>Deck</b> — 한 장씩 넘겨 보고, 키보드로 탐색하며, PPTX / PDF로 내보낼 수 있는 피치 덱입니다.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-image.png" alt="Image" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-image.png" alt="Image" /><br/>
 <sub><b>Image</b> — 고해상도 생성과 다운로드를 지원하는 브랜드급 이미지와 비주얼 에셋입니다.</sub>
 </td>
 </tr>
@@ -144,7 +144,7 @@ Open Design가 무엇이고 무엇을 하는지 빠르게 살펴봅니다. **Hom
 `od mcp install <agent> --print`로 드라이런 미리보기 · `--uninstall`로 제거 · 전체 목록은 `od mcp install --help`로 확인.
 
 <p align="center">
-  <img src="docs/assets/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
+  <img src="https://repo-assets.open-design.ai/resources/images/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
 </p>
 
 **CLI를 설치하지 않았다고요?** `POST /api/proxy/{anthropic,openai,azure,google,ollama,senseaudio}/stream`의 BYOK 프록시가 동일한 루프(프로세스 스폰 없이)를 제공합니다 — `baseUrl` + `apiKey` + `model`을 붙여넣기만 하면 되며, OpenAI, Anthropic, Azure OpenAI, Google Gemini, Ollama, LM Studio, vLLM 또는 OpenAI 호환 엔드포인트라면 무엇이든 지원합니다. 대상별 SSRF 보호가 데몬 경계에서 내부 IP / 링크 로컬 / CGNAT를 차단합니다.

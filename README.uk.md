@@ -61,7 +61,7 @@ Open Design — це те, що ви отримуєте, коли **agent-native
 <table>
 <tr>
 <td valign="top">
-<img src="docs/screenshots/product/home.png" alt="Home page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/home.png" alt="Home page" /><br/>
 <sub><b>Home</b> — оглядова точка входу. Виберіть навичку та дизайн-систему, введіть бриф і запустіть усе з одного місця.</sub>
 </td>
 </tr>
@@ -70,21 +70,21 @@ Open Design — це те, що ви отримуєте, коли **agent-native
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/automation.png" alt="Automation page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/automation.png" alt="Automation page" /><br/>
 <sub><b>Automation</b> — оркеструйте повторювані дизайн-процеси в багаторазові автоматизації з можливістю планування.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/design-system.png" alt="Design System page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/design-system.png" alt="Design System page" /><br/>
 <sub><b>Design System</b> — виокремте <code>DESIGN.md</code> вашої команди в контракт бренду, який формує кожен результат.</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/plugin.png" alt="Plugin page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/plugin.png" alt="Plugin page" /><br/>
 <sub><b>Plugin</b> — переглядайте, встановлюйте та поширюйте плагіни робочих процесів, щоб розширювати генерацію на вимогу.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/integrations.png" alt="Integrations page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/integrations.png" alt="Integrations page" /><br/>
 <sub><b>Integrations</b> — підключайте зовнішні системи та інструменти MCP й використовуйте Open Design з будь-якого IDE, скрипта чи автоматизації.</sub>
 </td>
 </tr>
@@ -97,21 +97,21 @@ Open Design — це те, що ви отримуєте, коли **agent-native
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-prototype.png" alt="Prototype" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-prototype.png" alt="Prototype" /><br/>
 <sub><b>Prototype</b> — односторінкові HTML-артефакти, які зчитують вашу дизайн-систему та рендеряться в iframe-пісочниці, доступні для миттєвого перегляду й завантаження як вихідний код.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
 <sub><b>HyperFrame</b> — програмний рух і анімована графіка, відрендерені у справжній MP4 (наприклад, 1920×1080 · 30fps).</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-ppt.png" alt="Deck" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-ppt.png" alt="Deck" /><br/>
 <sub><b>Deck</b> — презентації, які можна гортати, навігувати з клавіатури та експортувати в PPTX / PDF.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-image.png" alt="Image" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-image.png" alt="Image" /><br/>
 <sub><b>Image</b> — зображення та візуальні ресурси брендового рівня з генерацією та завантаженням у високій роздільності.</sub>
 </td>
 </tr>
@@ -144,7 +144,7 @@ Open Design — це те, що ви отримуєте, коли **agent-native
 `od mcp install <agent> --print` для попереднього перегляду без застосування · `--uninstall` для видалення · повний список через `od mcp install --help`.
 
 <p align="center">
-  <img src="docs/assets/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
+  <img src="https://repo-assets.open-design.ai/resources/images/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
 </p>
 
 **Не встановлено жодного CLI?** Проксі BYOK на `POST /api/proxy/{anthropic,openai,azure,google,ollama,senseaudio}/stream` дає вам той самий цикл (без породження процесу) — вставте `baseUrl` + `apiKey` + `model`, з підтримкою OpenAI, Anthropic, Azure OpenAI, Google Gemini, Ollama, LM Studio, vLLM або будь-якої OpenAI-сумісної кінцевої точки. Захист від SSRF для кожної цілі блокує внутрішні IP / link-local / CGNAT на межі демона.

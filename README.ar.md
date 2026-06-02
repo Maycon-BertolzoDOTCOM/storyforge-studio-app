@@ -61,7 +61,7 @@
 <table>
 <tr>
 <td valign="top">
-<img src="docs/screenshots/product/home.png" alt="Home page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/home.png" alt="Home page" /><br/>
 <sub><b>الصفحة الرئيسية</b> — نقطة الدخول للنظرة العامة. اختر مهارة ونظام تصميم، واكتب الموجز، وانطلق بكل شيء من مكان واحد.</sub>
 </td>
 </tr>
@@ -70,21 +70,21 @@
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/automation.png" alt="Automation page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/automation.png" alt="Automation page" /><br/>
 <sub><b>الأتمتة</b> — حوّل سير عمل التصميم المتكرر إلى أتمتة قابلة لإعادة الاستخدام والجدولة.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/design-system.png" alt="Design System page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/design-system.png" alt="Design System page" /><br/>
 <sub><b>نظام التصميم</b> — استخلص ملف <code>DESIGN.md</code> الخاص بفريقك إلى عقد علامة تجارية يشكّل كل مخرَج.</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/plugin.png" alt="Plugin page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/plugin.png" alt="Plugin page" /><br/>
 <sub><b>الإضافة</b> — تصفّح وثبّت ووزّع إضافات سير العمل لتوسيع التوليد عند الطلب.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/integrations.png" alt="Integrations page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/integrations.png" alt="Integrations page" /><br/>
 <sub><b>عمليات التكامل</b> — اربط الأنظمة الخارجية وأدوات MCP، واستخدم Open Design من أي بيئة تطوير أو سكربت أو أتمتة.</sub>
 </td>
 </tr>
@@ -97,21 +97,21 @@
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-prototype.png" alt="Prototype" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-prototype.png" alt="Prototype" /><br/>
 <sub><b>النموذج الأولي</b> — مخرجات HTML من صفحة واحدة تقرأ نظام التصميم لديك وتُعرَض في iframe معزول، قابلة للمعاينة فورًا وللتنزيل كمصدر.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
 <sub><b>HyperFrame</b> — حركة ورسوميات متحركة برمجية، تُصيَّر إلى ملف MP4 حقيقي (مثل 1920×1080 · 30fps).</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-ppt.png" alt="Deck" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-ppt.png" alt="Deck" /><br/>
 <sub><b>العرض التقديمي</b> — عروض تقديمية يمكنك تصفّحها صفحة صفحة، والتنقل فيها بلوحة المفاتيح، وتصديرها إلى PPTX / PDF.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-image.png" alt="Image" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-image.png" alt="Image" /><br/>
 <sub><b>الصورة</b> — صور وأصول بصرية بجودة العلامة التجارية، مع توليد عالي الدقة وتنزيل.</sub>
 </td>
 </tr>
@@ -144,7 +144,7 @@
 `od mcp install <agent> --print` لمعاينة تجريبية دون تنفيذ · `--uninstall` للإزالة · القائمة الكاملة عبر `od mcp install --help`.
 
 <p align="center">
-  <img src="docs/assets/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
+  <img src="https://repo-assets.open-design.ai/resources/images/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
 </p>
 
 **لا توجد واجهة CLI مثبَّتة؟** يمنحك وكيل BYOK على `POST /api/proxy/{anthropic,openai,azure,google,ollama,senseaudio}/stream` الحلقة نفسها (دون إنشاء عملية) — الصق `baseUrl` + `apiKey` + `model`، مع دعم OpenAI وAnthropic وAzure OpenAI وGoogle Gemini وOllama وLM Studio وvLLM، أو أي نقطة نهاية متوافقة مع OpenAI. تمنع حماية SSRF لكل هدف عناوين IP الداخلية / link-local / CGNAT عند حافة الـ daemon.

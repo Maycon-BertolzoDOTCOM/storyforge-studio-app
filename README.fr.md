@@ -61,7 +61,7 @@ Un aperçu rapide de ce qu'est Open Design et de ce qu'il fait. Partez de la pag
 <table>
 <tr>
 <td valign="top">
-<img src="docs/screenshots/product/home.png" alt="Page d'accueil" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/home.png" alt="Page d'accueil" /><br/>
 <sub><b>Accueil</b> — le point d'entrée de la vue d'ensemble. Choisissez un skill et un système de design, saisissez le brief et lancez tout depuis un seul endroit.</sub>
 </td>
 </tr>
@@ -70,21 +70,21 @@ Un aperçu rapide de ce qu'est Open Design et de ce qu'il fait. Partez de la pag
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/automation.png" alt="Page Automation" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/automation.png" alt="Page Automation" /><br/>
 <sub><b>Automation</b> — orchestrez des workflows de design répétitifs en automatisations réutilisables et programmables.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/design-system.png" alt="Page Design System" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/design-system.png" alt="Page Design System" /><br/>
 <sub><b>Design System</b> — distillez le <code>DESIGN.md</code> de votre équipe en un contrat de marque qui façonne chaque sortie.</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/plugin.png" alt="Page Plugin" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/plugin.png" alt="Page Plugin" /><br/>
 <sub><b>Plugin</b> — parcourez, installez et distribuez des plugins de workflow pour étendre la génération à la demande.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/integrations.png" alt="Page Intégrations" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/integrations.png" alt="Page Intégrations" /><br/>
 <sub><b>Intégrations</b> — connectez des systèmes externes et des outils MCP, et utilisez Open Design depuis n'importe quel IDE, script ou automatisation.</sub>
 </td>
 </tr>
@@ -97,21 +97,21 @@ Un aperçu rapide de ce qu'est Open Design et de ce qu'il fait. Partez de la pag
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-prototype.png" alt="Prototype" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-prototype.png" alt="Prototype" /><br/>
 <sub><b>Prototype</b> — artefacts HTML d'une seule page qui lisent votre système de design et s'affichent dans une iframe sandboxée, prévisualisables instantanément et téléchargeables en tant que source.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
 <sub><b>HyperFrame</b> — mouvement programmatique et graphiques animés, rendus en un véritable MP4 (par ex. 1920×1080 · 30 fps).</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-ppt.png" alt="Présentation" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-ppt.png" alt="Présentation" /><br/>
 <sub><b>Présentation</b> — des pitch decks que vous pouvez feuilleter, parcourir au clavier et exporter en PPTX / PDF.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-image.png" alt="Image" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-image.png" alt="Image" /><br/>
 <sub><b>Image</b> — images et ressources visuelles de qualité professionnelle, avec génération et téléchargement en haute résolution.</sub>
 </td>
 </tr>
@@ -144,7 +144,7 @@ Un aperçu rapide de ce qu'est Open Design et de ce qu'il fait. Partez de la pag
 `od mcp install <agent> --print` pour un aperçu à blanc · `--uninstall` pour supprimer · liste complète avec `od mcp install --help`.
 
 <p align="center">
-  <img src="docs/assets/coding-agents.png" alt="Les 21 CLI d'agents de code pris en charge par Open Design — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
+  <img src="https://repo-assets.open-design.ai/resources/images/coding-agents.png" alt="Les 21 CLI d'agents de code pris en charge par Open Design — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
 </p>
 
 **Aucun CLI installé ?** Le proxy BYOK à `POST /api/proxy/{anthropic,openai,azure,google,ollama,senseaudio}/stream` vous offre la même boucle (sans spawn de processus) — collez `baseUrl` + `apiKey` + `model`, avec prise en charge d'OpenAI, Anthropic, Azure OpenAI, Google Gemini, Ollama, LM Studio, vLLM ou tout point de terminaison compatible OpenAI. Une protection SSRF par cible bloque les IP internes / link-local / CGNAT à la périphérie du daemon.

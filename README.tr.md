@@ -61,7 +61,7 @@ Open Design'ın ne olduğuna ve ne yaptığına hızlı bir bakış. **Home**'da
 <table>
 <tr>
 <td valign="top">
-<img src="docs/screenshots/product/home.png" alt="Home page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/home.png" alt="Home page" /><br/>
 <sub><b>Home</b> — genel bakış giriş noktası. Bir beceri ve bir tasarım sistemi seçin, özeti yazın ve her şeyi tek bir yerden başlatın.</sub>
 </td>
 </tr>
@@ -70,21 +70,21 @@ Open Design'ın ne olduğuna ve ne yaptığına hızlı bir bakış. **Home**'da
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/automation.png" alt="Automation page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/automation.png" alt="Automation page" /><br/>
 <sub><b>Automation</b> — tekrar eden tasarım iş akışlarını yeniden kullanılabilir, zamanlanabilir otomasyonlara dönüştürün.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/design-system.png" alt="Design System page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/design-system.png" alt="Design System page" /><br/>
 <sub><b>Design System</b> — ekibinizin <code>DESIGN.md</code> dosyasını her çıktıyı şekillendiren bir marka sözleşmesine damıtın.</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/plugin.png" alt="Plugin page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/plugin.png" alt="Plugin page" /><br/>
 <sub><b>Plugin</b> — üretimi talep üzerine genişletmek için iş akışı eklentilerine göz atın, yükleyin ve dağıtın.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/integrations.png" alt="Integrations page" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/integrations.png" alt="Integrations page" /><br/>
 <sub><b>Integrations</b> — harici sistemleri ve MCP araçlarını bağlayın ve Open Design'ı herhangi bir IDE'den, betikten veya otomasyondan kullanın.</sub>
 </td>
 </tr>
@@ -97,21 +97,21 @@ Bir projenin Studio'su içinde, aynı tasarım sistemi birden çok artifact tür
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-prototype.png" alt="Prototype" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-prototype.png" alt="Prototype" /><br/>
 <sub><b>Prototype</b> — tasarım sisteminizi okuyan ve yalıtılmış bir iframe içinde işlenen tek sayfalık HTML artifact'leri, anında önizlenebilir ve kaynak olarak indirilebilir.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
 <sub><b>HyperFrame</b> — programatik hareket ve animasyonlu grafikler, gerçek bir MP4'e işlenir (örn. 1920×1080 · 30fps).</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-ppt.png" alt="Deck" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-ppt.png" alt="Deck" /><br/>
 <sub><b>Deck</b> — sayfa sayfa gezebileceğiniz, klavyeyle gezinebileceğiniz ve PPTX / PDF'ye dışa aktarabileceğiniz tanıtım desteleri.</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-image.png" alt="Image" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-image.png" alt="Image" /><br/>
 <sub><b>Image</b> — yüksek çözünürlüklü üretim ve indirme ile marka düzeyinde görseller ve görsel varlıklar.</sub>
 </td>
 </tr>
@@ -144,7 +144,7 @@ Bir projenin Studio'su içinde, aynı tasarım sistemi birden çok artifact tür
 Kuru çalıştırma önizlemesi için `od mcp install <agent> --print` · kaldırmak için `--uninstall` · tam liste için `od mcp install --help`.
 
 <p align="center">
-  <img src="docs/assets/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
+  <img src="https://repo-assets.open-design.ai/resources/images/coding-agents.png" alt="The 21 coding-agent CLIs Open Design supports — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
 </p>
 
 **Kurulu CLI yok mu?** `POST /api/proxy/{anthropic,openai,azure,google,ollama,senseaudio}/stream` adresindeki BYOK proxy size aynı döngüyü verir (süreç başlatma yok) — `baseUrl` + `apiKey` + `model` yapıştırın; OpenAI, Anthropic, Azure OpenAI, Google Gemini, Ollama, LM Studio, vLLM veya herhangi bir OpenAI uyumlu uç nokta desteğiyle. Hedef bazlı SSRF koruması, daemon kenarında dahili IP'leri / link-local / CGNAT adreslerini engeller.

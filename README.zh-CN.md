@@ -61,7 +61,7 @@ Open Design 是这样一种产物：Anthropic 随 Claude Design 推出的 **Agen
 <table>
 <tr>
 <td valign="top">
-<img src="docs/screenshots/product/home.png" alt="Home 页" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/home.png" alt="Home 页" /><br/>
 <sub><b>Home</b>——总览入口。选择技能与设计系统，输入需求，一处发起所有创作。</sub>
 </td>
 </tr>
@@ -70,21 +70,21 @@ Open Design 是这样一种产物：Anthropic 随 Claude Design 推出的 **Agen
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/automation.png" alt="Automation 页" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/automation.png" alt="Automation 页" /><br/>
 <sub><b>Automation</b>——把重复的设计流程编排成可复用、可定时的自动化任务。</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/design-system.png" alt="Design System 页" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/design-system.png" alt="Design System 页" /><br/>
 <sub><b>Design System</b>——把团队的 <code>DESIGN.md</code> 沉淀为品牌契约，所有产物据此塑形。</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/plugin.png" alt="Plugin 页" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/plugin.png" alt="Plugin 页" /><br/>
 <sub><b>Plugin</b>——浏览、安装并分发工作流插件，按需扩展生成能力。</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/integrations.png" alt="Integrations 页" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/integrations.png" alt="Integrations 页" /><br/>
 <sub><b>集成</b>——接入外部系统与 MCP 工具，把 Open Design 用到任意 IDE、脚本与自动化中。</sub>
 </td>
 </tr>
@@ -97,21 +97,21 @@ Open Design 是这样一种产物：Anthropic 随 Claude Design 推出的 **Agen
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-prototype.png" alt="原型" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-prototype.png" alt="原型" /><br/>
 <sub><b>原型</b>——读取你的设计系统、在沙箱 iframe 中渲染的单页 HTML 工件，可即时预览、下载源码。</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-hyperframe.png" alt="HyperFrame" /><br/>
 <sub><b>HyperFrame</b>——程序化动效与动态图形，渲染为真实 MP4（如 1920×1080 · 30fps）。</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-ppt.png" alt="演示文稿" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-ppt.png" alt="演示文稿" /><br/>
 <sub><b>演示文稿</b>——可逐页预览、键盘翻页、导出 PPTX / PDF 的 pitch deck。</sub>
 </td>
 <td width="50%" valign="top">
-<img src="docs/screenshots/product/studio-image.png" alt="图片" /><br/>
+<img src="https://repo-assets.open-design.ai/resources/images/product/studio-image.png" alt="图片" /><br/>
 <sub><b>图片</b>——品牌级图片与视觉素材，支持高分辨率生成与下载。</sub>
 </td>
 </tr>
@@ -144,7 +144,7 @@ Open Design 是这样一种产物：Anthropic 随 Claude Design 推出的 **Agen
 `od mcp install <agent> --print` 干跑预览 · `--uninstall` 卸载 · 完整清单 `od mcp install --help`。
 
 <p align="center">
-  <img src="docs/assets/coding-agents.png" alt="Open Design 支持的 21 个编码 Agent CLI — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
+  <img src="https://repo-assets.open-design.ai/resources/images/coding-agents.png" alt="Open Design 支持的 21 个编码 Agent CLI — Claude Code · Codex · OpenCode · Hermes · Antigravity · Gemini · Grok Build · Kimi · Cursor Agent · Qwen · Qoder · GitHub Copilot · Pi · Kiro · Kilo · Mistral Vibe · DeepSeek · Reasonix · Aider · Devin · Trae" width="100%" />
 </p>
 
 **未安装任何 CLI？** `POST /api/proxy/{anthropic,openai,azure,google,ollama,senseaudio}/stream` 的 BYOK 代理提供同样的循环（无需 spawn 进程）——粘贴 `baseUrl` + `apiKey` + `model`，支持 OpenAI、Anthropic、Azure OpenAI、Google Gemini、Ollama、LM Studio、vLLM 或任何 OpenAI 兼容端点。每个目标的 SSRF 防护在守护进程边缘拦截内网 IP / link-local / CGNAT。
