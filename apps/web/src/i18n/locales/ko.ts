@@ -287,12 +287,13 @@ export const ko: Dict = {
   'settings.maxTokensHint':
     '응답 길이 상한입니다. 각 모델에는 기본값이 미리 조정되어 있으며(placeholder로 표시됨), 비워 두면 그 값을 사용하고 숫자를 입력하면 덮어씁니다.',
   'settings.baseUrl': 'Base URL',
-  'settings.baseUrlInvalid': '유효한 공개 http:// 또는 https:// URL을 입력하세요. localhost는 허용되며 사설 네트워크 IP는 차단됩니다.',
+  'settings.baseUrlInvalid': '공개 http:// 또는 https:// URL을 사용하세요.',
   'settings.baseUrlCustomize': '사용자 지정',
   'settings.baseUrlDefaultHint': '기본 엔드포인트입니다. 보통 변경할 필요가 없습니다.',
   'settings.azureBaseUrlPlaceholder': 'https://my-resource.openai.azure.com',
   'settings.azureBaseUrlHint': 'Find this in Azure portal → your resource → Endpoint.',
   'settings.azureDeploymentModel': '배포 이름',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
     'Azure OpenAI에서는 이 필드가 /openai/deployments/<model>의 배포 이름으로 사용됩니다. Azure에서 만든 배포 이름을 입력하세요.',
   'settings.apiVersion': 'API 버전',

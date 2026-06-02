@@ -285,12 +285,13 @@ export const uk: Dict = {
   'settings.suggestedModelsHint':
     'Це рекомендовані моделі для цього протоколу. Ваш провайдер може підтримувати інші моделі.',
   'settings.baseUrl': 'Базовий URL',
-  'settings.baseUrlInvalid': 'Введіть дійсний публічний URL з http:// або https://. Localhost дозволено; IP приватних мереж блокуються.',
+  'settings.baseUrlInvalid': 'Використовуйте публічний URL з http:// або https://.',
   'settings.baseUrlCustomize': 'Налаштувати',
   'settings.baseUrlDefaultHint': 'Типовий кінцевий пункт. Зазвичай його не потрібно змінювати.',
   'settings.azureBaseUrlPlaceholder': 'https://my-resource.openai.azure.com',
   'settings.azureBaseUrlHint': 'Find this in Azure portal → your resource → Endpoint.',
   'settings.azureDeploymentModel': 'Назва розгортання',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
     'Для Azure OpenAI це поле використовується як назва розгортання в /openai/deployments/<model>. Введіть назву розгортання, створену в Azure.',
   'settings.apiVersion': 'Версія API',

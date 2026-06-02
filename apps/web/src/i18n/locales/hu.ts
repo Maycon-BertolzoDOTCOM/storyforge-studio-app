@@ -284,12 +284,13 @@ export const hu: Dict = {
   'settings.suggestedModelsHint':
     'Ezek a protokollhoz javasolt modellek. A szolgáltatód más modelleket is támogathat.',
   'settings.baseUrl': 'Base URL',
-  'settings.baseUrlInvalid': 'Adj meg egy érvényes nyilvános http:// vagy https:// URL-t. A localhost engedélyezett; a privát hálózati IP-k blokkolva vannak.',
+  'settings.baseUrlInvalid': 'Használj nyilvános http:// vagy https:// URL-t.',
   'settings.baseUrlCustomize': 'Testreszabás',
   'settings.baseUrlDefaultHint': 'Alapértelmezett végpont. Általában nem kell módosítani.',
   'settings.azureBaseUrlPlaceholder': 'https://my-resource.openai.azure.com',
   'settings.azureBaseUrlHint': 'Find this in Azure portal → your resource → Endpoint.',
   'settings.azureDeploymentModel': 'Deployment név',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
     'Azure OpenAI esetén ez a mező a /openai/deployments/<model> deployment neveként szerepel. Add meg az Azure-ban létrehozott deployment nevét.',
   'settings.apiVersion': 'API-verzió',

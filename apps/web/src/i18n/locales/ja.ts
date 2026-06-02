@@ -284,12 +284,13 @@ export const ja: Dict = {
   'settings.suggestedModelsHint':
     'これはこのプロトコル向けの推奨モデルです。プロバイダーによっては別のモデルをサポートしている場合があります。',
   'settings.baseUrl': 'ベース URL',
-  'settings.baseUrlInvalid': '有効な公開 http:// または https:// URL を入力してください。localhost は許可され、プライベートネットワーク IP はブロックされます。',
+  'settings.baseUrlInvalid': '公開 http:// または https:// URL を使用してください。',
   'settings.baseUrlCustomize': 'カスタマイズ',
   'settings.baseUrlDefaultHint': 'デフォルトのエンドポイントです。通常は変更不要です。',
   'settings.azureBaseUrlPlaceholder': 'https://my-resource.openai.azure.com',
   'settings.azureBaseUrlHint': 'Find this in Azure portal → your resource → Endpoint.',
   'settings.azureDeploymentModel': 'デプロイ名',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
     'Azure OpenAI では、このフィールドが /openai/deployments/<model> のデプロイ名として使われます。Azure で作成したデプロイ名を入力してください。',
   'settings.apiVersion': 'API バージョン',

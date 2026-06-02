@@ -284,12 +284,13 @@ export const fa: Dict = {
   'settings.suggestedModelsHint':
     'این‌ها مدل‌های پیشنهادی برای این پروتکل هستند. ارائه‌دهنده شما ممکن است مدل‌های دیگری را پشتیبانی کند.',
   'settings.baseUrl': 'آدرس پایه',
-  'settings.baseUrlInvalid': 'یک URL عمومی معتبر با http:// یا https:// وارد کنید. localhost مجاز است؛ IPهای شبکه خصوصی مسدود می‌شوند.',
+  'settings.baseUrlInvalid': 'از URL عمومی http:// یا https:// استفاده کنید.',
   'settings.baseUrlCustomize': 'سفارشی‌سازی',
   'settings.baseUrlDefaultHint': 'نقطه پایانی پیش‌فرض. معمولاً نیازی به تغییر آن نیست.',
   'settings.azureBaseUrlPlaceholder': 'https://my-resource.openai.azure.com',
   'settings.azureBaseUrlHint': 'Find this in Azure portal → your resource → Endpoint.',
   'settings.azureDeploymentModel': 'نام استقرار',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
     'در Azure OpenAI، این فیلد به عنوان نام استقرار در /openai/deployments/<model> استفاده می‌شود. نام استقراری را که در Azure ساخته‌اید وارد کنید.',
   'settings.apiVersion': 'نسخه API',

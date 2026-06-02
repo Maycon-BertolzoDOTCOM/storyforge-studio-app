@@ -284,12 +284,13 @@ export const ru: Dict = {
   'settings.suggestedModelsHint':
     'Это рекомендуемые модели для этого протокола. Ваш провайдер может поддерживать другие модели.',
   'settings.baseUrl': 'Базовый URL',
-  'settings.baseUrlInvalid': 'Введите корректный публичный URL с http:// или https://. Localhost разрешен; IP частных сетей блокируются.',
+  'settings.baseUrlInvalid': 'Используйте публичный URL с http:// или https://.',
   'settings.baseUrlCustomize': 'Настроить',
   'settings.baseUrlDefaultHint': 'Эндпоинт по умолчанию. Обычно его не нужно менять.',
   'settings.azureBaseUrlPlaceholder': 'https://my-resource.openai.azure.com',
   'settings.azureBaseUrlHint': 'Find this in Azure portal → your resource → Endpoint.',
   'settings.azureDeploymentModel': 'Имя развертывания',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
     'Для Azure OpenAI это поле используется как имя развертывания в /openai/deployments/<model>. Укажите имя развертывания, созданного в Azure.',
   'settings.apiVersion': 'Версия API',

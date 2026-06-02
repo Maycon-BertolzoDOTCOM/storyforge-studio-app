@@ -284,12 +284,13 @@ export const ar: Dict = {
   'settings.suggestedModelsHint':
     'هذه نماذج مقترحة لهذا البروتوكول. قد يدعم مزوّدك نماذج مختلفة.',
   'settings.baseUrl': 'رابط القاعدة',
-  'settings.baseUrlInvalid': 'أدخل رابط http:// أو https:// عام وصالح. يُسمح بـ localhost؛ ويتم حظر عناوين IP للشبكات الخاصة.',
+  'settings.baseUrlInvalid': 'استخدم رابط http:// أو https:// عامًا.',
   'settings.baseUrlCustomize': 'تخصيص',
   'settings.baseUrlDefaultHint': 'نقطة النهاية الافتراضية. عادة لا تحتاج إلى تغييرها.',
   'settings.azureBaseUrlPlaceholder': 'https://my-resource.openai.azure.com',
   'settings.azureBaseUrlHint': 'Find this in Azure portal → your resource → Endpoint.',
   'settings.azureDeploymentModel': 'اسم النشر',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
     'في Azure OpenAI، يُستخدم هذا الحقل كاسم النشر في /openai/deployments/<model>. أدخل اسم النشر الذي أنشأته في Azure.',
   'settings.apiVersion': 'إصدار API',

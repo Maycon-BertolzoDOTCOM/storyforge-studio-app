@@ -284,12 +284,13 @@ export const tr: Dict = {
   'settings.suggestedModelsHint':
     'Bunlar bu protokol için önerilen modellerdir. Sağlayıcınız farklı modelleri destekleyebilir.',
   'settings.baseUrl': 'Temel URL',
-  'settings.baseUrlInvalid': 'Geçerli bir genel http:// veya https:// URL girin. Localhost izinlidir; özel ağ IPleri engellenir.',
+  'settings.baseUrlInvalid': 'Genel bir http:// veya https:// URL kullanın.',
   'settings.baseUrlCustomize': 'Özelleştir',
   'settings.baseUrlDefaultHint': 'Varsayılan uç nokta. Genellikle değiştirmeniz gerekmez.',
   'settings.azureBaseUrlPlaceholder': 'https://my-resource.openai.azure.com',
   'settings.azureBaseUrlHint': 'Find this in Azure portal → your resource → Endpoint.',
   'settings.azureDeploymentModel': 'Dağıtım adı',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
     'Azure OpenAI icin bu alan /openai/deployments/<model> icindeki dagitim adi olarak kullanilir. Azureda olusturdugunuz dagitim adini girin.',
   'settings.apiVersion': 'API sürümü',

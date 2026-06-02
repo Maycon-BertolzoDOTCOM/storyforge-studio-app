@@ -284,12 +284,13 @@ export const pl: Dict = {
   'settings.suggestedModelsHint':
       'To sugerowane modele dla tego protokołu. Twój dostawca może obsługiwać inne modele.',
   'settings.baseUrl': 'Bazowy URL',
-  'settings.baseUrlInvalid': 'Wpisz poprawny publiczny URL http:// lub https://. Localhost jest dozwolony; prywatne adresy IP są blokowane.',
+  'settings.baseUrlInvalid': 'Użyj publicznego URL http:// lub https://.',
   'settings.baseUrlCustomize': 'Dostosuj',
   'settings.baseUrlDefaultHint': 'Domyślny punkt końcowy. Zwykle nie trzeba go zmieniać.',
   'settings.azureBaseUrlPlaceholder': 'https://my-resource.openai.azure.com',
   'settings.azureBaseUrlHint': 'Find this in Azure portal → your resource → Endpoint.',
   'settings.azureDeploymentModel': 'Nazwa wdrożenia',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
       'Dla Azure OpenAI to pole jest używane jako nazwa wdrożenia w /openai/deployments/<model>. Wpisz nazwę wdrożenia utworzonego w Azure.',
   'settings.apiVersion': 'Wersja API',

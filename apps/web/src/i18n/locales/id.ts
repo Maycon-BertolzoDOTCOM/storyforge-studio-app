@@ -283,9 +283,9 @@ export const id: Dict = {
   'settings.model': 'Model',
   'settings.suggestedModelsHint': 'Ini model yang disarankan untuk protokol ini. Provider kamu mungkin mendukung model lain.',
   'settings.baseUrl': 'Base URL',
-  'settings.baseUrlInvalid':
-    'Masukkan URL publik http:// atau https:// yang valid. Localhost diizinkan; IP jaringan privat diblokir.',
+  'settings.baseUrlInvalid': 'Gunakan URL publik http:// atau https://.',
   'settings.azureDeploymentModel': 'Nama deployment',
+  'settings.azureCustomDeploymentName': 'Custom deployment name',
   'settings.azureDeploymentModelHint':
     'Untuk Azure OpenAI, field ini digunakan sebagai nama deployment di /openai/deployments/<model>. Masukkan nama deployment yang kamu buat di Azure.',
   'settings.apiVersion': 'Versi API',
