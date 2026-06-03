@@ -654,7 +654,7 @@ export function EntryShell({
               view === 'home' ? '' : ' entry-main__inner--wide'
             }`}
           >
-            <div style={view === 'home' ? undefined : { contentVisibility: 'hidden' }}>
+            <div data-testid="entry-view-home" data-active={view === 'home' ? 'true' : 'false'} style={view === 'home' ? undefined : { contentVisibility: 'hidden' }}>
               <HomeView
                 projects={projects}
                 projectsLoading={projectsLoading}
@@ -674,7 +674,7 @@ export function EntryShell({
                 promptTemplates={promptTemplates}
               />
             </div>
-            <div style={view === 'projects' ? undefined : { contentVisibility: 'hidden' }}>
+            <div data-testid="entry-view-projects" data-active={view === 'projects' ? 'true' : 'false'} style={view === 'projects' ? undefined : { contentVisibility: 'hidden' }}>
               {projectsLoading || skillsLoading || designSystemsLoading ? (
                 <CenteredLoader label={t('common.loading')} />
               ) : (
@@ -695,7 +695,7 @@ export function EntryShell({
                 </div>
               )}
             </div>
-            <div style={view === 'tasks' ? undefined : { contentVisibility: 'hidden' }}>
+            <div data-testid="entry-view-tasks" data-active={view === 'tasks' ? 'true' : 'false'} style={view === 'tasks' ? undefined : { contentVisibility: 'hidden' }}>
               <TasksView
                 skills={skills}
                 designTemplates={designTemplates}
@@ -703,14 +703,14 @@ export function EntryShell({
                 connectorsLoading={connectorsLoading}
               />
             </div>
-            <div style={view === 'plugins' ? undefined : { contentVisibility: 'hidden' }}>
+            <div data-testid="entry-view-plugins" data-active={view === 'plugins' ? 'true' : 'false'} style={view === 'plugins' ? undefined : { contentVisibility: 'hidden' }}>
               <PluginsView
                 onCreatePlugin={startPluginAuthoring}
                 onUsePlugin={usePluginFromLibrary}
                 onCreatePluginShareProject={onCreatePluginShareProject}
               />
             </div>
-            <div style={view === 'design-systems' ? undefined : { contentVisibility: 'hidden' }}>
+            <div data-testid="entry-view-design-systems" data-active={view === 'design-systems' ? 'true' : 'false'} style={view === 'design-systems' ? undefined : { contentVisibility: 'hidden' }}>
               {designSystemsLoading ? (
                 <CenteredLoader label={t('common.loading')} />
               ) : (
