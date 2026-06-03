@@ -252,7 +252,8 @@ addSharedOptions(
     .option("--arch <arch>", "Target arch: x64|arm64 (default: host arch)"),
 ).action(async (action: string, options: CliOptions) => {
   const platform = resolveWebuiPlatform(options.platform);
-  // webui 双进程统一用 server 模式（与现有 Linux headless 一致、已验证可运行）
+  // The webui two-process layout always uses server mode (same as the existing
+  // Linux headless path, verified to run).
   const config = { ...resolveToolPackConfig(platform, options), webOutputMode: "server" as const };
   switch (action) {
     case "build":

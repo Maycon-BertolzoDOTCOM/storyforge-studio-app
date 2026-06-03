@@ -79,7 +79,8 @@ function resolveLauncherConfig(namespace: string): PackagedConfig {
     posthogHost: process.env.POSTHOG_HOST?.trim() || null,
     webSidecarEntry: null,
     webStandaloneRoot: null,
-    // 与现有 Linux headless 一致的、已验证可在打包后运行的 web 运行模式。
+    // Same web runtime mode as the existing Linux headless path — verified to
+    // run after packaging.
     webOutputMode: "server",
   };
 }

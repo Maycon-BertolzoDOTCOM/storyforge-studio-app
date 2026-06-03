@@ -299,15 +299,15 @@ function createPackagedDaemonManagedPathEnv(
 }
 
 export type PackagedNetworkOptions = {
-  /** web 浏览器访问端口；映射到 web 子进程的 OD_WEB_PORT/PORT。 */
+  /** Browser-facing web port; mapped to the web child's OD_WEB_PORT/PORT. */
   webPort?: number | null;
-  /** web 监听 host；映射到 web 子进程的 OD_HOST。 */
+  /** Web listen host; mapped to the web child's OD_HOST. */
   webHost?: string | null;
-  /** daemon 监听端口；映射到 daemon 的 OD_PORT，默认 0（动态）。 */
+  /** Daemon listen port; mapped to the daemon's OD_PORT, default 0 (dynamic). */
   daemonPort?: number | null;
-  /** daemon 绑定 host；映射到 OD_BIND_HOST。 */
+  /** Daemon bind host; mapped to OD_BIND_HOST. */
   bindHost?: string | null;
-  /** daemon API token；映射到 OD_API_TOKEN。 */
+  /** Daemon API token; mapped to OD_API_TOKEN. */
   apiToken?: string | null;
 };
 
@@ -329,7 +329,7 @@ export type PackagedDaemonSpawnEnvOptions = {
   telemetryRelayUrl?: string | null;
   posthogKey?: string | null;
   posthogHost?: string | null;
-  /** webui 网络注入；省略时保持动态端口 + 环回 + 无 token。 */
+  /** WebUI network injection; when omitted, keeps dynamic port + loopback + no token. */
   network?: PackagedNetworkOptions | null;
 };
 

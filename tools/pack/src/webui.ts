@@ -53,7 +53,7 @@ export type WebuiBuildResult = {
   arch: ToolPackArch;
   archivePath: string;
   stageRoot: string;
-  /** @next/swc-* 原生编译器目录(构建期专用,运行时不加载),打包前已删除。 */
+  /** @next/swc-* native compiler dirs (build-only, never loaded at runtime), removed before packaging. */
   prunedNativeModules: string[];
 };
 
@@ -139,7 +139,7 @@ export async function installPrebuiltSqlite(
   } catch (error) {
     throw new Error(
       `failed to fetch better-sqlite3 prebuild for ${target.platform}/${target.arch}: ` +
-        `${(error as Error).message}. 该 os/arch 可能无预编译包。`,
+        `${(error as Error).message}. There may be no prebuilt package for this os/arch.`,
     );
   }
 }

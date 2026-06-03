@@ -1,24 +1,24 @@
 {
-  "//": "Open Design WebUI 配置示例。首次运行 `start` 会据此自动生成精简的 webui.config.json（自动去掉所有以 // 开头的说明键）。也可手动复制本文件改名为 webui.config.json —— 这些说明键会被忽略，不影响解析。优先级：命令行参数 > webui.config.json > 环境变量 > 默认值。",
+  "//": "Open Design WebUI configuration example. The first `start` auto-generates a clean webui.config.json from this file, stripping every key whose name begins with // (these are documentation only). You may also copy this file to webui.config.json manually — the // keys are ignored and never affect parsing. Precedence: CLI flags > webui.config.json > environment > defaults.",
 
-  "// port": "浏览器访问端口（web 监听端口）。默认 7456。",
+  "// port": "Browser-facing web port (the web listener). Default 7456.",
   "port": 7456,
 
-  "// daemonPort": "内部 daemon 端口。默认 7457；设为 0 改用随机环回端口（仅本机内部使用）。",
+  "// daemonPort": "Internal daemon port. Default 7457; set to 0 to use a random loopback port (internal, local-only).",
   "daemonPort": 7457,
 
-  "// host": "绑定地址。127.0.0.1 = 仅本机；0.0.0.0 = 监听所有网卡，供局域网/远程访问（此时建议设置 token）。",
+  "// host": "Bind address. 127.0.0.1 = local only; 0.0.0.0 = listen on all interfaces for LAN/remote access (set a token in that case).",
   "host": "127.0.0.1",
 
-  "// token": "直连 daemon /api 的访问令牌。host 非环回且此项为空时会自动生成并写回本文件，重启复用。浏览器经 web 访问时 /api 已反代，无需 token。",
+  "// token": "Access token for direct daemon /api calls. When host is non-loopback and this is empty, one is generated and written back to this file and reused on restart. Browsers reaching /api through web do not need it (it is reverse-proxied).",
   "token": null,
 
-  "// openBrowser": "启动后是否自动打开浏览器。默认 true。",
+  "// openBrowser": "Whether to open the browser automatically after start. Default true.",
   "openBrowser": true,
 
-  "// namespace": "可选。运行时命名空间，决定 start/stop/status 之间通信的 IPC socket。同机隔离多实例时给每个实例设不同值；省略 = default。设置后请保持 start/stop/status 用同一份配置。",
+  "// namespace": "Optional. Runtime namespace that determines the IPC socket start/stop/status use to talk to each other. Set a distinct value per instance to isolate multiple instances on one machine; omit = default. Keep start/stop/status pointed at the same config once set.",
 
-  "// dataDir": "可选。数据目录绝对路径（等价环境变量 OD_DATA_DIR），存放数据库 / 项目 / 工件 / 日志。省略 = 使用系统默认位置（OD_DATA_DIR 或 ~/.local/share/open-design）。",
+  "// dataDir": "Optional. Absolute path of the data directory (equivalent to the OD_DATA_DIR env var): database / projects / artifacts / logs. Omit = use the system default location (OD_DATA_DIR or ~/.local/share/open-design).",
 
-  "// lang": "可选。启动输出与界面语言，如 \"en\"、\"zh-CN\"。省略 = 按系统环境（LC_ALL/LANG 等）推断。"
+  "// lang": "Optional. Startup output and UI language, e.g. \"en\" or \"zh-CN\". Omit = infer from the system environment (LC_ALL/LANG, etc.)."
 }

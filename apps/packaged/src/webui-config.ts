@@ -22,9 +22,9 @@ export type WebuiFlags = {
 };
 
 export type WebuiConfigFile = {
-  /** 浏览器访问端口（web 子进程的监听端口）。 */
+  /** Browser-facing web port (the web child's listen port). */
   port?: number;
-  /** daemon 监听端口；省略或 0 表示随机环回端口（仅本机内部使用）。 */
+  /** Daemon listen port; omit or 0 means a random loopback port (internal, local-only). */
   daemonPort?: number;
   host?: string;
   token?: string;
@@ -37,7 +37,7 @@ export type WebuiConfigFile = {
 
 export type ResolvedWebuiConfig = {
   port: number;
-  /** null 表示动态环回端口（默认）。 */
+  /** null means a dynamic loopback port (the default). */
   daemonPort: number | null;
   host: string;
   token: string | null;
