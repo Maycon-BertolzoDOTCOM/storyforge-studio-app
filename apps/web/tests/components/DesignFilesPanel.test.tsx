@@ -665,6 +665,7 @@ describe('DesignFilesPanel directory navigation', () => {
     renderPanel([file({ name: 'assets/logo.png', kind: 'image' })], { onCreateFolder });
     fireEvent.click(document.querySelector('.df-dir-row .df-row-name-btn')!);
     fireEvent.click(screen.getByRole('button', { name: 'Folder' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }));
 
     await waitFor(() => {
       expect(onCreateFolder).toHaveBeenCalledWith('assets/untitled-folder');

@@ -2034,6 +2034,33 @@ function formatWorkspaceContextList(items) {
     .join('\n');
 }
 
+function renderWorkspaceContextToolHints(items) {
+  if (!Array.isArray(items) || items.length === 0) return '';
+  const kinds = new Set(items.map((item) => item?.kind).filter(Boolean));
+  const hints = [];
+  if (kinds.has('browser')) {
+    hints.push(
+      '- Browser tabs: use the selected browser tab URL/title as the target for requests about logos, fonts, images, colors, motion code, element/page screenshots, accessibility, OG/meta tags, or page structure. Prefer mounted browser automation / browser-use style tools when available (DOM snapshot, page screenshot, element screenshot, accessibility tree, evaluated JavaScript). If only URL/title context is available and no inspection tool is mounted, say that explicitly and do not invent page internals.',
+    );
+  }
+  if (kinds.has('terminal')) {
+    hints.push(
+      '- Terminal tabs: treat the selected terminal tab as the target shell/session. If the exact scrollback is not included in the prompt, run safe project-local read-only commands or ask for the terminal transcript instead of guessing hidden output.',
+    );
+  }
+  if (kinds.has('file') || kinds.has('folder') || kinds.has('design-files')) {
+    hints.push(
+      '- File and Design Files tabs: use project-relative paths exactly as shown. Read before editing, and keep generated screenshots/briefs/assets in Design Files when the user asks to capture or extract references.',
+    );
+  }
+  if (kinds.has('live-artifact')) {
+    hints.push(
+      '- Live artifact tabs: treat the selected live artifact as the preview target. Inspect or modify its source files rather than editing generated runtime output when possible.',
+    );
+  }
+  return hints.join('\n');
+}
+
 function renderRunContextPrompt(selection, metadata) {
   const context = mergeRunContextSelections(projectMetadataContextSelection(metadata), selection);
   const lines = [];
@@ -2043,6 +2070,8 @@ function renderRunContextPrompt(selection, metadata) {
       'The user did not manually choose this context; Open Design selected the currently focused workspace tab. Use it as the default target for phrases like "this", "current", "the browser", "the terminal", or "that file" unless the user says otherwise. Use project-relative paths exactly when reading or editing project files.',
     );
     lines.push(formatWorkspaceContextList(context.workspaceItems));
+    const toolHints = renderWorkspaceContextToolHints(context.workspaceItems);
+    if (toolHints) lines.push(toolHints);
   }
   if (Array.isArray(context.pluginIds) && context.pluginIds.length > 0) {
     lines.push('### Selected plugins');

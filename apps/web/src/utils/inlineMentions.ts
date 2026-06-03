@@ -3,6 +3,7 @@ export type InlineMentionKind =
   | 'skill'
   | 'mcp'
   | 'file'
+  | 'workspace'
   | 'connector'
   | 'unknown';
 

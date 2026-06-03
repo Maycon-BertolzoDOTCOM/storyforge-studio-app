@@ -1312,12 +1312,18 @@ a.avatar-item:visited {
 
 /* -------- Split / panes -------------------------------------------- */
 .split {
+  --project-chat-panel-width: 460px;
+  --project-workspace-panel-track: minmax(400px, 1fr);
   display: grid;
-  grid-template-columns: 460px 8px minmax(400px, 1fr);
+  grid-template-columns:
+    var(--project-chat-panel-width)
+    8px
+    var(--project-workspace-panel-track);
   min-height: 0;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
+  background: var(--bg);
 }
 .split.is-resizing-chat {
   cursor: col-resize;
@@ -1325,6 +1331,16 @@ a.avatar-item:visited {
 }
 .split.is-resizing-chat iframe {
   pointer-events: none;
+}
+.split.is-resizing-chat .workspace,
+.split.is-resizing-chat .viewer,
+.split.split-focus .workspace,
+.split.split-focus .viewer {
+  contain: layout paint;
+}
+.split.is-resizing-chat .html-viewer:has(.deck-nav) .preview-frame-clip,
+.split.split-focus .html-viewer:has(.deck-nav) .preview-frame-clip {
+  background: var(--text-strong);
 }
 .split.split-focus {
   grid-template-columns: minmax(0, 1fr);

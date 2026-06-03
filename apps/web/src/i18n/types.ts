@@ -1904,6 +1904,7 @@ export interface Dict {
   'chat.importDesignSystemLoadFailed': string;
   'chat.mentionTabsAria': string;
   'chat.mentionTabAll': string;
+  'chat.mentionTabTabs': string;
   'chat.mentionTabPlugins': string;
   'chat.mentionTabSkills': string;
   'chat.mentionTabMcp': string;
@@ -1911,6 +1912,7 @@ export interface Dict {
   'chat.mentionTabFiles': string;
   'chat.mentionNoResults': string;
   'chat.mentionSearchPrompt': string;
+  'chat.mentionSectionTabs': string;
   'chat.mentionSectionPlugins': string;
   'chat.mentionSectionSkills': string;
   'chat.mentionSectionMcp': string;
@@ -2011,6 +2013,7 @@ export interface Dict {
   'workspace.loadingSketch': string;
   'workspace.newTab': string;
   'workspace.searchFilesPlaceholder': string;
+  'workspace.openTabs': string;
   'workspace.openFile': string;
   'workspace.noFilesMatch': string;
   'workspace.allFiles': string;

@@ -333,6 +333,7 @@ interface Props {
   projectMetadata?: ProjectMetadata;
   onProjectMetadataChange?: (metadata: ProjectMetadata) => void;
   activeWorkspaceContext?: WorkspaceContextItem | null;
+  workspaceContexts?: WorkspaceContextItem[];
   currentSkillId?: string | null;
   onProjectSkillChange?: (skillId: string | null) => void;
   researchAvailable?: boolean;
@@ -449,6 +450,7 @@ export function ChatPane({
   projectMetadata,
   onProjectMetadataChange,
   activeWorkspaceContext,
+  workspaceContexts = [],
   currentSkillId = null,
   onProjectSkillChange,
   researchAvailable,
@@ -1442,6 +1444,7 @@ export function ChatPane({
             projectMetadata={projectMetadata}
             onProjectMetadataChange={onProjectMetadataChange}
             activeWorkspaceContext={activeWorkspaceContext}
+            workspaceContexts={workspaceContexts}
             byokApiProtocol={byokApiProtocol}
             byokImageModel={byokImageModel}
             onChangeByokImageModel={onChangeByokImageModel}

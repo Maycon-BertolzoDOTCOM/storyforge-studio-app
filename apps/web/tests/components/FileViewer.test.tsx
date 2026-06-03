@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ANNOTATION_EVENT } from '../../src/components/PreviewDrawOverlay';
@@ -82,6 +82,19 @@ function createDragDataTransfer() {
       store.set(type, value);
     }),
   };
+}
+
+// jsdom does not implement DragEvent, so fireEvent.dragOver/drop silently drop
+// the `clientY` from the event init. Construct the event and pin the coordinate
+// directly so handlers that read `event.clientY` (e.g. drop-edge math) see it.
+function fireDragEventWithClientY(
+  type: 'dragOver' | 'drop',
+  element: Element,
+  init: { dataTransfer: unknown; clientY: number },
+) {
+  const event = createEvent[type](element, { dataTransfer: init.dataTransfer } as never);
+  Object.defineProperty(event, 'clientY', { value: init.clientY, configurable: true });
+  fireEvent(element, event);
 }
 
 function deferredResponse() {
@@ -1851,7 +1864,10 @@ describe('FileViewer SVG artifacts', () => {
     expect(customDomainLabel).toBeTruthy();
     expect(pagesDevLabel.closest('.deploy-result-block')).toBe(customDomainLabel.closest('.deploy-result-block'));
     expect(screen.getByText('https://demo-pages.pages.dev')).toBeTruthy();
-    expect(screen.getByText('https://demo.example.com')).toBeTruthy();
+    // The custom domain is also the public share URL, so it renders both in the
+    // result block and in the social-share header; scope to the result block.
+    const resultBlock = customDomainLabel.closest('.deploy-result-block') as HTMLElement;
+    expect(within(resultBlock).getByText('https://demo.example.com')).toBeTruthy();
     const deployToast = document.querySelector('.od-toast');
     expect(deployToast?.className).toContain('tone-success');
     expect(deployToast?.className).toContain('placement-top');
@@ -2488,9 +2504,11 @@ describe('FileViewer SVG artifacts', () => {
     fireEvent.click(screen.getByRole('button', { name: /share/i }));
     fireEvent.click(await screen.findByRole('menuitem', { name: /deploy then share/i }));
 
-    expect(await screen.findByRole('dialog')).toBeTruthy();
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'X' })).toBeNull();
-    fireEvent.click(await screen.findByRole('button', { name: /Deploy to Vercel/i }));
+    const deployButtons = within(dialog).getAllByRole('button', { name: /^Deploy$/i });
+    fireEvent.click(deployButtons[deployButtons.length - 1]!);
 
     expect(await screen.findByRole('link', { name: 'X' })).toBeTruthy();
     expect(screen.getAllByText('https://vercel.example').length).toBeGreaterThan(0);
@@ -3970,8 +3988,8 @@ describe('FileViewer tweaks toolbar', () => {
     }));
     const dataTransfer = createDragDataTransfer();
     fireEvent.dragStart(screen.getAllByLabelText('chat.queuedReorder')[1]!, { dataTransfer });
-    fireEvent.dragOver(items[0]!, { dataTransfer, clientY: 0 });
-    fireEvent.drop(items[0]!, { dataTransfer, clientY: 0 });
+    fireDragEventWithClientY('dragOver', items[0]!, { dataTransfer, clientY: 0 });
+    fireDragEventWithClientY('drop', items[0]!, { dataTransfer, clientY: 0 });
 
     expect(onReorder).toHaveBeenCalledWith(['comment-2', 'comment-1']);
   });

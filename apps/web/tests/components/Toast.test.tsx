@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Toast } from '../../src/components/Toast';
@@ -36,15 +36,24 @@ describe('Toast', () => {
     expect(onDismiss).not.toHaveBeenCalled();
   });
 
-  it('auto-dismisses after ttlMs plus the exit fade when code is not present', () => {
+  it('auto-dismisses at ttlMs when code is not present, with the exit fade playing inside the window', () => {
     vi.useFakeTimers();
     const onDismiss = vi.fn();
-    render(<Toast message="folder opened" ttlMs={2000} onDismiss={onDismiss} />);
-    // The fade-out begins at ttlMs, but onDismiss (which unmounts the toast)
-    // waits for the exit animation to play first, so it has not fired yet.
-    vi.advanceTimersByTime(2001);
+    const { container } = render(
+      <Toast message="folder opened" ttlMs={2000} onDismiss={onDismiss} />,
+    );
+    // The fade-out begins before the deadline (ttlMs - exit), so the toast is
+    // already in its leaving state just shy of ttlMs but has not unmounted yet.
+    act(() => {
+      vi.advanceTimersByTime(1999);
+    });
+    expect(container.querySelector('.od-toast.leaving')).not.toBeNull();
     expect(onDismiss).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(200);
+    // onDismiss (which unmounts the toast) fires at exactly ttlMs, so the exit
+    // animation does not extend the toast's lifetime beyond ttlMs.
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 

@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   useLayoutEffect,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
@@ -563,6 +564,15 @@ function workspaceContextItemEqual(
   );
 }
 
+function workspaceContextItemsEqual(
+  a: WorkspaceContextItem[],
+  b: WorkspaceContextItem[],
+): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  return a.every((item, index) => workspaceContextItemEqual(item, b[index] ?? null));
+}
+
 function appendLiveArtifactEventItem(
   prev: LiveArtifactEventItem[],
   event: LiveArtifactEventItem['event'],
@@ -574,6 +584,27 @@ function appendLiveArtifactEventItem(
 
 export function projectSplitClassName(workspaceFocused: boolean): string {
   return workspaceFocused ? 'split split-focus' : 'split';
+}
+
+type ProjectSplitStyle = CSSProperties & {
+  '--project-chat-panel-width': string;
+  '--project-workspace-panel-track': string;
+};
+
+export function projectSplitStyle(
+  workspaceFocused: boolean,
+  chatPanelWidth: number,
+  workspacePanelTrack: string,
+): ProjectSplitStyle | undefined {
+  if (workspaceFocused) return undefined;
+  return {
+    '--project-chat-panel-width': `${chatPanelWidth}px`,
+    '--project-workspace-panel-track': workspacePanelTrack,
+  };
+}
+
+function applySplitChatPanelWidth(split: HTMLDivElement | null, width: number): void {
+  split?.style.setProperty('--project-chat-panel-width', `${width}px`);
 }
 
 function shouldFetchElevenLabsVoiceOptions(project: Project): boolean {
@@ -803,6 +834,7 @@ export function ProjectView({
   });
   const [activeWorkspaceContext, setActiveWorkspaceContext] =
     useState<WorkspaceContextItem | null>(null);
+  const [workspaceContexts, setWorkspaceContexts] = useState<WorkspaceContextItem[]>([]);
   const tabsLoadedRef = useRef(false);
   const tabsHydratedFromSavedStateRef = useRef(false);
   const hasAppliedInitialPrimaryOpenRef = useRef(false);
@@ -1249,6 +1281,12 @@ export function ProjectView({
   const handleActiveWorkspaceContextChange = useCallback((next: WorkspaceContextItem | null) => {
     setActiveWorkspaceContext((current) =>
       workspaceContextItemEqual(current, next) ? current : next,
+    );
+  }, []);
+
+  const handleWorkspaceContextsChange = useCallback((next: WorkspaceContextItem[]) => {
+    setWorkspaceContexts((current) =>
+      workspaceContextItemsEqual(current, next) ? current : next,
     );
   }, []);
 
@@ -4356,19 +4394,24 @@ export function ProjectView({
   const renderPreferredChatPanelWidth = useCallback((
     preferredWidth: number,
     maxWidth = chatPanelMaxWidthRef.current,
+    options: { commitState?: boolean } = {},
   ): number => {
     const next = clampChatPanelWidth(preferredWidth, maxWidth);
     chatPanelWidthRef.current = next;
-    setChatPanelWidth(next);
+    applySplitChatPanelWidth(splitRef.current, next);
+    if (options.commitState !== false) setChatPanelWidth(next);
     return next;
   }, []);
 
-  const applyChatPanelWidth = useCallback((width: number): number => {
+  const applyChatPanelWidth = useCallback((
+    width: number,
+    options: { commitState?: boolean } = {},
+  ): number => {
     const nextPreferred = clampPreferredChatPanelWidth(
       clampChatPanelWidth(width, chatPanelMaxWidthRef.current),
     );
     preferredChatPanelWidthRef.current = nextPreferred;
-    return renderPreferredChatPanelWidth(nextPreferred);
+    return renderPreferredChatPanelWidth(nextPreferred, chatPanelMaxWidthRef.current, options);
   }, [renderPreferredChatPanelWidth]);
 
   const finishChatPanelResize = useCallback((saveFinalWidth = true) => {
@@ -4381,8 +4424,11 @@ export function ProjectView({
     pendingPointerClientXRef.current = null;
     resizeStateRef.current = null;
     setResizingChatPanel(false);
-    if (saveFinalWidth) saveChatPanelWidth(preferredChatPanelWidthRef.current);
-  }, []);
+    if (saveFinalWidth) {
+      const finalWidth = renderPreferredChatPanelWidth(preferredChatPanelWidthRef.current);
+      saveChatPanelWidth(finalWidth);
+    }
+  }, [renderPreferredChatPanelWidth]);
 
   useEffect(() => {
     chatPanelWidthRef.current = chatPanelWidth;
@@ -4438,7 +4484,7 @@ export function ProjectView({
       if (delta === 0 && !state.hasMoved) return;
       state.hasMoved = true;
       const rawWidth = state.startWidth + (state.isRtl ? -delta : delta);
-      applyChatPanelWidth(rawWidth);
+      applyChatPanelWidth(rawWidth, { commitState: false });
     };
 
     const flushPendingPointerMove = () => {
@@ -5014,12 +5060,7 @@ export function ProjectView({
           leftInspectorActive && !workspaceFocused ? 'split-manual-edit' : '',
           resizingChatPanel && !workspaceFocused ? 'is-resizing-chat' : '',
         ].filter(Boolean).join(' ')}
-        style={workspaceFocused
-          ? undefined
-          : {
-              gridTemplateColumns:
-                `${chatPanelWidth}px ${SPLIT_RESIZE_HANDLE_WIDTH}px ${workspacePanelTrack}`,
-            }}
+        style={projectSplitStyle(workspaceFocused, chatPanelWidthRef.current, workspacePanelTrack)}
       >
         <div className="split-chat-slot" hidden={workspaceFocused}>
           {commentInspectorActive ? (
@@ -5106,6 +5147,7 @@ export function ProjectView({
                 onProjectChange({ ...project, metadata });
               }}
               activeWorkspaceContext={activeWorkspaceContext}
+              workspaceContexts={workspaceContexts}
               currentSkillId={project.skillId}
               onProjectSkillChange={(skillId) => {
                 onProjectChange({ ...project, skillId });
@@ -5198,6 +5240,7 @@ export function ProjectView({
           activeConversationChat={activeConversationChatState}
           onCreateSideChat={handleCreateSideChat}
           onActiveContextChange={handleActiveWorkspaceContextChange}
+          onWorkspaceContextsChange={handleWorkspaceContextsChange}
           messages={messages}
           artifactHtml={artifact?.html}
           conversationError={error}

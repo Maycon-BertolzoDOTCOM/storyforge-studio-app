@@ -1374,7 +1374,8 @@ export function DesignBrowserPanel({
       onRemoveImage={removeBrowserImage}
       onPreviewImage={setBrowserPreviewIndex}
       sending={sendingComment}
-      sendDisabled={sendDisabled}
+      queueOnSend={sendDisabled && Boolean(onSendBoardCommentAttachments)}
+      sendDisabled={!onSendBoardCommentAttachments}
       t={t}
       scale={1}
       bounds={browserPopoverBounds}

@@ -8,7 +8,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { FileWorkspace, scrollWorkspaceTabsWithWheel } from '../../src/components/FileWorkspace';
 import { DesignFilesPanel } from '../../src/components/DesignFilesPanel';
-import { projectSplitClassName } from '../../src/components/ProjectView';
+import { projectSplitClassName, projectSplitStyle } from '../../src/components/ProjectView';
 import {
   fetchProjectFileText,
   uploadProjectFiles,
@@ -891,6 +891,14 @@ describe('projectSplitClassName', () => {
   it('marks the project split as focused so the chat pane can collapse globally', () => {
     expect(projectSplitClassName(false)).toBe('split');
     expect(projectSplitClassName(true)).toBe('split split-focus');
+  });
+
+  it('uses CSS variables for split widths so pointer resize can update layout without rerendering workspace content', () => {
+    expect(projectSplitStyle(false, 512, 'minmax(420px, 1fr)')).toEqual({
+      '--project-chat-panel-width': '512px',
+      '--project-workspace-panel-track': 'minmax(420px, 1fr)',
+    });
+    expect(projectSplitStyle(true, 512, 'minmax(420px, 1fr)')).toBeUndefined();
   });
 });
 

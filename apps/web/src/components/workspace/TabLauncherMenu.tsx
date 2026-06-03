@@ -4,6 +4,7 @@ import { useT } from '../../i18n';
 import type { Dict } from '../../i18n/types';
 import { Icon, type IconName } from '../Icon';
 import type { ProjectFile, ProjectFileKind } from '../../types';
+import type { WorkspaceContextItem } from '@open-design/contracts';
 import type { LauncherAction, LauncherContext } from './tab-launcher';
 import styles from './TabLauncherMenu.module.css';
 
@@ -14,6 +15,8 @@ interface Props {
   anchor: HTMLElement | null;
   /** Project files to search; the caller passes `visibleFiles`. */
   files: ProjectFile[];
+  /** Open workspace tabs to search and focus. */
+  workspaceContexts?: WorkspaceContextItem[];
   /** Tab names already open, so matching rows can show an "open" marker. */
   openTabNames: string[];
   /** "Create new" actions from the launcher registry (empty in Stage 1). */
@@ -22,6 +25,7 @@ interface Props {
   launcherContext: LauncherContext;
   /** Open the chosen file in a new tab (wired to FileWorkspace.openFile). */
   onOpenFile: (name: string) => void;
+  onOpenTab?: (tabId: string) => void;
   onClose: () => void;
 }
 
@@ -33,10 +37,12 @@ interface Props {
 export function TabLauncherMenu({
   anchor,
   files,
+  workspaceContexts = [],
   openTabNames,
   actions,
   launcherContext,
   onOpenFile,
+  onOpenTab,
   onClose,
 }: Props) {
   const t = useT();
@@ -103,18 +109,28 @@ export function TabLauncherMenu({
     });
   }, [files, query, kindFilter]);
 
+  const tabResults = useMemo(() => {
+    if (kindFilter !== 'all') return [] as WorkspaceContextItem[];
+    const q = query.trim().toLowerCase();
+    return workspaceContexts
+      .filter((item) => item.tabId)
+      .filter((item) => !q || workspaceContextSearchText(item).toLowerCase().includes(q))
+      .slice(0, 20);
+  }, [kindFilter, query, workspaceContexts]);
+
+  const selectableCount = tabResults.length + results.length;
+
   // Clamp the selection whenever the result set shrinks.
   useEffect(() => {
-    setSelected((curr) => (results.length === 0 ? 0 : Math.min(curr, results.length - 1)));
-  }, [results.length]);
+    setSelected((curr) => (selectableCount === 0 ? 0 : Math.min(curr, selectableCount - 1)));
+  }, [selectableCount]);
 
   // Keep the keyboard-selected row visible as arrow keys move past the
   // scrollable window's edges.
   useEffect(() => {
-    const ul = listRef.current;
-    const el = ul?.children[selected] as HTMLElement | undefined;
+    const el = menuRef.current?.querySelector<HTMLElement>(`[data-selectable-idx="${selected}"]`);
     el?.scrollIntoView({ block: 'nearest' });
-  }, [selected, results.length]);
+  }, [selected, selectableCount]);
 
   const openSet = useMemo(() => new Set(openTabNames), [openTabNames]);
 
@@ -123,16 +139,27 @@ export function TabLauncherMenu({
     onClose();
   }
 
+  function chooseTab(item: WorkspaceContextItem) {
+    if (item.tabId) onOpenTab?.(item.tabId);
+    onClose();
+  }
+
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelected((s) => (results.length === 0 ? 0 : (s + 1) % results.length));
+      setSelected((s) => (selectableCount === 0 ? 0 : (s + 1) % selectableCount));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelected((s) => (results.length === 0 ? 0 : (s - 1 + results.length) % results.length));
+      setSelected((s) => (selectableCount === 0 ? 0 : (s - 1 + selectableCount) % selectableCount));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const file = results[selected] ?? results[0];
+      const tab = selected < tabResults.length ? tabResults[selected] : null;
+      if (tab) {
+        chooseTab(tab);
+        return;
+      }
+      const fileIndex = selected - tabResults.length;
+      const file = results[fileIndex] ?? results[0];
       if (file) {
         chooseFile(file.name);
       } else if (actions[0]) {
@@ -194,6 +221,37 @@ export function TabLauncherMenu({
         </div>
       ) : null}
 
+      {tabResults.length > 0 ? (
+        <>
+          <div className={styles.sectionHeader}>{t('workspace.openTabs')}</div>
+          <ul className={styles.list} style={{ maxHeight: 'none', flex: '0 0 auto' }}>
+            {tabResults.map((item, index) => (
+              <li key={`${item.kind}:${item.id}`}>
+                <button
+                  type="button"
+                  className={`${styles.row} ${index === selected ? styles.rowSelected : ''}`}
+                  onMouseEnter={() => setSelected(index)}
+                  onClick={() => chooseTab(item)}
+                  data-selectable-idx={index}
+                  data-testid="tab-launcher-tab-result"
+                >
+                  <span className={styles.rowIcon} aria-hidden>
+                    <Icon name={workspaceContextIconName(item.kind)} size={15} />
+                  </span>
+                  <span className={styles.rowBody}>
+                    <span className={styles.rowName}>{item.label}</span>
+                    <span className={styles.rowMeta}>
+                      {workspaceContextKindLabel(item.kind)} · {workspaceContextMeta(item)}
+                    </span>
+                  </span>
+                  <span className={styles.rowOpen}>{t('workspace.tabOpen')}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
       {actions.length > 0 ? (
         <>
           <div className={styles.sectionHeader}>{t('workspace.createNew')}</div>
@@ -223,9 +281,11 @@ export function TabLauncherMenu({
           </ul>
           <div className={styles.sectionHeader}>{t('workspace.openFile')}</div>
         </>
+      ) : tabResults.length > 0 ? (
+        <div className={styles.sectionHeader}>{t('workspace.openFile')}</div>
       ) : null}
 
-      {results.length === 0 ? (
+      {results.length === 0 && tabResults.length === 0 ? (
         <div className={styles.empty} data-testid="tab-launcher-empty">
           {t('workspace.noFilesMatch')}
         </div>
@@ -233,13 +293,15 @@ export function TabLauncherMenu({
         <ul className={styles.list} ref={listRef}>
           {results.map((file, index) => {
             const isOpen = openSet.has(file.name);
+            const selectableIndex = tabResults.length + index;
             return (
               <li key={file.name}>
                 <button
                   type="button"
-                  className={`${styles.row} ${index === selected ? styles.rowSelected : ''}`}
-                  onMouseEnter={() => setSelected(index)}
+                  className={`${styles.row} ${selectableIndex === selected ? styles.rowSelected : ''}`}
+                  onMouseEnter={() => setSelected(selectableIndex)}
                   onClick={() => chooseFile(file.name)}
+                  data-selectable-idx={selectableIndex}
                   data-testid="tab-launcher-result"
                 >
                   <span className={styles.rowIcon} aria-hidden>
@@ -288,6 +350,55 @@ function kindLabel(kind: ProjectFileKind, t: TranslateFn): string {
   if (kind === 'presentation') return t('designFiles.kindPresentation');
   if (kind === 'spreadsheet') return t('designFiles.kindSpreadsheet');
   return t('designFiles.kindBinary');
+}
+
+function workspaceContextIconName(kind: WorkspaceContextItem['kind']): IconName {
+  if (kind === 'browser') return 'globe';
+  if (kind === 'design-files' || kind === 'folder') return 'folder';
+  if (kind === 'design-system') return 'blocks';
+  if (kind === 'terminal') return 'terminal';
+  if (kind === 'side-chat') return 'comment';
+  if (kind === 'live-artifact') return 'file-code';
+  return 'file';
+}
+
+function workspaceContextKindLabel(kind: WorkspaceContextItem['kind']): string {
+  switch (kind) {
+    case 'browser':
+      return 'Browser';
+    case 'design-files':
+      return 'Design files';
+    case 'design-system':
+      return 'Design system';
+    case 'folder':
+      return 'Folder';
+    case 'terminal':
+      return 'Terminal';
+    case 'side-chat':
+      return 'Side chat';
+    case 'live-artifact':
+      return 'Live artifact';
+    case 'file':
+    default:
+      return 'File';
+  }
+}
+
+function workspaceContextMeta(item: WorkspaceContextItem): string {
+  return item.url || item.path || item.absolutePath || item.title || item.tabId || item.id;
+}
+
+function workspaceContextSearchText(item: WorkspaceContextItem): string {
+  return [
+    item.id,
+    item.kind,
+    item.label,
+    item.tabId ?? '',
+    item.path ?? '',
+    item.absolutePath ?? '',
+    item.url ?? '',
+    item.title ?? '',
+  ].join(' ');
 }
 
 function formatBytes(n: number): string {

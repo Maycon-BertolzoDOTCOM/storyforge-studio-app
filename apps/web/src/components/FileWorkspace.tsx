@@ -157,6 +157,7 @@ interface Props {
   /** Create a context-seeded conversation and resolve its id (backs the launcher). */
   onCreateSideChat?: (seedFromConversationId: string | null) => Promise<string | null>;
   onActiveContextChange?: (context: WorkspaceContextItem | null) => void;
+  onWorkspaceContextsChange?: (contexts: WorkspaceContextItem[]) => void;
   messages?: ChatMessage[];
   artifactHtml?: string | null;
   conversationError?: string | null;
@@ -333,6 +334,7 @@ export function FileWorkspace({
   activeConversationChat,
   onCreateSideChat,
   onActiveContextChange,
+  onWorkspaceContextsChange,
   messages = [],
   artifactHtml,
   conversationError,
@@ -652,6 +654,25 @@ export function FileWorkspace({
     const nextTabs = currentTabs.includes(name) ? currentTabs : [...currentTabs, name];
     commitTabsState(workspaceTabsState(nextTabs, name));
     setActiveTab(name);
+  }
+
+  function focusWorkspaceTab(tabId: string) {
+    setUploadError(null);
+    if (tabId === DESIGN_SYSTEM_TAB) {
+      setPersistedActive(designSystemProject ? DESIGN_SYSTEM_TAB : DESIGN_FILES_TAB);
+      return;
+    }
+    if (tabId === DESIGN_FILES_TAB) {
+      setPersistedActive(DESIGN_FILES_TAB);
+      return;
+    }
+    if (isBrowserTabId(tabId)) {
+      if (!browserTabs.some((tab) => tab.id === tabId)) return;
+      commitTabsState(workspaceTabsState(persistedTabs, tabId, browserTabs));
+      setActiveTab(tabId);
+      return;
+    }
+    openFile(tabId);
   }
 
   // Open `openName` (focusing it) and close `closeName` in a single tab-state
@@ -1241,6 +1262,127 @@ export function FileWorkspace({
     [browserTabs, tabNames],
   );
 
+  const workspaceContexts = useMemo<WorkspaceContextItem[]>(() => {
+    const out: WorkspaceContextItem[] = [];
+    const seen = new Set<string>();
+    const push = (item: WorkspaceContextItem | null | undefined) => {
+      if (!item) return;
+      const key = `${item.kind}:${item.id}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(item);
+    };
+
+    if (designSystemProject) {
+      push({
+        id: 'workspace:design-system',
+        kind: 'design-system',
+        label: 'Design System',
+        tabId: DESIGN_SYSTEM_TAB,
+      });
+    }
+
+    const trimmedDir = uploadDir.trim();
+    const designFilesLabel = trimmedDir.split('/').filter(Boolean).pop() || t('workspace.designFiles');
+    push({
+      id: trimmedDir ? `folder:${trimmedDir}` : 'workspace:design-files',
+      kind: trimmedDir ? 'folder' : 'design-files',
+      label: designFilesLabel,
+      tabId: DESIGN_FILES_TAB,
+      ...(trimmedDir ? { path: trimmedDir } : {}),
+      ...(resolvedDir ? { absolutePath: joinDisplayPath(resolvedDir, trimmedDir) } : {}),
+    });
+
+    const filesByName = new Map(visibleFiles.map((file) => [file.name, file] as const));
+    const liveByTabId = new Map(liveArtifactEntries.map((entry) => [entry.tabId, entry] as const));
+    const terminalTabNames = tabNames.filter(isTerminalTabId);
+
+    for (const entry of orderedWorkspaceTabs) {
+      if (entry.kind === 'browser') {
+        const tab = entry.browserTab;
+        const url = tab.url?.trim() ?? '';
+        const label = url ? tab.title?.trim() || labelFromUrl(url) : tab.label;
+        push({
+          id: `browser:${tab.id}`,
+          kind: 'browser',
+          label,
+          tabId: tab.id,
+          ...(tab.title ? { title: tab.title } : {}),
+          ...(url ? { url } : {}),
+        });
+        continue;
+      }
+
+      const name = entry.name;
+      if (isTerminalTabId(name)) {
+        const terminalId = terminalIdFromTabId(name);
+        const ordinal = terminalTabNames.indexOf(name) + 1;
+        push({
+          id: `terminal:${terminalId}`,
+          kind: 'terminal',
+          label: ordinal > 1 ? `${t('workspace.newTerminal')} ${ordinal}` : t('workspace.newTerminal'),
+          tabId: name,
+        });
+        continue;
+      }
+
+      if (isSideChatTabId(name)) {
+        const conversationId = conversationIdFromSideChatTabId(name);
+        const conversation = conversations.find((item) => item.id === conversationId);
+        push({
+          id: `side-chat:${conversationId}`,
+          kind: 'side-chat',
+          label: conversation?.title?.trim() || t('workspace.sideChatDefaultTitle'),
+          tabId: name,
+        });
+        continue;
+      }
+
+      const liveArtifact = liveByTabId.get(name as LiveArtifactWorkspaceEntry['tabId']);
+      if (liveArtifact) {
+        push({
+          id: `live-artifact:${liveArtifact.artifactId}`,
+          kind: 'live-artifact',
+          label: liveArtifact.title,
+          tabId: liveArtifact.tabId,
+          path: liveArtifact.slug,
+        });
+        continue;
+      }
+
+      const file = filesByName.get(name);
+      if (file || (isSketchName(name) && sketches[name])) {
+        const filePath = file?.path ?? file?.name ?? name;
+        push({
+          id: `file:${filePath}`,
+          kind: 'file',
+          label: filePath.split('/').filter(Boolean).pop() || filePath,
+          tabId: name,
+          path: filePath,
+          ...(resolvedDir ? { absolutePath: joinDisplayPath(resolvedDir, filePath) } : {}),
+        });
+      }
+    }
+
+    return out;
+  }, [
+    browserTabs,
+    conversations,
+    designSystemProject,
+    liveArtifactEntries,
+    orderedWorkspaceTabs,
+    resolvedDir,
+    sketches,
+    t,
+    tabNames,
+    uploadDir,
+    visibleFiles,
+  ]);
+
+  useEffect(() => {
+    onWorkspaceContextsChange?.(workspaceContexts);
+  }, [onWorkspaceContextsChange, workspaceContexts]);
+
   useEffect(() => {
     const tabBar = tabsBarRef.current;
     if (!tabBar) return;
@@ -1518,10 +1660,12 @@ export function FileWorkspace({
         <TabLauncherMenu
           anchor={launcherBtnRef.current}
           files={visibleFiles}
+          workspaceContexts={workspaceContexts}
           openTabNames={tabNames}
           actions={launcherActions}
           launcherContext={launcherContext}
           onOpenFile={openFile}
+          onOpenTab={focusWorkspaceTab}
           onClose={() => setLauncherOpen(false)}
         />
       ) : null}
@@ -1817,8 +1961,13 @@ export function FileWorkspace({
         <QuickSwitcher
           projectId={projectId}
           files={visibleFiles}
+          workspaceContexts={workspaceContexts}
           onOpenFile={(name) => {
             openFile(name);
+            setQuickSwitcherOpen(false);
+          }}
+          onOpenTab={(tabId) => {
+            focusWorkspaceTab(tabId);
             setQuickSwitcherOpen(false);
           }}
           onClose={() => setQuickSwitcherOpen(false)}

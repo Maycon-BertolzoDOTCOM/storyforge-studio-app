@@ -301,6 +301,55 @@ describe('DesignBrowserPanel <webview> navigation', () => {
     expect(screen.queryByRole('button', { name: 'Annotate page' })).toBeNull();
   });
 
+  it('queues browser element comments while the chat run is busy', async () => {
+    const onSendBoardCommentAttachments = vi.fn(async (_attachments: unknown[], _images?: File[]) => undefined);
+    const { container } = render(
+      <DesignBrowserPanel
+        initialUrl="https://example.com"
+        projectId="proj-webview-comment-queue"
+        onOpenFile={() => {}}
+        onRefreshFiles={() => {}}
+        onSendBoardCommentAttachments={onSendBoardCommentAttachments}
+        sendDisabled
+      />,
+    );
+
+    const webview = container.querySelector('webview.db-webview') as HTMLElement & {
+      executeJavaScript?: ReturnType<typeof vi.fn>;
+    };
+    webview.executeJavaScript = vi.fn()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce({
+        elementId: 'dom:h1',
+        filePath: 'browser:https://example.com',
+        htmlHint: '<h1>',
+        label: 'h1',
+        position: { x: 24, y: 32, width: 360, height: 72 },
+        selector: 'h1',
+        selectionKind: 'element',
+        style: { color: 'rgb(13, 12, 34)', fontSize: '48px', lineHeight: '52px' },
+        text: 'Example heading',
+      });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
+
+    const textarea = await screen.findByTestId('comment-popover-input');
+    fireEvent.change(textarea, { target: { value: 'Make this heading tighter' } });
+
+    const sendButton = screen.getByTestId('comment-add-send') as HTMLButtonElement;
+    expect(sendButton.textContent).toBe('Queue');
+    expect(sendButton.disabled).toBe(false);
+
+    fireEvent.click(sendButton);
+
+    await waitFor(() => expect(onSendBoardCommentAttachments).toHaveBeenCalledTimes(1));
+    expect(onSendBoardCommentAttachments.mock.calls[0]?.[0]?.[0]).toMatchObject({
+      comment: 'Make this heading tighter',
+      elementId: 'dom:h1',
+      filePath: 'browser:https://example.com',
+    });
+  });
+
   it('hides open annotation chrome while taking a browser screenshot', async () => {
     restoreHost?.();
     const capturePage = vi.fn(async () => {

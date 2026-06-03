@@ -63,7 +63,7 @@ type TranslateFn = (key: keyof Dict, vars?: Record<string, string | number>) => 
 
 type ToolsTab = 'plugins' | 'skills' | 'mcp' | 'import';
 
-type MentionTab = 'all' | 'files' | 'plugins' | 'skills' | 'mcp' | 'connectors';
+type MentionTab = 'all' | 'tabs' | 'files' | 'plugins' | 'skills' | 'mcp' | 'connectors';
 
 const USER_PLUGIN_SOURCE_KINDS = new Set<PluginSourceKind>([
   'user',
@@ -265,6 +265,7 @@ interface Props {
   projectMetadata?: ProjectMetadata;
   onProjectMetadataChange?: (metadata: ProjectMetadata) => void;
   activeWorkspaceContext?: WorkspaceContextItem | null;
+  workspaceContexts?: WorkspaceContextItem[];
   // SenseAudio BYOK image-model picker shown above the textarea. Hidden
   // when the active chat protocol is anything other than 'senseaudio',
   // so the composer stays clean for every other BYOK tab. The state
@@ -368,6 +369,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       projectMetadata,
       onProjectMetadataChange,
       activeWorkspaceContext = null,
+      workspaceContexts = [],
       byokApiProtocol,
       byokImageModel,
       onChangeByokImageModel,
@@ -407,6 +409,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     const [stagedSkills, setStagedSkills] = useState<SkillSummary[]>([]);
     const [stagedMcpServers, setStagedMcpServers] = useState<McpServerConfig[]>([]);
     const [stagedConnectors, setStagedConnectors] = useState<ConnectorDetail[]>([]);
+    const [stagedWorkspaceContexts, setStagedWorkspaceContexts] = useState<WorkspaceContextItem[]>([]);
     const [dismissedWorkspaceContextId, setDismissedWorkspaceContextId] = useState<string | null>(null);
     const activeWorkspaceContextId = activeWorkspaceContext?.id ?? null;
     const previousWorkspaceContextIdRef = useRef<string | null>(activeWorkspaceContextId);
@@ -476,6 +479,20 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       activeWorkspaceContext && activeWorkspaceContext.id !== dismissedWorkspaceContextId
         ? activeWorkspaceContext
         : null;
+    const selectedWorkspaceContexts = useMemo(() => {
+      const out: WorkspaceContextItem[] = [];
+      const seen = new Set<string>();
+      const push = (item: WorkspaceContextItem | null | undefined) => {
+        if (!item) return;
+        const key = `${item.kind}:${item.id}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(item);
+      };
+      push(visibleWorkspaceContext);
+      for (const item of stagedWorkspaceContexts) push(item);
+      return out;
+    }, [stagedWorkspaceContexts, visibleWorkspaceContext]);
     // initialDraft is only honored on the first non-empty value the parent
     // hands us. After we seed once, the composer is fully under user control
     // — re-renders that pass the same prompt back must not reseed. If the
@@ -639,8 +656,9 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
           plugins: pluginsForComposer,
           skills,
           staged,
+          workspaceContexts,
         }),
-      [connectors, enabledMcpServers, pluginsForComposer, projectFiles, skills, staged],
+      [connectors, enabledMcpServers, pluginsForComposer, projectFiles, skills, staged, workspaceContexts],
     );
     // Resolve which tabs to surface in the consolidated tools popover.
     // Plugins is always visible while a project is active so users can
@@ -852,7 +870,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
           nextAttachmentOrderRef.current = nextChatAttachmentOrder(orderedAttachments);
           setStagedVisualComments(commentAttachments);
           // Rebuild staged context from the queued turn's meta so the
-          // plugin / connector / skill / MCP bindings (and their chips) come
+          // plugin / connector / skill / MCP / workspace-tab bindings (and their chips) come
           // back for editing instead of being dropped. Ids resolve against the
           // currently-loaded lists; ids that no longer resolve (uninstalled
           // since queueing) are skipped rather than crashing. The applied
@@ -879,6 +897,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                   .filter((c): c is ConnectorDetail => Boolean(c))
               : [],
           );
+          setStagedWorkspaceContexts(ctx?.workspaceItems ?? []);
           setActiveAppliedPlugin(meta?.appliedPluginSnapshot ?? null);
           setUploadError(null);
           setMention(null);
@@ -902,6 +921,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       setStagedSkills([]);
       setStagedMcpServers([]);
       setStagedConnectors([]);
+      setStagedWorkspaceContexts([]);
       setUploadError(null);
       setMention(null);
       setMentionTab('all');
@@ -923,7 +943,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       const pluginIds = activeAppliedPlugin ? [activeAppliedPlugin.pluginId] : [];
       const mcpServerIds = stagedMcpServers.map((s) => s.id);
       const connectorIds = stagedConnectors.map((c) => c.id);
-      const workspaceItems = visibleWorkspaceContext ? [visibleWorkspaceContext] : [];
+      const workspaceItems = selectedWorkspaceContexts;
       const context: RunContextSelection = {
         ...(skillIds.length > 0 ? { skillIds } : {}),
         ...(pluginIds.length > 0 ? { pluginIds } : {}),
@@ -1133,7 +1153,18 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }
 
     function removeWorkspaceContext(id: string) {
-      setDismissedWorkspaceContextId(id);
+      if (visibleWorkspaceContext?.id === id) setDismissedWorkspaceContextId(id);
+      const workspaceItem = selectedWorkspaceContexts.find((item) => item.id === id) ?? null;
+      setStagedWorkspaceContexts((prev) => prev.filter((item) => item.id !== id));
+      if (workspaceItem) {
+        replaceEditorDraft(stripInlineMentionLabels(draft, [
+          workspaceItem.label,
+          workspaceItem.id,
+          workspaceItem.title ?? '',
+          workspaceItem.path ?? '',
+          workspaceItem.url ?? '',
+        ]));
+      }
     }
 
     async function ensureProject(): Promise<string | null> {
@@ -1375,6 +1406,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       draft,
       onSend,
       projectId,
+      selectedWorkspaceContexts,
       staged,
       stagedConnectors,
       stagedMcpServers,
@@ -1382,7 +1414,6 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       stagedVisualComments,
       streaming,
       t,
-      visibleWorkspaceContext,
     ]);
 
     useEffect(() => {
@@ -1397,6 +1428,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       commentAttachments,
       draft,
       onSend,
+      selectedWorkspaceContexts,
       sendDisabled,
       staged,
       stagedConnectors,
@@ -1405,7 +1437,6 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       stagedVisualComments,
       streaming,
       streamingAnnotationSendPending,
-      visibleWorkspaceContext,
     ]);
 
     // Paste handler invoked by the editor's PastePlugin. `files` are the items
@@ -1484,6 +1515,9 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       setStagedConnectors((prev) =>
         prev.filter((c) => set.has(`connector:${c.id}`)),
       );
+      setStagedWorkspaceContexts((prev) =>
+        prev.filter((item) => set.has(`workspace:${item.id}`)),
+      );
     }
 
     // Lexical reports the active @/slash trigger derived from the caret. The
@@ -1553,14 +1587,16 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       }
       if (mention) {
         // Drive a single index over the visible section union. MentionPopover
-        // renders the same files-first section order and highlights the
+        // renders the same tabs-first section order and highlights the
         // matching row from activeIndex.
+        const showTabs = mentionTab === 'all' || mentionTab === 'tabs';
         const showFiles = mentionTab === 'all' || mentionTab === 'files';
         const showPlugins = mentionTab === 'all' || mentionTab === 'plugins';
         const showSkills = mentionTab === 'all' || mentionTab === 'skills';
         const showMcp = mentionTab === 'all' || mentionTab === 'mcp';
         const showConnectors = mentionTab === 'all' || mentionTab === 'connectors';
         const total =
+          (showTabs ? filteredWorkspaceContexts.length : 0) +
           (showFiles ? filteredFiles.length : 0) +
           (showPlugins ? filteredPlugins.length : 0) +
           (showSkills ? filteredSkills.length : 0) +
@@ -1585,11 +1621,18 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }
 
     // Resolve a flat visible-section index to the right insert call. Section
-    // order MUST match MentionPopover's render order (files→plugins→skills
-    // →mcp→connectors); the activeIndex highlight and Enter target stay in
+    // order MUST match MentionPopover's render order (tabs→files→plugins
+    // →skills→mcp→connectors); the activeIndex highlight and Enter target stay in
     // lockstep across "All" and individual tabs.
     function pickMentionByFlatIndex(flat: number) {
       let i = flat;
+      if (mentionTab === 'all' || mentionTab === 'tabs') {
+        if (i < filteredWorkspaceContexts.length) {
+          insertWorkspaceMention(filteredWorkspaceContexts[i]!);
+          return;
+        }
+        i -= filteredWorkspaceContexts.length;
+      }
       if (mentionTab === 'all' || mentionTab === 'files') {
         if (i < filteredFiles.length) {
           insertMention(filteredFiles[i]!.path ?? filteredFiles[i]!.name);
@@ -1675,6 +1718,19 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       setMention(null);
     }
 
+    function insertWorkspaceMention(item: WorkspaceContextItem) {
+      setStagedWorkspaceContexts((current) =>
+        current.some((candidate) => candidate.id === item.id)
+          ? current
+          : [...current, item],
+      );
+      editorRef.current?.insertMention({
+        token: inlineMentionToken(item.label),
+        entity: { id: item.id, kind: 'workspace', label: item.label },
+      });
+      setMention(null);
+    }
+
     async function applyProjectSkill(skill: SkillSummary): Promise<boolean> {
       if (!projectId) return false;
       const result = await patchProject(projectId, { skillId: skill.id });
@@ -1735,12 +1791,12 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }
 
     // The @-picker offers a unified search across context surfaces:
-    // project files first, then plugins, skills, active MCP servers, and
-    // connectors. Picked
+    // workspace tabs first, then project files, plugins, skills, active MCP
+    // servers, and connectors. Picked
     // entities keep an inline @ token for orientation while richer
     // context is still applied behind the scenes when available.
     const mentionQuery = mention ? mention.q.toLowerCase() : '';
-    // The five suggestion lists below only matter while the @-popover is open
+    // The suggestion lists below only matter while the @-popover is open
     // (each is `[]` otherwise). Memoize them on `[mention, mentionQuery,
     // <source>]` so the filter/sort passes run only when the query or the
     // backing list actually changes — not on every unrelated composer render
@@ -1748,6 +1804,18 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     // `mention` is in the deps (not just `mentionQuery`) so the open/close gate
     // re-evaluates: a null→{q:''} transition keeps the query '' but must flip
     // the list from `[]` to live results.
+    const filteredWorkspaceContexts = useMemo(
+      () =>
+        mention
+          ? workspaceContexts
+              .filter((item) => {
+                if (!mentionQuery) return true;
+                return workspaceContextSearchText(item).toLowerCase().includes(mentionQuery);
+              })
+              .slice(0, 12)
+          : [],
+      [mention, mentionQuery, workspaceContexts],
+    );
     const filteredFiles = useMemo(
       () =>
         mention
@@ -1879,9 +1947,10 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
               }}
             />
           ) : null}
-          {visibleWorkspaceContext || stagedSkills.length > 0 || stagedMcpServers.length > 0 || stagedConnectors.length > 0 ? (
+          {selectedWorkspaceContexts.length > 0 || stagedSkills.length > 0 || stagedMcpServers.length > 0 || stagedConnectors.length > 0 ? (
             <StagedRunContexts
-              workspaceItem={visibleWorkspaceContext}
+              workspaceItems={selectedWorkspaceContexts}
+              currentWorkspaceContextId={visibleWorkspaceContext?.id ?? null}
               skills={stagedSkills}
               mcpServers={stagedMcpServers}
               connectors={stagedConnectors}
@@ -1999,6 +2068,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
           <CaretFloatingLayer caret={caretRect} open={Boolean(mention)}>
             <MentionPopover
               files={filteredFiles}
+              workspaceContexts={filteredWorkspaceContexts}
               plugins={filteredPlugins}
               skills={filteredSkills}
               mcpServers={filteredMcpServers}
@@ -2012,6 +2082,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
               activeIndex={mentionIndex}
               currentSkillId={currentSkillId}
               onPickFile={insertMention}
+              onPickWorkspaceContext={insertWorkspaceMention}
               onPickPlugin={(record) => void insertPluginMention(record)}
               onPickSkill={(skill) => void insertSkillMention(skill)}
               onPickMcp={insertMcpMention}
@@ -2355,6 +2426,7 @@ function buildComposerMentionEntities({
   plugins,
   skills,
   staged,
+  workspaceContexts,
 }: {
   connectors: ConnectorDetail[];
   files: ProjectFile[];
@@ -2362,8 +2434,23 @@ function buildComposerMentionEntities({
   plugins: InstalledPluginRecord[];
   skills: SkillSummary[];
   staged: ChatAttachment[];
+  workspaceContexts: WorkspaceContextItem[];
 }): InlineMentionEntity[] {
   const entities: InlineMentionEntity[] = [];
+  const workspaceSeen = new Set<string>();
+  for (const item of workspaceContexts) {
+    if (!item.id || !item.label) continue;
+    const key = `workspace:${item.id}`;
+    if (workspaceSeen.has(key)) continue;
+    workspaceSeen.add(key);
+    entities.push({
+      id: item.id,
+      kind: 'workspace',
+      label: item.label,
+      token: inlineMentionToken(item.label),
+      title: `Workspace: ${item.label}`,
+    });
+  }
   for (const plugin of plugins) {
     entities.push({
       id: plugin.id,
@@ -2637,6 +2724,23 @@ function workspaceContextTitle(item: WorkspaceContextItem): string {
   ].filter(Boolean).join(' | ');
 }
 
+function workspaceContextDescription(item: WorkspaceContextItem): string {
+  return item.url || item.path || item.absolutePath || item.title || item.tabId || item.id;
+}
+
+function workspaceContextSearchText(item: WorkspaceContextItem): string {
+  return [
+    item.id,
+    item.kind,
+    item.label,
+    item.tabId ?? '',
+    item.path ?? '',
+    item.absolutePath ?? '',
+    item.url ?? '',
+    item.title ?? '',
+  ].join(' ');
+}
+
 function workspaceContextKindLabel(kind: WorkspaceContextItem['kind']): string {
   switch (kind) {
     case 'browser':
@@ -2660,7 +2764,8 @@ function workspaceContextKindLabel(kind: WorkspaceContextItem['kind']): string {
 }
 
 function StagedRunContexts({
-  workspaceItem,
+  workspaceItems,
+  currentWorkspaceContextId,
   skills,
   mcpServers,
   connectors,
@@ -2670,7 +2775,8 @@ function StagedRunContexts({
   onRemoveConnector,
   t,
 }: {
-  workspaceItem?: WorkspaceContextItem | null;
+  workspaceItems: WorkspaceContextItem[];
+  currentWorkspaceContextId: string | null;
   skills: SkillSummary[];
   mcpServers: McpServerConfig[];
   connectors: ConnectorDetail[];
@@ -2685,30 +2791,36 @@ function StagedRunContexts({
       className="staged-row staged-context-row"
       data-testid="staged-contexts"
     >
-      {workspaceItem ? (
-        <div
-          key={workspaceItem.id}
-          className={`staged-chip staged-context staged-context--workspace staged-context--workspace-${workspaceItem.kind}`}
-        >
-          <span className="staged-icon" aria-hidden>
-            <Icon name={workspaceContextIcon(workspaceItem)} size={12} />
-          </span>
-          <span className="staged-name" title={workspaceContextTitle(workspaceItem)}>
-            <span className="staged-context-kind">Current</span>
-            {workspaceItem.label}
-          </span>
-          <button
-            type="button"
-            className="staged-remove od-tooltip"
-            onClick={() => onRemoveWorkspace(workspaceItem.id)}
-            title={t('common.delete')}
-            data-tooltip={t('common.delete')}
-            aria-label={t('chat.removeAria', { name: workspaceItem.label })}
+      {workspaceItems.map((workspaceItem) => {
+        const kindLabel =
+          workspaceItem.id === currentWorkspaceContextId
+            ? 'Current'
+            : workspaceContextKindLabel(workspaceItem.kind);
+        return (
+          <div
+            key={workspaceItem.id}
+            className={`staged-chip staged-context staged-context--workspace staged-context--workspace-${workspaceItem.kind}`}
           >
-            <Icon name="close" size={11} />
-          </button>
-        </div>
-      ) : null}
+            <span className="staged-icon" aria-hidden>
+              <Icon name={workspaceContextIcon(workspaceItem)} size={12} />
+            </span>
+            <span className="staged-name" title={workspaceContextTitle(workspaceItem)}>
+              <span className="staged-context-kind">{kindLabel}</span>
+              {workspaceItem.label}
+            </span>
+            <button
+              type="button"
+              className="staged-remove od-tooltip"
+              onClick={() => onRemoveWorkspace(workspaceItem.id)}
+              title={t('common.delete')}
+              data-tooltip={t('common.delete')}
+              aria-label={t('chat.removeAria', { name: workspaceItem.label })}
+            >
+              <Icon name="close" size={11} />
+            </button>
+          </div>
+        );
+      })}
       {skills.map((s) => (
         <div
           key={s.id}
@@ -4135,6 +4247,7 @@ function SlashPopover({
 
 function MentionPopover({
   files,
+  workspaceContexts,
   connectors,
   plugins,
   skills,
@@ -4145,12 +4258,14 @@ function MentionPopover({
   activeIndex,
   currentSkillId,
   onPickFile,
+  onPickWorkspaceContext,
   onPickPlugin,
   onPickSkill,
   onPickMcp,
   onPickConnector,
 }: {
   files: ProjectFile[];
+  workspaceContexts: WorkspaceContextItem[];
   connectors: ConnectorDetail[];
   plugins: InstalledPluginRecord[];
   skills: SkillSummary[];
@@ -4161,6 +4276,7 @@ function MentionPopover({
   activeIndex: number;
   currentSkillId: string | null;
   onPickFile: (path: string) => void;
+  onPickWorkspaceContext: (item: WorkspaceContextItem) => void;
   onPickPlugin: (record: InstalledPluginRecord) => void;
   onPickSkill: (skill: SkillSummary) => void;
   onPickMcp: (server: McpServerConfig) => void;
@@ -4170,18 +4286,21 @@ function MentionPopover({
   const ref = useRef<HTMLDivElement | null>(null);
   const tabs: Array<{ id: MentionTab; label: string }> = [
     { id: 'all', label: t('chat.mentionTabAll') },
+    { id: 'tabs', label: t('chat.mentionTabTabs') },
     { id: 'files', label: t('chat.mentionTabFiles') },
     { id: 'plugins', label: t('chat.mentionTabPlugins') },
     { id: 'skills', label: t('chat.mentionTabSkills') },
     { id: 'mcp', label: t('chat.mentionTabMcp') },
     { id: 'connectors', label: t('chat.mentionTabConnectors') },
   ];
+  const showTabs = tab === 'all' || tab === 'tabs';
   const showFiles = tab === 'all' || tab === 'files';
   const showPlugins = tab === 'all' || tab === 'plugins';
   const showSkills = tab === 'all' || tab === 'skills';
   const showMcp = tab === 'all' || tab === 'mcp';
   const showConnectors = tab === 'all' || tab === 'connectors';
   const hasVisibleResults =
+    (showTabs && workspaceContexts.length > 0) ||
     (showFiles && files.length > 0) ||
     (showPlugins && plugins.length > 0) ||
     (showSkills && skills.length > 0) ||
@@ -4189,7 +4308,7 @@ function MentionPopover({
     (showConnectors && connectors.length > 0);
   useEffect(() => {
     if (ref.current) ref.current.scrollTop = 0;
-  }, [connectors, files, plugins, skills, mcpServers, tab]);
+  }, [connectors, files, plugins, skills, mcpServers, tab, workspaceContexts]);
   let optionIndex = 0;
   return (
     <div className="mention-popover" data-testid="mention-popover">
@@ -4217,6 +4336,38 @@ function MentionPopover({
               <>{t('chat.mentionSearchPrompt')}</>
             )}
           </div>
+        ) : null}
+        {showTabs && workspaceContexts.length > 0 ? (
+          <>
+            <div className="mention-section-label">{t('chat.mentionSectionTabs')}</div>
+            {workspaceContexts.map((item) => {
+              const flat = optionIndex;
+              optionIndex += 1;
+              const active = flat === activeIndex;
+              return (
+                <button
+                  key={`workspace-${item.kind}-${item.id}`}
+                  id={`mention-opt-${flat}`}
+                  role="option"
+                  aria-selected={active}
+                  className={`mention-item mention-item--workspace${active ? ' is-active' : ''}`}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onPickWorkspaceContext(item)}
+                  title={workspaceContextTitle(item)}
+                >
+                  <Icon name={workspaceContextIcon(item)} size={12} />
+                  <span className="mention-item-body">
+                    <strong>{item.label}</strong>
+                    <span className="mention-meta mention-meta--desc">
+                      {workspaceContextDescription(item)}
+                    </span>
+                  </span>
+                  <span className="mention-meta">{workspaceContextKindLabel(item.kind)}</span>
+                </button>
+              );
+            })}
+          </>
         ) : null}
         {showFiles && files.length > 0 ? (
           <>

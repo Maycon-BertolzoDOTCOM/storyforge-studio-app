@@ -1061,13 +1061,14 @@
 }
 .design-browser .comment-popover,
 .db-comment-popover {
-  z-index: 140;
+  z-index: 240;
 }
 .db-comment-popover textarea {
   width: 100%;
 }
-.db-inspect-panel {
-  z-index: 140;
+.design-browser .db-inspect-panel {
+  z-index: 360;
+  isolation: isolate;
 }
 .db-inspect-text {
   min-height: 96px;

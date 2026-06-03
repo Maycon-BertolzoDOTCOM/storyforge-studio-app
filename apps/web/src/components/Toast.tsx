@@ -34,8 +34,11 @@ export interface ToastProps {
 }
 
 const DEFAULT_TTL = 4000;
-// Exit fade duration — kept in sync with the .od-toast.leaving CSS animation
-// so onDismiss (which unmounts us) fires only after the fade-out has played.
+// Exit fade duration — kept in sync with the .od-toast.leaving CSS animation.
+// The fade plays inside the TTL window (it begins at ttlMs - EXIT_MS) so the
+// toast unmounts at exactly ttlMs. Auto-dismiss timing therefore matches the
+// pre-fade contract: callers that rely on the toast being gone by ttlMs keep
+// working, and the exit animation no longer extends the toast's lifetime.
 const EXIT_MS = 160;
 
 // A leading status glyph makes the toast's outcome readable at a glance:
@@ -59,8 +62,12 @@ export function Toast({ message, details, code, ttlMs = DEFAULT_TTL, onDismiss, 
     // prior leaving state before re-arming the timers.
     setLeaving(false);
     if (!onDismiss || !Number.isFinite(effectiveTtl) || effectiveTtl <= 0) return;
-    const fadeId = window.setTimeout(() => setLeaving(true), effectiveTtl);
-    const dismissId = window.setTimeout(() => onDismiss(), effectiveTtl + EXIT_MS);
+    // Begin the fade-out EXIT_MS before the deadline so the exit animation
+    // plays within the TTL window and onDismiss (which unmounts us) lands at
+    // exactly effectiveTtl. Clamp the fade start to 0 for very short TTLs.
+    const fadeAt = Math.max(0, effectiveTtl - EXIT_MS);
+    const fadeId = window.setTimeout(() => setLeaving(true), fadeAt);
+    const dismissId = window.setTimeout(() => onDismiss(), effectiveTtl);
     return () => {
       window.clearTimeout(fadeId);
       window.clearTimeout(dismissId);
