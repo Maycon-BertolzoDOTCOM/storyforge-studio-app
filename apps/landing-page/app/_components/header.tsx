@@ -33,6 +33,51 @@ const ext = {
   rel: 'noreferrer noopener',
 } as const;
 
+/*
+ * Solution dropdown — SEO surfaces grouped under one parent. Names stay in
+ * English on purpose: each is a target keyword phrase (e.g. "Figma alternative"),
+ * and the canonical search-query form is English regardless of UI locale.
+ * `href` is relative and run through `href()` so it picks up the locale prefix.
+ * Pages still on the backlog point at an existing surface today and will be
+ * repointed at their dedicated page once it ships (see nav IA plan, PR-2/3).
+ */
+const SOLUTION_LINKS: ReadonlyArray<{ name: string; href: string }> = [
+  { name: 'Claude Code for Design', href: '/compare/' },
+  { name: 'AI Prototype Generator', href: '/compare/' },
+  { name: 'AI Dashboard Builder', href: '/compare/' },
+  { name: 'AI Landing Page Builder', href: '/compare/' },
+  { name: 'AI Slides Generator', href: '/compare/' },
+  { name: 'Figma Alternative', href: '/alternatives/claude-design/' },
+  { name: 'Lovable Alternative', href: '/alternatives/claude-design/' },
+];
+
+/*
+ * Agent dropdown — the 17 first-party coding-agent adapters. Names mirror the
+ * canonical `name:` fields on the /agents/ hub (apps/landing-page/app/pages/
+ * agents/index.astro); each item deep-links to that agent's anchor on the hub.
+ * Per-agent detail pages (/agents/<slug>/) are a later milestone — until then
+ * the anchor is the destination. Agent product names are not localized.
+ */
+const AGENT_LINKS: ReadonlyArray<{ name: string; slug: string }> = [
+  { name: 'Claude Code', slug: 'claude-code' },
+  { name: 'Codex', slug: 'codex' },
+  { name: 'Cursor Agent', slug: 'cursor' },
+  { name: 'Gemini CLI', slug: 'gemini' },
+  { name: 'GitHub Copilot CLI', slug: 'copilot' },
+  { name: 'OpenCode', slug: 'opencode' },
+  { name: 'Qwen', slug: 'qwen' },
+  { name: 'Grok', slug: 'grok' },
+  { name: 'Hermes', slug: 'hermes' },
+  { name: 'Kimi CLI', slug: 'kimi' },
+  { name: 'Devin for Terminal', slug: 'devin' },
+  { name: 'DeepSeek TUI', slug: 'deepseek' },
+  { name: 'Pi', slug: 'pi' },
+  { name: 'Mistral Vibe CLI', slug: 'vibe' },
+  { name: 'Kiro CLI', slug: 'kiro' },
+  { name: 'Kilo', slug: 'kilo' },
+  { name: 'Qoder CLI', slug: 'qoder' },
+];
+
 export interface HeaderProps {
   /** Nav highlight target. `'home'` is the default for `/`. */
   active?:
@@ -50,6 +95,9 @@ export interface HeaderProps {
     | 'systems'
     | 'templates'
     | 'craft'
+    | 'solution'
+    | 'agent'
+    | 'resources'
     | 'blog'
     | 'tutorials'
     | 'community';
@@ -208,6 +256,59 @@ export function Header({
               </ul>
             </li>
             {/*
+              Solution — SEO surfaces (Claude Code for design, use-case pages,
+              competitor-alternative pages) grouped under one parent. The
+              trigger points at the flagship Claude Code page once it ships;
+              until then it falls back to /compare/. Same CSS-only dropdown
+              mechanic as Product. Sub-item names are intentionally English
+              (target search phrases). See nav IA plan PR-2/3.
+            */}
+            <li className='has-dropdown'>
+              <a
+                href={href('/compare/')}
+                className={active === 'solution' ? 'is-active' : undefined}
+                aria-haspopup='true'
+                aria-expanded='false'
+              >
+                {headerCopy.nav.solution}
+                <span className='dropdown-caret' aria-hidden='true'>▾</span>
+              </a>
+              <ul className='nav-dropdown' role='menu'>
+                {SOLUTION_LINKS.map((item) => (
+                  <li role='none' key={item.name}>
+                    <a role='menuitem' href={href(item.href)}>
+                      <span className='dropdown-name'>{item.name}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </li>
+            {/*
+              Agent — the 17 first-party coding-agent adapters, deep-linking to
+              their anchors on the /agents/ hub. The trigger points at the hub
+              itself. Agent product names are not localized.
+            */}
+            <li className='has-dropdown'>
+              <a
+                href={href('/agents/')}
+                className={active === 'agent' ? 'is-active' : undefined}
+                aria-haspopup='true'
+                aria-expanded='false'
+              >
+                {headerCopy.nav.agent}
+                <span className='dropdown-caret' aria-hidden='true'>▾</span>
+              </a>
+              <ul className='nav-dropdown nav-dropdown-agents' role='menu'>
+                {AGENT_LINKS.map((item) => (
+                  <li role='none' key={item.slug}>
+                    <a role='menuitem' href={href(`/agents/#${item.slug}`)}>
+                      <span className='dropdown-name'>{item.name}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </li>
+            {/*
               Plugins — catalog facets (Templates / Skills / Systems / Craft)
               collapsed under one parent. Each row keeps its count badge
               inside the panel and the trigger highlights when any of the
@@ -263,15 +364,58 @@ export function Header({
                 </li>
               </ul>
             </li>
-            <li>
-              <a href={href('/tutorials/')} className={linkClass('tutorials')}>
-                {headerCopy.nav.tutorials}
+            {/*
+              Resources — Blog, Tutorials, the comparison hub, and Download
+              collapsed under one parent. Blog/Tutorials were standalone
+              top-level items before; folding them here frees two slots for the
+              new Solution/Agent dropdowns without overflowing the bar.
+            */}
+            <li className='has-dropdown'>
+              <a
+                href={href('/blog/')}
+                className={
+                  active === 'resources' ||
+                  active === 'blog' ||
+                  active === 'tutorials'
+                    ? 'is-active'
+                    : undefined
+                }
+                aria-haspopup='true'
+                aria-expanded='false'
+              >
+                {headerCopy.nav.resources}
+                <span className='dropdown-caret' aria-hidden='true'>▾</span>
               </a>
-            </li>
-            <li>
-              <a href={href('/blog/')} className={linkClass('blog')}>
-                {headerCopy.nav.blog}
-              </a>
+              <ul className='nav-dropdown' role='menu'>
+                <li role='none'>
+                  <a
+                    role='menuitem'
+                    href={href('/blog/')}
+                    className={linkClass('blog')}
+                  >
+                    <span className='dropdown-name'>{headerCopy.nav.blog}</span>
+                  </a>
+                </li>
+                <li role='none'>
+                  <a
+                    role='menuitem'
+                    href={href('/tutorials/')}
+                    className={linkClass('tutorials')}
+                  >
+                    <span className='dropdown-name'>{headerCopy.nav.tutorials}</span>
+                  </a>
+                </li>
+                <li role='none'>
+                  <a role='menuitem' href={href('/compare/')}>
+                    <span className='dropdown-name'>Compare</span>
+                  </a>
+                </li>
+                <li role='none'>
+                  <a role='menuitem' href={href('/download/')}>
+                    <span className='dropdown-name'>{headerCopy.download}</span>
+                  </a>
+                </li>
+              </ul>
             </li>
             {/*
               Community is a static contributors / ambassadors page served
