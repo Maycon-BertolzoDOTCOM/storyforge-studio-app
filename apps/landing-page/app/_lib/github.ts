@@ -1,3 +1,5 @@
+import { getStableReleaseMetadata } from './release-metadata';
+
 export interface GithubRepoMeta {
   starsLabel: string;
   versionLabel: string;
@@ -17,13 +19,18 @@ function formatStars(count: unknown): string | null {
   return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}K`;
 }
 
-function formatVersion(release: unknown): string | null {
-  if (!release || typeof release !== 'object') return null;
-  const record = release as { name?: unknown; tag_name?: unknown };
+function formatVersion(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const record = metadata as {
+    releaseVersion?: unknown;
+    stableVersion?: unknown;
+    baseVersion?: unknown;
+    versionTag?: unknown;
+  };
 
-  const fromName = (name: unknown) => {
-    if (typeof name !== 'string') return null;
-    const match = name.match(/(\d+\.\d+\.\d+(?:[-+][\w.]+)?)/);
+  const fromVersion = (version: unknown) => {
+    if (typeof version !== 'string') return null;
+    const match = version.match(/(\d+\.\d+\.\d+(?:[-+][\w.]+)?)/);
     return match ? `v${match[1]}` : null;
   };
 
@@ -33,22 +40,27 @@ function formatVersion(release: unknown): string | null {
     return cleaned ? `v${cleaned.replace(/^v/, '')}` : null;
   };
 
-  return fromName(record.name) ?? fromTag(record.tag_name);
+  return (
+    fromVersion(record.releaseVersion) ??
+    fromVersion(record.stableVersion) ??
+    fromVersion(record.baseVersion) ??
+    fromTag(record.versionTag)
+  );
 }
 
-async function fetchJson(url: string): Promise<unknown> {
+async function fetchJson(url: string, headers?: Record<string, string>): Promise<unknown> {
   const response = await fetch(url, {
-    headers: { Accept: 'application/vnd.github+json' },
+    headers,
   });
-  if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
+  if (!response.ok) throw new Error(`Request returned ${response.status}: ${url}`);
   return response.json();
 }
 
 export function getGithubRepoMeta(): Promise<GithubRepoMeta> {
   repoMetaPromise ??= (async () => {
     const [repoResult, releaseResult] = await Promise.allSettled([
-      fetchJson(REPO_API),
-      fetchJson(`${REPO_API}/releases/latest`),
+      fetchJson(REPO_API, { Accept: 'application/vnd.github+json' }),
+      getStableReleaseMetadata(),
     ]);
 
     const repo = repoResult.status === 'fulfilled' ? repoResult.value : null;
