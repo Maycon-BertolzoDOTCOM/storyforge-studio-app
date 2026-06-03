@@ -152,6 +152,7 @@ describe("packaged smoke workflow", () => {
     expect(workflow).toContain("open-design-beta-win-publish-manifest");
     expect(workflow).toContain("if: ${{ inputs.mac_smoke_mode != 'skip' }}");
     expect(workflow).toContain("OD_PACKAGED_E2E_MAC_SMOKE_PROFILE: ${{ inputs.mac_smoke_mode }}");
+    expect(workflow).toContain("if: ${{ always() && inputs.mac_smoke_mode != 'skip' }}");
     expect(workflow).toContain("runs-on: [self-hosted, macOS, ARM64, nexu-mac, release-beta]");
     expect(workflow).toContain("path: _release-build");
     expect(workflow).toContain("working-directory: _release-build");

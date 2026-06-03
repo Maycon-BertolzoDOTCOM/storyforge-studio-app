@@ -312,7 +312,7 @@ jobs:
           pnpm exec tsx scripts/release-smoke.ts mac specs/mac.spec.ts
 
       - name: Upload mac e2e spec report
-        if: ${{ always() }}
+        if: ${{ always() && inputs.mac_smoke_mode != 'skip' }}
         uses: actions/upload-artifact@v7
         with:
           name: open-design-beta-mac-e2e-report
