@@ -26,6 +26,7 @@ import type { PackagedConfig } from "./config.js";
 import { writePackagedDesktopIdentity, writePackagedWebIdentity } from "./identity.js";
 import { resolvePackagedNamespacePaths, resolveWebuiNamespacesRoot } from "./paths.js";
 import { readSidecarLogTail, startPackagedSidecars } from "./sidecars.js";
+import { probeWebuiStatus } from "./webui-ipc.js";
 import { resolveWebuiLocale, webuiMessages } from "./webui-i18n.js";
 import {
   composeHttpUrl,
@@ -303,29 +304,13 @@ function printStartBanner(opts: {
   }
 }
 
-// One desktop IPC STATUS probe. Returns the live instance's URLs, or null when
-// nothing is listening on this namespace (a dead/stale/absent socket all throw
-// and resolve to null — so this never false-positives on a crashed worker).
-async function probeWebuiStatus(
-  ipcPath: string,
-): Promise<{ url: string; daemonUrl: string | null } | null> {
-  try {
-    const reply = (await requestJsonIpc(ipcPath, { type: SIDECAR_MESSAGES.STATUS }, { timeoutMs: 800 })) as {
-      url?: string;
-      daemonUrl?: string | null;
-    };
-    if (reply?.url != null && reply.url.length > 0) {
-      return { url: reply.url, daemonUrl: reply.daemonUrl ?? null };
-    }
-  } catch {
-    // nothing listening on this namespace
-  }
-  return null;
-}
-
 // Polls the worker's desktop IPC STATUS until it reports a URL, fast-failing if
 // the detached worker dies (reads its log tail into the error so the real
-// failure surfaces in the foreground terminal).
+// failure surfaces in the foreground terminal). A not-running probe result
+// (missing/refused socket while the worker is still binding) keeps polling; a
+// real probe failure (timeout once the socket is up, permission, malformed
+// reply) is surfaced immediately with the log tail instead of polling to the
+// generic timeout.
 async function waitForWebuiReady(
   ipcPath: string,
   pid: number,
@@ -334,17 +319,23 @@ async function waitForWebuiReady(
 ): Promise<ServeHandle> {
   const start = Date.now();
   const t = webuiMessages(currentLocale());
+  const failWith = async (reason?: string): Promise<never> => {
+    const tail = await readSidecarLogTail(logPath);
+    const suffix = reason != null ? ` (${reason})` : "";
+    throw new Error(`${t.startFailedLog(logPath)}${suffix}${tail.length > 0 ? `:\n${tail}` : ""}`);
+  };
   while (Date.now() - start < timeoutMs) {
-    if (!isProcessAlive(pid)) {
-      const tail = await readSidecarLogTail(logPath);
-      throw new Error(`${t.startFailedLog(logPath)}${tail.length > 0 ? `:\n${tail}` : ""}`);
+    if (!isProcessAlive(pid)) return failWith();
+    let status: Awaited<ReturnType<typeof probeWebuiStatus>>;
+    try {
+      status = await probeWebuiStatus(ipcPath);
+    } catch (error) {
+      return failWith(error instanceof Error ? error.message : String(error));
     }
-    const status = await probeWebuiStatus(ipcPath);
     if (status != null) return { webUrl: status.url, daemonUrl: status.daemonUrl };
     await sleep(200);
   }
-  const tail = await readSidecarLogTail(logPath);
-  throw new Error(`${t.startFailedLog(logPath)}${tail.length > 0 ? `:\n${tail}` : ""}`);
+  return failWith();
 }
 
 // The detached background worker: re-resolves the config the foreground passed
