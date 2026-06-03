@@ -61,6 +61,12 @@ export interface HomeHeroSubmitHandler {
   (): void;
 }
 
+export interface ExamplePromptInfo {
+  title: string;
+  artifactType: string;
+  brief: Record<string, string>;
+}
+
 interface Props {
   prompt: string;
   onPromptChange: (value: string) => void;
@@ -110,6 +116,7 @@ interface Props {
   workingDir?: string | null;
   onPickWorkingDir?: () => void;
   onClearWorkingDir?: () => void;
+  onExamplePromptStatusChange?: (info: ExamplePromptInfo | null) => void;
 }
 
 interface HomeHeroDesignSystemOption {
@@ -198,6 +205,7 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
     workingDir = null,
     onPickWorkingDir,
     onClearWorkingDir,
+    onExamplePromptStatusChange,
   },
   ref,
 ) {
@@ -547,6 +555,7 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
   function clearSelectedPromptExample() {
     if (selectedPromptExample) {
       onPromptChange('');
+      onExamplePromptStatusChange?.(null);
     }
     setSelectedPromptExample(null);
   }
@@ -555,6 +564,11 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
     setSelectedPromptExample({
       label: promptExampleChipLabel(example),
       promptText: example,
+    });
+    onExamplePromptStatusChange?.({
+      title: promptExampleChipLabel(example),
+      artifactType: activeChipId ?? 'prototype',
+      brief: briefForChipId(activeChipId ?? 'prototype'),
     });
     onPromptChange(example);
     setSelectedIndex(0);
@@ -572,6 +586,11 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
     setSelectedPromptExample({
       label: record.title,
       promptText,
+    });
+    onExamplePromptStatusChange?.({
+      title: record.title,
+      artifactType: chipId,
+      brief: briefForPluginPreset(record, chipId),
     });
     onPickExamplePlugin(record, chipId, promptText);
   }
@@ -832,6 +851,7 @@ export const HomeHero = forwardRef<HTMLTextAreaElement, Props>(function HomeHero
                 onPromptChange(e.target.value);
                 if (selectedPromptExample && e.target.value !== selectedPromptExample.promptText) {
                   setSelectedPromptExample(null);
+                  onExamplePromptStatusChange?.(null);
                 }
                 setSelectedIndex(0);
               }}
@@ -3100,4 +3120,35 @@ function homeHeroChipPromptExamples(chipId: string, locale: Locale): string[] {
 
 function isChineseLocale(locale: Locale): boolean {
   return locale === 'zh-CN' || locale === 'zh-TW';
+}
+
+function briefForChipId(chipId: string): Record<string, string> {
+  switch (chipId) {
+    case 'prototype':
+      return { artifact_type: 'web prototype', audience: 'product evaluators', fidelity: 'high-fidelity' };
+    case 'deck':
+      return { artifact_type: 'pitch deck / presentation', audience: 'decision makers', slide_count: '10-15 pages' };
+    case 'image':
+      return { artifact_type: 'image', style: 'cinematic, high-quality, on-brand' };
+    case 'video':
+      return { artifact_type: 'video', style: 'cinematic, high-quality, on-brand' };
+    case 'hyperframes':
+      return { artifact_type: 'motion graphic / animated sequence', style: 'cinematic, polished transitions' };
+    case 'audio':
+      return { artifact_type: 'audio', style: 'professional, polished, brand-appropriate' };
+    default:
+      return { artifact_type: chipId };
+  }
+}
+
+function briefForPluginPreset(record: InstalledPluginRecord, chipId: string): Record<string, string> {
+  const brief: Record<string, string> = { ...briefForChipId(chipId) };
+  const fields = record.manifest?.od?.inputs ?? [];
+  for (const field of fields) {
+    const value = field.default ?? field.placeholder;
+    if (value != null && typeof value === 'string' && value.trim()) {
+      brief[field.name] = value;
+    }
+  }
+  return brief;
 }
