@@ -838,7 +838,6 @@ export function isAllowedEmbeddedBrowserUrl(url: string): boolean {
     return (
       parsed.protocol === "http:" ||
       parsed.protocol === "https:" ||
-      parsed.protocol === "file:" ||
       (parsed.protocol === "about:" && parsed.pathname === "blank")
     );
   } catch {

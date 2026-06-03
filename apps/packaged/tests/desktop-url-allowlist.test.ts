@@ -99,14 +99,15 @@ describe('isAllowedChildWindowUrl (issue #911)', () => {
 });
 
 describe('isAllowedEmbeddedBrowserUrl', () => {
-  it('allows browser-tab page URLs and local files', () => {
+  it('allows browser-tab page URLs and blank startup pages', () => {
     expect(isAllowedEmbeddedBrowserUrl('https://example.com')).toBe(true);
     expect(isAllowedEmbeddedBrowserUrl('http://127.0.0.1:17579/index.html')).toBe(true);
-    expect(isAllowedEmbeddedBrowserUrl('file:///Users/pftom/example.html')).toBe(true);
     expect(isAllowedEmbeddedBrowserUrl('about:blank')).toBe(true);
   });
 
   it('rejects executable or privileged schemes for embedded browser startup', () => {
+    expect(isAllowedEmbeddedBrowserUrl('file:///Users/pftom/example.html')).toBe(false);
+    expect(isAllowedEmbeddedBrowserUrl('file:///etc/passwd')).toBe(false);
     expect(isAllowedEmbeddedBrowserUrl('javascript:alert(1)')).toBe(false);
     expect(isAllowedEmbeddedBrowserUrl('data:text/html,<script>alert(1)</script>')).toBe(false);
     expect(isAllowedEmbeddedBrowserUrl('od://app/')).toBe(false);
