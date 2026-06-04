@@ -41,6 +41,7 @@ jobs:
               pnpm -C e2e exec playwright test -c playwright.config.ts
               ui/critical-smoke.test.ts
               ui/entry-chrome-flows.test.ts
+              ui/entry-configuration-flows.test.ts
               ui/amr-onboarding.test.ts
               ui/api-empty-response.test.ts
               --grep '\[P0\]'
