@@ -10,7 +10,7 @@ function Format-TableCell {
 
 function Format-CodeCell {
   param([object]$Value)
-  $text = (Format-TableCell $Value).Replace("`", "'")
+  $text = (Format-TableCell $Value).Replace('`', "'")
   return ('`{0}`' -f $text)
 }
 
@@ -119,17 +119,20 @@ if (!(Test-Path $buildJsonPath)) {
       ForEach-Object {
         $size = (Get-ChildItem -Path $_.FullName -Recurse -File -Force -ErrorAction SilentlyContinue |
           Measure-Object -Property Length -Sum).Sum
+        $entrySize = if ($null -eq $size) { 0 } else { [int64]$size }
         [pscustomobject]@{
           Node = Split-Path (Split-Path $_.FullName -Parent) -Leaf
-          Size = [int64]($size ?? 0)
+          Size = $entrySize
         }
       } |
       Group-Object Node |
       ForEach-Object {
+        $nodeSize = ($_.Group | Measure-Object -Property Size -Sum).Sum
+        $totalSize = if ($null -eq $nodeSize) { 0 } else { [int64]$nodeSize }
         [pscustomobject]@{
           Node = $_.Name
           Count = $_.Count
-          Size = [int64](($_.Group | Measure-Object -Property Size -Sum).Sum ?? 0)
+          Size = $totalSize
         }
       } |
       Sort-Object Size -Descending
