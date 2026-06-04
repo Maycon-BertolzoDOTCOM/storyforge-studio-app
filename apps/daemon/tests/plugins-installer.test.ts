@@ -14,6 +14,9 @@ import { listInstalledPlugins } from '../src/plugins/registry.js';
 import { addMarketplace, resolvePluginInMarketplaces } from '../src/plugins/marketplaces.js';
 import type { InstalledPluginRecord } from '@open-design/contracts';
 import { doctorPlugin } from '../src/plugins/doctor.js';
+import { applyPlugin } from '../src/plugins/apply.js';
+import { buildBundleRegistryOverlayForPlugin } from '../src/plugins/bundle.js';
+import { resolvePluginSnapshot } from '../src/plugins/resolve-snapshot.js';
 
 let tmpRoot: string;
 let pluginsRoot: string;
@@ -437,6 +440,57 @@ describe('installFromLocalFolder', () => {
       atoms: [],
     });
     expect(report.issues.filter((issue) => issue.code === 'context.unresolved')).toEqual([]);
+  });
+
+  it('apply and snapshot resolution preserve bundle-local short references', async () => {
+    const bundleRoot = await writeBundleFixture('runtime-bundle', {
+      skillContext: true,
+    });
+
+    for await (const ev of installFromLocalFolder(db, {
+      source: bundleRoot,
+      roots: { userPluginsRoot: pluginsRoot },
+    })) {
+      if (ev.kind === 'error') throw new Error(ev.message);
+    }
+
+    db.prepare(`INSERT INTO projects (id, name) VALUES (?, ?)`).run('project-1', 'Project 1');
+    const skill = listInstalledPlugins(db).find((row) => row.id === 'runtime-bundle/deck-skeleton');
+    expect(skill).toBeTruthy();
+
+    const emptyRegistry = {
+      skills: [],
+      designSystems: [],
+      craft: [],
+      atoms: [],
+    };
+    const applied = applyPlugin({
+      plugin: skill!,
+      inputs: {},
+      registry: buildBundleRegistryOverlayForPlugin(skill!, emptyRegistry),
+    });
+    expect(applied.warnings).toEqual([]);
+    expect(applied.result.projectMetadata.designSystemId).toBe('linear-clone');
+    expect(applied.result.projectMetadata.craftRequires).toEqual(['deck-pacing']);
+
+    const resolved = resolvePluginSnapshot({
+      db,
+      body: { pluginId: 'runtime-bundle/deck-skeleton' },
+      projectId: 'project-1',
+      registry: emptyRegistry,
+    });
+    expect(resolved?.ok).toBe(true);
+    if (resolved?.ok) {
+      const contextIds = resolved.snapshot.resolvedContext.items
+        .filter((item) => item.kind === 'skill' || item.kind === 'design-system' || item.kind === 'craft')
+        .map((item) => item.id)
+        .sort();
+      expect(contextIds).toEqual([
+        'deck-pacing',
+        'deck-skeleton',
+        'linear-clone',
+      ]);
+    }
   });
 });
 

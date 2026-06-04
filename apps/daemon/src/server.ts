@@ -165,6 +165,7 @@ import {
   marketplaceManifestUrlForRegistry,
   marketplaceRegistryIdFromUrl,
 } from './plugins/marketplaces.js';
+import { buildBundleRegistryOverlayForPlugin } from './plugins/bundle.js';
 import {
   getSurface,
   listSurfacesForProject,
@@ -7279,7 +7280,8 @@ export async function startServer({
 
       const registry = await loadPluginRegistryView();
       const connectorProbe = buildConnectorProbe(connectorService);
-      const computed = applyPlugin({ plugin, inputs, registry, locale, connectorProbe });
+      const expandedRegistry = buildBundleRegistryOverlayForPlugin(plugin, registry);
+      const computed = applyPlugin({ plugin, inputs, registry: expandedRegistry, locale, connectorProbe });
       // Plan §3.B2 — apply-time grants are merged into the snapshot's
       // capabilitiesGranted so the §9 capability gate sees them, but
       // they are NOT written back to installed_plugins.capabilities_granted.

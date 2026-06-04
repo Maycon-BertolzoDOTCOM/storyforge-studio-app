@@ -46,6 +46,7 @@ import {
   type ConnectorProbe,
 } from './connector-gate.js';
 import type { RegistryView } from '@open-design/plugin-runtime';
+import { buildBundleRegistryOverlayForPlugin } from './bundle.js';
 
 type SqliteDb = Database.Database;
 
@@ -211,10 +212,11 @@ export function resolvePluginSnapshot(input: ResolveSnapshotInput): ResolveSnaps
 
   let applyComputed;
   try {
+    const registry = buildBundleRegistryOverlayForPlugin(plugin, input.registry);
     applyComputed = applyPlugin({
       plugin,
       inputs: fields.pluginInputs ?? {},
-      registry: input.registry,
+      registry,
       activeProjectDesignSystem: input.activeProjectDesignSystem,
       connectorProbe: input.connectorProbe,
       locale: fields.locale,
