@@ -82,6 +82,32 @@ describe('visual validation atom runner', () => {
     }
   });
 
+  it('fails closed when the visual-validation artifact directory cannot be created', async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), 'od-visual-artifact-dir-'));
+    try {
+      await writeFile(path.join(cwd, 'index.html'), '<!doctype html><html><body>ok</body></html>', 'utf8');
+      await writeFile(
+        path.join(cwd, 'reference-home.png'),
+        PNG.sync.write(createFilledPng(200, 120, [255, 255, 255, 255])),
+      );
+      await writeFile(path.join(cwd, 'critique'), 'not-a-directory', 'utf8');
+
+      const result = await runVisualValidation({
+        cwd,
+        captureScreenshot: async ({ outputPath }) => {
+          await writeFile(outputPath, PNG.sync.write(createFilledPng(200, 120, [255, 255, 255, 255])));
+        },
+      });
+
+      expect(result.report.status).toBe('failed');
+      expect(result.report.message).toContain('ENOTDIR');
+      expect(result.signals['preview.ok']).toBe(false);
+      expect(result.signals['critique.score']).toBe(1);
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it('skips cleanly when the Playwright browser runtime is unavailable', async () => {
     const cwd = await mkdtemp(path.join(os.tmpdir(), 'od-visual-no-browser-'));
     try {
@@ -149,6 +175,41 @@ describe('visual validation atom runner', () => {
       expect(result.report.status).toBe('skipped');
       expect(result.report.message).toContain('no reference screenshot found');
       expect(result.signals).toEqual({});
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps per-reference artifacts distinct when basenames collide', async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), 'od-visual-collisions-'));
+    try {
+      await writeFile(path.join(cwd, 'index.html'), '<!doctype html><html><body>ok</body></html>', 'utf8');
+      await mkdir(path.join(cwd, 'references'), { recursive: true });
+      await mkdir(path.join(cwd, 'spec'), { recursive: true });
+      await writeFile(
+        path.join(cwd, 'references', 'reference.png'),
+        PNG.sync.write(createFilledPng(200, 120, [255, 255, 255, 255])),
+      );
+      await writeFile(
+        path.join(cwd, 'spec', 'reference.png'),
+        PNG.sync.write(createFilledPng(200, 120, [255, 255, 255, 255])),
+      );
+
+      const captures: string[] = [];
+      const result = await runVisualValidation({
+        cwd,
+        captureScreenshot: async ({ outputPath }) => {
+          captures.push(path.relative(cwd, outputPath));
+          await writeFile(outputPath, PNG.sync.write(createFilledPng(200, 120, [255, 255, 255, 255])));
+        },
+      });
+
+      expect(result.report.status).toBe('ok');
+      expect(captures).toEqual([
+        'critique/visual-validation/references-reference-1.actual.png',
+        'critique/visual-validation/spec-reference-2.actual.png',
+      ]);
+      expect(captures).toContain(result.report.comparison?.actualPath);
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }

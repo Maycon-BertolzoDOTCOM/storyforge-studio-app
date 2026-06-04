@@ -96,19 +96,18 @@ export async function runVisualValidation(
     };
   }
 
-  const outputDir = path.join(cwd, 'critique', 'visual-validation');
-  await fsp.mkdir(outputDir, { recursive: true });
-
   try {
+    const outputDir = path.join(cwd, 'critique', 'visual-validation');
+    await fsp.mkdir(outputDir, { recursive: true });
     let best: VisualValidationComparison | null = null;
-    for (const referencePath of referenceImages) {
+    for (const [index, referencePath] of referenceImages.entries()) {
       const reference = PNG.sync.read(await fsp.readFile(referencePath));
       assertPngSize(reference, referencePath);
       const viewport = {
         width: clamp(reference.width, 320, 1600),
         height: clamp(Math.min(reference.height, 1200), 480, 1200),
       };
-      const stem = sanitizeStem(path.basename(referencePath, path.extname(referencePath)));
+      const stem = buildReferenceArtifactStem(cwd, referencePath, index);
       const actualPath = path.join(outputDir, `${stem}.actual.png`);
       const diffPath = path.join(outputDir, `${stem}.diff.png`);
       const capture = input.captureScreenshot ?? captureWithPlaywright;
@@ -590,6 +589,13 @@ function padBox(
 function sanitizeStem(input: string): string {
   const normalized = input.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
   return normalized || 'reference';
+}
+
+function buildReferenceArtifactStem(cwd: string, referencePath: string, index: number): string {
+  const relativeReferencePath = relativeToProject(cwd, referencePath)
+    .replace(/^\.\//, '')
+    .replace(/\.[^.]+$/, '');
+  return `${sanitizeStem(relativeReferencePath)}-${index + 1}`;
 }
 
 function relativeToProject(cwd: string, target: string): string {
