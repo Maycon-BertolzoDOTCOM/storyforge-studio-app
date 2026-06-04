@@ -568,7 +568,7 @@ const AGENT_CLI_ENV_FIELDS = [
     agentId: 'codex',
     envKey: 'OPENAI_API_KEY',
     labelKey: 'settings.cliEnvCodexApiKey',
-    labelSuffix: 'OPENAI_API_KEY · proxy/legacy',
+    labelSuffix: 'OPENAI_API_KEY · legacy',
     placeholder: 'Paste OPENAI_API_KEY',
     secret: true,
   },

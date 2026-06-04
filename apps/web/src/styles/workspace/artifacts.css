@@ -969,7 +969,7 @@
   padding: 10px 12px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
-  background: var(--bg-subtle);
+  background: var(--bg-panel);
 }
 .agent-installable-toggle {
   appearance: none;
@@ -988,6 +988,12 @@
 }
 .agent-installable-toggle svg {
   flex: 0 0 auto;
+  transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+/* No chevron-up glyph in the set, so flip the chevron-down to point up once
+   the list is expanded ("Show less"). */
+.agent-installable-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
 }
 .agent-installable-toggle:hover {
   color: var(--text);

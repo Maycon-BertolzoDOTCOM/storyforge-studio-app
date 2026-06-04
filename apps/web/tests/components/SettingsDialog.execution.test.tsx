@@ -1699,7 +1699,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
 
     const memoryModel = await screen.findByRole('combobox', { name: 'Memory model' }) as HTMLSelectElement;
     expect(memoryModel.options[memoryModel.selectedIndex]?.textContent).toBe('Same as chat (Claude Code)');
-    expect(screen.getByText(/anthropic is only the fallback provider family/i)).toBeTruthy();
+    expect(screen.getByText(/anthropic is the fallback/i)).toBeTruthy();
   });
 
   it('shows rescan loading, avoids duplicate rescans, and renders the success notice', async () => {
@@ -1804,13 +1804,13 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     expect(
-      screen.getByLabelText('Codex/OpenAI proxy API key (CODEX_API_KEY)'),
+      screen.getByLabelText('Proxy API key (CODEX_API_KEY)'),
     ).toBeTruthy();
     expect(
-      screen.getByLabelText('Codex/OpenAI proxy API key (OPENAI_API_KEY · proxy/legacy)'),
+      screen.getByLabelText('Proxy API key (OPENAI_API_KEY · legacy)'),
     ).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText('Codex home'), {
+    fireEvent.change(screen.getByLabelText('Config directory'), {
       target: { value: ' ~/.codex-team ' },
     });
 
