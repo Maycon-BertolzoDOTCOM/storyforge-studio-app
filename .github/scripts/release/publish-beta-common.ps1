@@ -213,16 +213,42 @@ function Publish-ReleaseReport(
   }
 
   $reportPrefix = "$VersionPrefix/report/$ReportDirectory"
+  $reportZipPath = Optional-Env "REPORT_ZIP_PATH" (Join-Path (Split-Path -Parent $ReportRoot) "$ReportDirectory-report.zip")
+  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $reportZipPath) | Out-Null
+  Remove-Item -LiteralPath $reportZipPath -Force -ErrorAction SilentlyContinue
+  Compress-Archive -LiteralPath (Join-Path $ReportRoot "*") -DestinationPath $reportZipPath -CompressionLevel Optimal -Force
   if ($null -ne $Session) {
     foreach ($file in $files) {
       $relativePath = Get-RelativeFilePath -Root $ReportRoot -Path $file
       Publish-StorageFile -Session $Session -Path $file -ObjectKey "$reportPrefix/$relativePath" -CacheControl "public, max-age=31536000, immutable"
     }
+    Publish-StorageFile -Session $Session -Path $reportZipPath -ObjectKey "$reportPrefix/report.zip" -CacheControl "public, max-age=31536000, immutable" -ContentType "application/zip"
+  }
+
+  $reportJsonPath = Join-Path $ReportRoot "report.json"
+  $reportJson = $null
+  if (Test-Path -LiteralPath $reportJsonPath) {
+    $reportJson = [ordered]@{
+      contentType = "application/json; charset=utf-8"
+      name = "report.json"
+      size = (Get-Item -LiteralPath $reportJsonPath).Length
+      url = "$PublicOrigin/$reportPrefix/report.json"
+    }
+  }
+  $zip = [ordered]@{
+    contentType = "application/zip"
+    name = "report.zip"
+    size = (Get-Item -LiteralPath $reportZipPath).Length
+    url = "$PublicOrigin/$reportPrefix/report.zip"
   }
 
   return [ordered]@{
     fileCount = $files.Count
+    json = $reportJson
+    jsonUrl = if ($reportJson -eq $null) { $null } else { $reportJson.url }
     type = "directory"
     url = "$PublicOrigin/$reportPrefix/"
+    zip = $zip
+    zipUrl = $zip.url
   }
 }

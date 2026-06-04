@@ -196,6 +196,35 @@ jobs:
           @echo on
           powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .github\scripts\release\build-beta.ps1 -Platform win -Lane self-hosted -Namespace release-beta-win -ReleaseVersion "${{ inputs.release_version || needs.metadata.outputs.beta_version }}" -MetadataUrl "${{ inputs.s3_public_origin }}/beta/latest/metadata.json" -SmokeMode "${{ inputs.win_smoke_mode }}" -Target "${{ inputs.win_target }}" -SignMode "${{ inputs.win_sign_mode }}"
 
+      - name: Publish windows build report
+        if: ${{ always() }}
+        shell: cmd
+        continue-on-error: true
+        env:
+          BUILD_JSON_PATH: C:\.tmp\runner\od-beta\win\windows-tools-pack-build.json
+          CACHE_ROOT: C:\.tmp\runner\od-beta\win\tools-pack-cache
+          INDEX_PATH: C:\.tmp\runner\od-beta\win\index\index.json
+          RELEASE_CHANNEL: beta
+          RELEASE_VERSION: ${{ inputs.release_version || needs.metadata.outputs.beta_version }}
+          REPORT_ROOT: C:\.tmp\runner\od-beta\win\release-report\win
+          REPORT_SMOKE_MODE: ${{ inputs.win_smoke_mode }}
+          REPORT_TARGET: ${{ inputs.win_target }}
+          REPORT_ZIP_PATH: C:\.tmp\runner\od-beta\win\release-report\win-report.zip
+          SUMMARY_TITLE: Windows self-hosted tools-pack build
+        run: |
+          @echo on
+          powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .github\scripts\release\report\win.ps1
+
+      - name: Upload windows e2e spec report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: open-design-beta-win-e2e-report
+          path: |
+            C:\.tmp\runner\od-beta\win\release-report\win
+            C:\.tmp\runner\od-beta\win\release-report\win-report.zip
+          if-no-files-found: warn
+
       - name: Publish beta candidate platform to Nexu S3
         id: publish_platform
         if: ${{ inputs.publish }}
@@ -207,6 +236,7 @@ jobs:
           S3_ACCESS_KEY_ID: ${{ secrets.NEXU_S3_ACCESS_KEY_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.NEXU_S3_SECRET_ACCESS_KEY }}
           S3_PUBLIC_ORIGIN: ${{ inputs.s3_public_origin || vars.NEXU_S3_PUBLIC_ORIGIN }}
+          REPORT_ZIP_PATH: C:\.tmp\runner\od-beta\win\release-report\win-report.zip
         run: |
           @echo on
           powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .github\scripts\release\publish-platform.ps1 -IndexPath "C:\.tmp\runner\od-beta\win\index\index.json" -ChannelPrefix beta -Platform win -Probe -Publish
@@ -272,6 +302,12 @@ jobs:
         continue-on-error: true
         env:
           BUILD_JSON_PATH: ${{ runner.temp }}/mac-tools-pack-build.json
+          RELEASE_CHANNEL: beta
+          RELEASE_VERSION: ${{ inputs.release_version || needs.metadata.outputs.beta_version }}
+          REPORT_ROOT: ${{ runner.temp }}/release-report/mac
+          REPORT_SMOKE_MODE: ${{ inputs.mac_smoke_mode }}
+          REPORT_TARGET: dmg
+          REPORT_ZIP_PATH: ${{ runner.temp }}/release-report/mac-report.zip
           SUMMARY_TITLE: macOS self-hosted tools-pack build
         run: bash .github/scripts/release/report/mac.sh
 
@@ -311,12 +347,30 @@ jobs:
           hash -r
           pnpm exec tsx scripts/release-smoke.ts mac specs/mac.spec.ts
 
+      - name: Refresh mac release report
+        if: ${{ always() }}
+        working-directory: _release-build
+        continue-on-error: true
+        env:
+          BUILD_JSON_PATH: ${{ runner.temp }}/mac-tools-pack-build.json
+          RELEASE_CHANNEL: beta
+          RELEASE_VERSION: ${{ inputs.release_version || needs.metadata.outputs.beta_version }}
+          REPORT_ROOT: ${{ runner.temp }}/release-report/mac
+          REPORT_SMOKE_MODE: ${{ inputs.mac_smoke_mode }}
+          REPORT_TARGET: dmg
+          REPORT_ZIP_PATH: ${{ runner.temp }}/release-report/mac-report.zip
+          SUMMARY_TITLE: macOS self-hosted tools-pack build after smoke
+          WRITE_STEP_SUMMARY: "false"
+        run: bash .github/scripts/release/report/mac.sh
+
       - name: Upload mac e2e spec report
         if: ${{ always() && inputs.mac_smoke_mode != 'skip' }}
         uses: actions/upload-artifact@v7
         with:
           name: open-design-beta-mac-e2e-report
-          path: ${{ runner.temp }}/release-report/mac
+          path: |
+            ${{ runner.temp }}/release-report/mac
+            ${{ runner.temp }}/release-report/mac-report.zip
           if-no-files-found: warn
 
       - name: Prune mac tools-pack cache
@@ -362,6 +416,7 @@ jobs:
           RELEASE_SIGNED: ${{ inputs.mac_sign_mode != 'no' && 'true' || 'false' }}
           RELEASE_VERSION: ${{ inputs.release_version || needs.metadata.outputs.beta_version }}
           REPORT_ROOT: ${{ runner.temp }}/release-report/mac
+          REPORT_ZIP_PATH: ${{ runner.temp }}/release-report/mac-report.zip
         run: |
           set -euo pipefail
           if ! command -v rehash >/dev/null 2>&1; then

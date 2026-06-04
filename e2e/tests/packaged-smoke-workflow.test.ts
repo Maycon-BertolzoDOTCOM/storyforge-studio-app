@@ -152,6 +152,12 @@ describe("packaged smoke workflow", () => {
     expect(workflow).toContain('OD_BETA_WINDOWS_SIGNTOOL_PATH: ${{ steps.sign_probe.outputs.signtool_path }}');
     expect(workflow).toContain("Publish beta candidate platform to Nexu S3");
     expect(workflow).toContain("publish-platform.ps1");
+    expect(workflow).toContain("name: Publish windows build report");
+    expect(workflow).toContain(".github\\scripts\\release\\report\\win.ps1");
+    expect(workflow).toContain("REPORT_ROOT: C:\\.tmp\\runner\\od-beta\\win\\release-report\\win");
+    expect(workflow).toContain("REPORT_ZIP_PATH: C:\\.tmp\\runner\\od-beta\\win\\release-report\\win-report.zip");
+    expect(workflow).toContain("name: Upload windows e2e spec report");
+    expect(workflow).toContain("open-design-beta-win-e2e-report");
     expect(workflow).toContain("Upload windows publish manifest");
     expect(workflow).toContain("open-design-beta-win-publish-manifest");
     expect(workflow).toContain("if: ${{ inputs.mac_smoke_mode != 'skip' }}");
@@ -168,6 +174,9 @@ describe("packaged smoke workflow", () => {
     expect(workflow).toContain("TOOLS_PACK_DIR: ${{ env.MAC_TOOLS_PACK_DIR }}");
     expect(workflow).toContain("name: Publish mac build summary");
     expect(workflow).toContain("bash .github/scripts/release/report/mac.sh");
+    expect(workflow).toContain("name: Refresh mac release report");
+    expect(workflow).toContain("REPORT_ROOT: ${{ runner.temp }}/release-report/mac");
+    expect(workflow).toContain("REPORT_ZIP_PATH: ${{ runner.temp }}/release-report/mac-report.zip");
     expect(workflow).toContain("OD_PACKAGED_E2E_TOOLS_PACK_DIR: ${{ env.MAC_TOOLS_PACK_DIR }}");
     expect(workflow).toContain("name: Prune mac tools-pack cache");
     expect(workflow).toContain("CACHE_ROOT: ${{ env.MAC_TOOLS_PACK_CACHE_DIR }}");
@@ -180,6 +189,7 @@ describe("packaged smoke workflow", () => {
     expect(workflow).toContain("Publish beta mac candidate platform to Nexu S3");
     expect(workflow).toContain("RELEASE_PLATFORM: mac");
     expect(workflow).toContain("RELEASE_SIGNED: ${{ inputs.mac_sign_mode != 'no' && 'true' || 'false' }}");
+    expect(workflow).toContain("REPORT_ZIP_PATH: ${{ runner.temp }}/release-report/mac-report.zip");
     expect(
       workflow.match(/- name: Publish beta mac candidate platform to Nexu S3\n(?:.+\n)+?          node --experimental-strip-types \.github\/scripts\/release\/r2\/publish-platform\.ts/m)?.[0],
     ).toContain("OPEN_DESIGN_RELEASE_PROFILE: /Users/runner/.profile");

@@ -3,11 +3,11 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { assertFreshToolBuild } from "../../../scripts/tool-build-metadata.mjs";
+import { assertFreshToolBuildFromMeta } from "../../../packages/metatool/src/index.ts";
 
 const entryDir = dirname(fileURLToPath(import.meta.url));
 const toolRoot = resolve(entryDir, "..");
 const distEntry = resolve(toolRoot, "dist/index.mjs");
 
-await assertFreshToolBuild("tools-serve", toolRoot);
+await assertFreshToolBuildFromMeta(toolRoot);
 await import(pathToFileURL(distEntry).href);

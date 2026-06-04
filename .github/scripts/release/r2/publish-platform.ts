@@ -1,5 +1,6 @@
-import { appendFileSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, join, relative, sep } from "node:path";
+import { spawnSync } from "node:child_process";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, relative, sep } from "node:path";
 import { uploadS3Object } from "./s3-upload.ts";
 
 type AssetEntry = {
@@ -116,11 +117,47 @@ async function uploadReport(reportDirectory) {
     const relativePath = normalizePath(relative(reportRoot, file));
     await upload(file, `${reportPrefix}/${relativePath}`, contentType(file), "public, max-age=31536000, immutable");
   }
+  createReportZip(reportRoot, reportZipPath);
+  await upload(reportZipPath, `${reportPrefix}/report.zip`, "application/zip", "public, max-age=31536000, immutable");
+  const reportJsonPath = join(reportRoot, "report.json");
+  const reportJson = existsSync(reportJsonPath) && statSync(reportJsonPath).isFile()
+    ? {
+        contentType: "application/json; charset=utf-8",
+        name: "report.json",
+        size: statSync(reportJsonPath).size,
+        url: `${publicOrigin}/${reportPrefix}/report.json`,
+      }
+    : null;
+  const zip = {
+    contentType: "application/zip",
+    name: "report.zip",
+    size: statSync(reportZipPath).size,
+    url: `${publicOrigin}/${reportPrefix}/report.zip`,
+  };
   return {
     fileCount: files.length,
+    json: reportJson,
+    jsonUrl: reportJson?.url ?? null,
     type: "directory",
     url: `${publicOrigin}/${reportPrefix}/`,
+    zip,
+    zipUrl: zip.url,
   };
+}
+
+function createReportZip(root, zipPath) {
+  mkdirSync(dirname(zipPath), { recursive: true });
+  rmSync(zipPath, { force: true });
+  const result = spawnSync("zip", ["-qr", zipPath, "."], {
+    cwd: root,
+    stdio: "inherit",
+  });
+  if (result.error != null) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(`zip failed with exit code ${result.status}`);
+  }
 }
 
 function setOutput(name, value) {
@@ -237,6 +274,10 @@ if (platform === "mac") {
 const reportRoot = optional(
   "REPORT_ROOT",
   config.reportDirectory == null ? join(runnerTemp, "release-report", config.key) : join(runnerTemp, "release-report", config.reportDirectory),
+);
+const reportZipPath = optional(
+  "REPORT_ZIP_PATH",
+  config.reportDirectory == null ? join(runnerTemp, "release-report", `${config.key}-report.zip`) : join(runnerTemp, "release-report", `${config.reportDirectory}-report.zip`),
 );
 
 for (const name of config.assetNames) {
