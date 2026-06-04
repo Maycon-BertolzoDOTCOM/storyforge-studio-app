@@ -114,15 +114,22 @@ export async function signAndVerifyWinFile(
   };
 }
 
-async function resolveSigntoolPath(configured: string): Promise<string> {
-  const candidates = configured === "signtool.exe"
-    ? DEFAULT_SIGNTOOL_CANDIDATES
-    : [configured, ...DEFAULT_SIGNTOOL_CANDIDATES];
-  for (const candidate of candidates) {
-    if (candidate === "signtool.exe") return candidate;
+export async function resolveSigntoolPath(
+  configured: string,
+  candidates: readonly string[] = DEFAULT_SIGNTOOL_CANDIDATES,
+): Promise<string> {
+  const filesystemCandidates = candidates.filter((candidate) => candidate !== "signtool.exe");
+  const orderedFilesystemCandidates = configured === "signtool.exe"
+    ? filesystemCandidates
+    : [configured, ...filesystemCandidates.filter((candidate) => candidate !== configured)];
+
+  for (const candidate of orderedFilesystemCandidates) {
     if (await fileExists(candidate)) return candidate;
   }
-  return configured;
+
+  return configured === "signtool.exe" && candidates.includes("signtool.exe")
+    ? "signtool.exe"
+    : configured;
 }
 
 async function fileExists(path: string): Promise<boolean> {
