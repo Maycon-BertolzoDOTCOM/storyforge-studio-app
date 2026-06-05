@@ -147,4 +147,3 @@ export function writeGithubOutputs(outputs: Record<string, string>): void {
   const lines = Object.entries(outputs).map(([name, value]) => `${name}=${value}`).join("\n");
   writeFileSync(outputPath, `${lines}\n`, { flag: "a" });
 }
-

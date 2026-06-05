@@ -356,7 +356,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ needs.metadata.outputs.commit }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
@@ -473,7 +473,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ needs.metadata.outputs.commit }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
@@ -584,7 +584,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ needs.metadata.outputs.commit }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
@@ -719,7 +719,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ needs.metadata.outputs.commit }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
@@ -856,7 +856,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ needs.metadata.outputs.commit }}
 
       - name: Download mac_arm64 publish manifest
         if: ${{ inputs.enable_mac_arm64 && needs.build_mac_arm64.result == 'success' }}
