@@ -40,6 +40,14 @@ export interface ComposerPlusMenuProps {
 
   /** Test id for the trigger button. */
   triggerTestId?: string;
+
+  /**
+   * Notified when the menu opens. The project composer uses this to latch its
+   * lazy plugin / MCP / connector fetches, so the Plugins / Connectors / MCP
+   * submenus aren't empty when the "+" menu is the first thing clicked on a
+   * cold composer.
+   */
+  onOpen?: () => void;
 }
 
 function pluginMatches(plugin: InstalledPluginRecord, needle: string): boolean {
@@ -73,6 +81,7 @@ export function ComposerPlusMenu({
   renderToolbox,
   toolboxLabel,
   triggerTestId,
+  onOpen,
 }: ComposerPlusMenuProps) {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -81,6 +90,14 @@ export function ComposerPlusMenu({
   >(null);
   const [query, setQuery] = useState('');
   const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // The plugin and MCP flyouts share one `query`, but it is scoped to whichever
+  // submenu is open. Reset it whenever the active submenu changes so a stale
+  // plugin search (e.g. "deck") never filters the MCP list — which would
+  // otherwise show the empty state even when servers exist.
+  useEffect(() => {
+    setQuery('');
+  }, [submenu]);
 
   function close() {
     setOpen(false);
@@ -123,7 +140,14 @@ export function ComposerPlusMenu({
         type="button"
         className={`icon-btn plus-menu__trigger od-tooltip${open ? ' is-active' : ''}`}
         data-testid={triggerTestId}
-        onClick={() => (open ? close() : setOpen(true))}
+        onClick={() => {
+          if (open) {
+            close();
+            return;
+          }
+          onOpen?.();
+          setOpen(true);
+        }}
         title={t('homeHero.addMenu')}
         data-tooltip={t('homeHero.addMenu')}
         aria-label={t('homeHero.addMenu')}
@@ -138,6 +162,7 @@ export function ComposerPlusMenu({
             type="button"
             role="menuitem"
             className="plus-menu__item"
+            data-testid="composer-plus-attach"
             disabled={attachLoading}
             onClick={() => {
               close();

@@ -242,17 +242,16 @@ describe('WorkspaceTabsBar navigation semantics', () => {
     });
   });
 
-  it('creates a replacement Home tab when the last tab is closed', async () => {
+  it('keeps the pinned Home tab permanent and non-closable', async () => {
     render(<WorkspaceTabsBar route={{ kind: 'home', view: 'home' }} projects={[project]} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    // The Home tab is pinned leftmost and has no close affordance, so there is
+    // no way to remove the last remaining tab.
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
 
-    await waitFor(() => {
-      const labels = screen.getAllByRole('tab').map((tab) => tab.textContent ?? '');
-      expect(labels).toHaveLength(1);
-      expect(labels[0]).toContain('Home');
-    });
-    expect(navigate).toHaveBeenCalledWith(homeRoute);
+    const labels = screen.getAllByRole('tab').map((tab) => tab.textContent ?? '');
+    expect(labels).toHaveLength(1);
+    expect(labels[0]).toContain('Home');
   });
 
   it('maps the browser new-tab shortcut to the workspace new-tab action', async () => {

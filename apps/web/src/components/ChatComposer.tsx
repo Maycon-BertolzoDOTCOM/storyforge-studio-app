@@ -2073,6 +2073,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
             />
             <ComposerPlusMenu
               triggerTestId="chat-plus-trigger"
+              onOpen={() => setComposerEngaged(true)}
               connectors={connectors}
               onPickConnector={insertConnectorMention}
               onAddConnector={onOpenConnectors}

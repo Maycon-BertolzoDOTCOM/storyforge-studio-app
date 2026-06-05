@@ -1769,31 +1769,25 @@ function homeHeroChipLabelForId(chipId: string, t: ReturnType<typeof useI18n>['t
   }
 }
 
-// Artifact-specific settings (fidelity, slide count, speaker notes, aspect
-// ratio, resolution, model, duration, audio type) are no longer promoted into
-// the home composer footer. The agent asks for whichever of these it needs via
-// AskUserQuestion once the project is running, so the only field that stays in
-// the footer is the design-system picker, which applies to every artifact kind.
+// Prototype/deck-specific settings (fidelity, slide count, speaker notes) are
+// no longer promoted into the home composer footer — the agent asks for those
+// via the first-turn discovery flow, so the prototype/deck footer keeps only
+// the design-system picker. Media surfaces (image/video/audio/hyperframes)
+// still surface their generation controls (model / ratio / resolution /
+// duration / audio type) in the footer, since that footer IS their primary
+// configuration UI and has no discovery-form equivalent.
 const ARTIFACT_FOOTER_FIELD_NAMES = new Set([
   'fidelity',
   'slideCount',
   'speakerNotes',
-  'ratio',
-  'resolution',
-  'model',
-  'duration',
-  'audioType',
 ]);
 
 function footerInputNamesForChip(chipId: string | null): string[] {
-  if (
-    chipId === 'prototype' ||
-    chipId === 'deck' ||
-    chipId === 'image' ||
-    chipId === 'video'
-  ) {
-    return ['designSystem'];
-  }
+  if (chipId === 'prototype' || chipId === 'deck') return ['designSystem'];
+  if (chipId === 'image') return ['designSystem', 'model', 'ratio', 'resolution'];
+  if (chipId === 'video') return ['designSystem', 'model', 'ratio', 'duration', 'resolution'];
+  if (chipId === 'audio') return ['audioType', 'model', 'duration'];
+  if (chipId === 'hyperframes') return ['ratio', 'duration'];
   return [];
 }
 
