@@ -6,7 +6,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { FileWorkspace, scrollWorkspaceTabsWithWheel } from '../../src/components/FileWorkspace';
+import {
+  DESIGN_FILES_TAB,
+  FileWorkspace,
+  scrollWorkspaceTabsWithWheel,
+} from '../../src/components/FileWorkspace';
 import { DesignFilesPanel } from '../../src/components/DesignFilesPanel';
 import { projectSplitClassName, projectSplitStyle } from '../../src/components/ProjectView';
 import {
@@ -186,6 +190,21 @@ function failedAssistantMessage(
     agentId,
     preTurnFileNames: [],
     events: [{ kind: 'status', label: 'error', detail, code }],
+  };
+}
+
+function generatingAssistantMessage(): ChatMessage {
+  return {
+    id: 'msg-generating',
+    role: 'assistant',
+    content: '',
+    createdAt: 1700000000,
+    startedAt: 1700000000,
+    runId: 'run-generating',
+    runStatus: 'running',
+    agentId: 'claude',
+    preTurnFileNames: [],
+    events: [{ kind: 'status', label: 'thinking' }],
   };
 }
 
@@ -1386,6 +1405,55 @@ describe('FileWorkspace generation failure recovery', () => {
       expect.objectContaining({ id: 'msg-rate_limited', agentId: 'antigravity' }),
     );
   });
+
+  // Regression guard for #3516: the giant Lexical-composer merge added an
+  // `activeTab !== DESIGN_FILES_TAB` clause to `showGenerationPreview`, which
+  // suppressed the generation progress card on the design-files tab — the
+  // default landing tab. While a run is in flight and no previewable artifact
+  // exists yet, the progress card must take priority over the empty
+  // "Creations will appear here" file list instead of being hidden behind it.
+  it('keeps the generation preview on the design-files tab while generating with no artifacts yet', () => {
+    render(
+      <FileWorkspace
+        projectId="project-1"
+        projectKind="prototype"
+        files={[]}
+        liveArtifacts={[]}
+        onRefreshFiles={vi.fn()}
+        isDeck={false}
+        streaming
+        tabsState={{ tabs: [], active: DESIGN_FILES_TAB }}
+        onTabsStateChange={vi.fn()}
+        messages={[generatingAssistantMessage()]}
+      />,
+    );
+
+    expect(screen.getByTestId('generation-preview-stage')).toBeTruthy();
+  });
+
+  // The override above is scoped to the *empty* design-files tab. A populated
+  // project must keep its file browser while a run is in flight instead of
+  // having the generation card hijack the tab — otherwise the fresh-project fix
+  // would regress browsing for everyone with existing files.
+  it('keeps the file browser on a populated design-files tab while a run is active', async () => {
+    render(
+      <FileWorkspace
+        projectId="project-1"
+        projectKind="prototype"
+        files={[workspaceFile('index.html')]}
+        liveArtifacts={[]}
+        onRefreshFiles={vi.fn()}
+        isDeck={false}
+        streaming
+        tabsState={{ tabs: [], active: DESIGN_FILES_TAB }}
+        onTabsStateChange={vi.fn()}
+        messages={[generatingAssistantMessage()]}
+      />,
+    );
+
+    expect(await screen.findByText('index.html')).toBeTruthy();
+    expect(screen.queryByTestId('generation-preview-stage')).toBeNull();
+  });
 });
 
 describe('DesignFilesPanel plugin folders', () => {
@@ -1921,14 +1989,14 @@ describe('FileWorkspace add-module menu', () => {
     expect(menu).not.toBeNull();
 
     // The tab strip is a horizontal scroll container that also clips
-    // vertically, so the "+" button lives OUTSIDE it in `.ws-tabs-actions`
-    // and the launcher menu is portaled to <body> — neither can be clipped
+    // vertically, so the "+" button lives outside it in `.ws-add-tab`
+    // and the launcher menu is portaled to <body> -- neither can be clipped
     // by the scrolling bar.
     const tabsBar = document.querySelector('.ws-tabs-bar');
     expect(tabsBar).not.toBeNull();
     expect(tabsBar!.contains(addButton)).toBe(false);
     expect(tabsBar!.contains(menu)).toBe(false);
-    expect(addButton.closest('.ws-tabs-actions')).not.toBeNull();
+    expect(addButton.closest('.ws-add-tab')).not.toBeNull();
   });
 
   it('orders launcher sections as create new, files, then tabs in one scroll body', () => {
