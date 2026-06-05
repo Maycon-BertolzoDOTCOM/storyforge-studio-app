@@ -306,17 +306,82 @@ jobs:
       release_name: ${{ steps.beta.outputs.release_name }}
       state_source: ${{ steps.beta.outputs.state_source }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6.0.2
-        with:
-          clean: false
-          fetch-depth: 1
-          lfs: false
-          path: _release-metadata
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            apps/packaged/package.json
-            scripts/release-beta.ts
+      - name: Checkout metadata sources
+        id: checkout
+        env:
+          CHECKOUT_REF: ${{ inputs.ref != '' && inputs.ref || github.ref_name }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          repo_dir="$PWD/_release-metadata"
+          repository_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          auth_token="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')"
+          auth_config="http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_token"
+
+          case "$CHECKOUT_REF" in
+            refs/heads/*)
+              fetch_source="$CHECKOUT_REF"
+              ;;
+            refs/tags/*)
+              fetch_source="$CHECKOUT_REF"
+              ;;
+            *)
+              if [[ "$CHECKOUT_REF" =~ ^[0-9a-fA-F]{40}$ ]]; then
+                fetch_source="$CHECKOUT_REF"
+              else
+                fetch_source="refs/heads/$CHECKOUT_REF"
+              fi
+              ;;
+          esac
+          checkout_branch="_release-metadata"
+          checkout_start="refs/remotes/origin/$checkout_branch"
+          fetch_ref="+$fetch_source:$checkout_start"
+
+          mkdir -p "$repo_dir"
+          if [ ! -d "$repo_dir/.git" ]; then
+            find "$repo_dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            git init "$repo_dir"
+            git -C "$repo_dir" remote add origin "$repository_url"
+          else
+            current_url="$(git -C "$repo_dir" config --local --get remote.origin.url || true)"
+            if [ "$current_url" != "$repository_url" ]; then
+              find "$repo_dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+              git init "$repo_dir"
+              git -C "$repo_dir" remote add origin "$repository_url"
+            else
+              rm -f "$repo_dir/.git/index.lock" "$repo_dir/.git/shallow.lock"
+              git -C "$repo_dir" remote set-url origin "$repository_url"
+            fi
+          fi
+
+          git config --global --add safe.directory "$repo_dir"
+          git -C "$repo_dir" config --local gc.auto 0
+          git -C "$repo_dir" config --local core.sparseCheckout true
+          sparse_path="$(git -C "$repo_dir" rev-parse --git-path info/sparse-checkout)"
+          mkdir -p "$(dirname "$repo_dir/$sparse_path")"
+          cat > "$repo_dir/$sparse_path" <<'EOF'
+          apps/packaged/package.json
+          scripts/release-beta.ts
+          EOF
+
+          for attempt in 1 2 3; do
+            if git -C "$repo_dir" -c protocol.version=2 -c "$auth_config" fetch --no-tags --prune --no-recurse-submodules --filter=blob:none --depth=1 origin "$fetch_ref"; then
+              if git -C "$repo_dir" -c "$auth_config" checkout --progress --force -B "$checkout_branch" "$checkout_start"; then
+                break
+              fi
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "metadata checkout failed after $attempt attempts" >&2
+              exit 1
+            fi
+            sleep "$((attempt * 5))"
+          done
+
+          commit="$(git -C "$repo_dir" rev-parse HEAD)"
+          echo "checked out metadata sources at $commit"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
       - name: Validate self-hosted beta inputs
         run: |
@@ -350,6 +415,9 @@ jobs:
       - name: Prepare beta release metadata
         id: beta
         working-directory: _release-metadata
+        env:
+          GITHUB_REF_NAME: ${{ inputs.ref != '' && inputs.ref || github.ref_name }}
+          GITHUB_SHA: ${{ steps.checkout.outputs.commit }}
         run: |
           set -euo pipefail
           if ! command -v rehash >/dev/null 2>&1; then

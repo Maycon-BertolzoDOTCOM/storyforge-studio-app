@@ -172,7 +172,9 @@ describe("packaged smoke workflow", () => {
     expect(workflow).toContain("name: Prepare beta metadata");
     expect(workflow).toContain("OPEN_DESIGN_BETA_METADATA_URL: ${{ inputs.release_public_origin }}/beta/latest/metadata.json");
     expect(workflow).toContain("OPEN_DESIGN_STABLE_METADATA_URL: https://releases.open-design.ai/stable/latest/metadata.json");
-    expect(workflow).toContain("path: _release-metadata");
+    expect(workflow).toContain('repo_dir="$PWD/_release-metadata"');
+    expect(workflow).toContain("--filter=blob:none --depth=1");
+    expect(workflow).toContain("for attempt in 1 2 3");
     expect(workflow).toContain("working-directory: _release-metadata");
     expect(workflow).toContain("apps/packaged/package.json");
     expect(workflow).toContain("scripts/release-beta.ts");
