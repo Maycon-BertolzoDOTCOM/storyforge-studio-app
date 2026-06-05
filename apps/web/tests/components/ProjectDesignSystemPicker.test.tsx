@@ -112,6 +112,7 @@ describe('ProjectDesignSystemPicker', () => {
 
     fireEvent.click(screen.getByTestId('project-ds-picker-trigger'));
     const option = (await screen.findAllByRole('option'))[0];
+    if (!option) throw new Error('Expected the no-design-system option to render');
     option.focus();
     fireEvent.keyDown(option, { key: ' ' });
 

@@ -7,7 +7,7 @@
 // `/api/runs` — see providers/daemon.ts).
 //
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { DesignSystemSummary } from '@open-design/contracts';
 import { useI18n } from '../i18n';
@@ -185,7 +185,7 @@ export function ProjectDesignSystemPicker({
     setOpen(false);
   };
 
-  const selectDesignSystemOnKeyDown = (event: KeyboardEvent<HTMLButtonElement>, id: string | null) => {
+  const selectDesignSystemOnKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, id: string | null) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     selectDesignSystem(id);
