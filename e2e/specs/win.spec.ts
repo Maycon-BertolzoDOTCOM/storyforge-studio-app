@@ -64,6 +64,17 @@ const clickUpdaterInstallExpression = `
 `;
 const clickUpdaterRailExpression = `
   (async () => {
+    const onboarding = document.querySelector('.entry-shell--onboarding, .entry-onboarding-modal');
+    const onboardingSkip = document.querySelector('.onboarding-view__secondary');
+    if (onboarding instanceof HTMLElement && onboardingSkip instanceof HTMLButtonElement && !onboardingSkip.disabled) {
+      onboardingSkip.click();
+      return {
+        clicked: false,
+        reason: 'onboarding-visible',
+        skippedOnboarding: true,
+        text: onboardingSkip.textContent?.trim() ?? '',
+      };
+    }
     const host = window.__od__;
     let hostStatus = null;
     if (host?.updater?.status instanceof Function) {
@@ -90,15 +101,16 @@ const clickUpdaterRailExpression = `
 `;
 const ensureMainAppShellExpression = `
   (() => {
-    const home = document.querySelector('[data-testid="entry-nav-home"]');
-    if (home instanceof HTMLElement) {
-      return { homeVisible: true, onboardingVisible: false, skipped: false };
-    }
     const onboarding = document.querySelector('.entry-shell--onboarding, .entry-onboarding-modal');
     const skip = document.querySelector('.onboarding-view__secondary');
     if (onboarding instanceof HTMLElement && skip instanceof HTMLButtonElement && !skip.disabled) {
       skip.click();
       return { homeVisible: false, onboardingVisible: true, skipped: true, text: skip.textContent?.trim() ?? '' };
+    }
+    const home = document.querySelector('[data-testid="entry-nav-home"]');
+    const homeVisible = home instanceof HTMLElement && home.getClientRects().length > 0;
+    if (homeVisible) {
+      return { homeVisible: true, onboardingVisible: false, skipped: false };
     }
     return {
       homeVisible: false,
