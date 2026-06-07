@@ -1062,8 +1062,6 @@ export interface Dict {
   'pluginCard.contributeTitle': string;
   'skillPluginCandidate.createForMe': string;
   'skillPluginCandidate.contributeToMain': string;
-  'skillPluginCandidate.publishRepo': string;
-  'skillPluginCandidate.dismiss': string;
   'skillPluginCandidate.repoDescription': string;
   'integrations.kicker': string;
   'integrations.lede': string;
