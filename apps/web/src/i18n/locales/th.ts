@@ -2297,7 +2297,7 @@ export const th: Dict = {
   'assistant.forkConversation': 'Fork จากตรงนี้',
   'assistant.forkingConversation': 'กำลัง fork…',
   'assistant.shareToOpenDesign': 'แชร์ไปยัง Open Design',
-  'assistant.shareToOpenDesignBusy': 'กำลังแชร์…',
+  'assistant.shareToOpenDesignBusy': 'กำลังเตรียมแพ็กเกจ…',
   'assistant.feedbackPrompt': 'ข้อเสนอแนะ',
   'assistant.feedbackPositive': 'มีประโยชน์',
   'assistant.feedbackNegative': 'ไม่มีประโยชน์',

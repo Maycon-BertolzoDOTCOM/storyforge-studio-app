@@ -312,9 +312,9 @@ interface Props {
   ) => Promise<{ message?: string; url?: string } | void> | { message?: string; url?: string } | void;
   activePluginActionPaths?: Set<string>;
   hiddenPluginActionPaths?: Set<string>;
-  // Click handler for the "Share to Open Design" button rendered next to
-  // the post-completion Discord prompt. ProjectView wires this to
-  // handleSend with the bundled `od-share-to-community` trigger prompt.
+  // Click handler for the post-completion "Share to Open Design" submission
+  // action. ProjectView wires this to handleSend with the bundled
+  // `od-share-to-community` trigger prompt.
   onShareToOpenDesign?: () => void;
   shareToOpenDesignBusy?: boolean;
   // True only for the most recent assistant message.
@@ -344,7 +344,7 @@ interface Props {
   // once it has produced a previewable (HTML) artifact. Omitting them hides
   // the affordance entirely (e.g. in tests that don't wire chat send).
   onArtifactShare?: (fileName: string) => void;
-  onArtifactChip?: (fileName: string, prompt: string) => void;
+  onArtifactChip?: (fileName: string | null, prompt: string) => void;
 }
 
 // Props compared by reference to decide whether a memoized AssistantMessage can
@@ -621,6 +621,13 @@ function AssistantMessageImpl({
     hasEmptyResponse ||
     !!copyMarkdown ||
     canFork;
+  const showOpenDesignSubmission = !!onShareToOpenDesign && !!isLast && showFeedback;
+  const showNextStepActions =
+    !streaming &&
+    !!isLast &&
+    !!projectId &&
+    runSucceeded &&
+    (!!onArtifactChip || showOpenDesignSubmission);
   // Pre-output vs working: before any real content (text / thinking / tools /
   // files) the footer shimmers "Preparing…"; the moment content lands it
   // flips to "Working". The elapsed clock stays anchored to the persisted run
@@ -761,18 +768,6 @@ function AssistantMessageImpl({
             onRequestOpenFile={onRequestOpenFile}
           />
         ) : null}
-        {!streaming &&
-        isLast &&
-        projectId &&
-        nextStepArtifactName &&
-        onArtifactShare &&
-        onArtifactChip ? (
-          <NextStepActions
-            fileName={nextStepArtifactName}
-            onShare={onArtifactShare}
-            onChip={onArtifactChip}
-          />
-        ) : null}
         {!streaming && projectId && pluginActionFolders.length > 0 ? (
           <PluginActionPanel
             folders={pluginActionFolders}
@@ -860,29 +855,16 @@ function AssistantMessageImpl({
                 isLast={!!isLast}
               />
             )}
-            {/*
-              "Share to Open Design" — pairs with the post-feedback Discord
-              prompt (assistant-feedback-discord-note). Only shows on the most
-              recent assistant message after a successful run, gated on the
-              same isFeedbackEligible signal so it appears alongside the
-              thumbs-up/down + Discord CTA — not on errored runs, partial
-              streams, or empty responses. Click hands the user a packaged
-              plugin via the bundled od-share-to-community scenario.
-            */}
-            {onShareToOpenDesign && isLast && showFeedback ? (
-              <button
-                type="button"
-                className="assistant-share-to-od-btn"
-                data-testid="assistant-share-to-od"
-                disabled={shareToOpenDesignBusy}
-                onClick={onShareToOpenDesign}
-              >
-                {shareToOpenDesignBusy
-                  ? t('assistant.shareToOpenDesignBusy')
-                  : t('assistant.shareToOpenDesign')}
-              </button>
-            ) : null}
           </div>
+        ) : null}
+        {showNextStepActions ? (
+          <NextStepActions
+            fileName={nextStepArtifactName}
+            onShare={nextStepArtifactName ? onArtifactShare : undefined}
+            onChip={onArtifactChip}
+            onShareToOpenDesign={showOpenDesignSubmission ? onShareToOpenDesign : undefined}
+            shareToOpenDesignBusy={shareToOpenDesignBusy}
+          />
         ) : null}
       </div>
     </div>

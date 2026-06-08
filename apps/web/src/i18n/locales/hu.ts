@@ -2297,7 +2297,7 @@ export const hu: Dict = {
   'assistant.forkConversation': 'Fork innen',
   'assistant.forkingConversation': 'Fork létrehozása…',
   'assistant.shareToOpenDesign': 'Megosztás az Open Designnal',
-  'assistant.shareToOpenDesignBusy': 'Megosztás folyamatban…',
+  'assistant.shareToOpenDesignBusy': 'Csomag előkészítése…',
   'assistant.feedbackPrompt': 'Visszajelzés',
   'assistant.feedbackPositive': 'Hasznos',
   'assistant.feedbackNegative': 'Nem hasznos',
