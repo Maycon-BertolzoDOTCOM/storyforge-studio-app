@@ -1484,7 +1484,7 @@ async function expectArtifactVisible(
   if ((await artifactPreview(page).count()) === 0) {
     const turnCard = page.locator('.msg.assistant').filter({ hasText: artifact.fileName }).last();
     if ((await turnCard.count()) > 0) {
-      const openButton = turnCard.getByRole('button', { name: 'Open' });
+      const openButton = turnCard.getByRole('button', { name: 'Open', exact: true });
       if ((await openButton.count()) > 0) {
         await openButton.click();
       }
@@ -1581,7 +1581,7 @@ async function runFileMentionFlow(
   await page.getByTestId('chat-composer-input').click();
   await page.getByTestId('chat-composer-input').pressSequentially('Review @ref');
   await expect(page.getByTestId('mention-popover')).toBeVisible();
-  await page.getByTestId('mention-popover').getByRole('button', { name: /reference\.txt/i }).click();
+  await page.getByTestId('mention-popover').getByRole('option', { name: /reference\.txt/i }).click();
   await expect(page.getByTestId('chat-composer-input')).toHaveText('Review @reference.txt ');
   await expect(stagedAttachmentName(page, 'reference.txt')).toBeVisible();
   await expect(page.getByTestId('chat-send')).toBeEnabled();
@@ -1618,7 +1618,7 @@ async function runDeepLinkPreviewFlow(
 
   await page.goto(`/projects/${projectId}/files/${fileName}`, { waitUntil: 'domcontentloaded' });
   await waitForLoadingToClear(page);
-  const artifactTab = page.getByRole('tab', { name: new RegExp(`${fileName.replace('.', '\\.')}$`, 'i') });
+  const artifactTab = tabBySuffix(page, fileName);
   await expect(artifactTab).toBeVisible();
   await expect(artifactTab).toHaveAttribute('aria-selected', 'true');
   await expectProjectFileToContain(page, projectId, fileName, entry.mockArtifact!.heading);
