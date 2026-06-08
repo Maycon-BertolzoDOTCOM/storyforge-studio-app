@@ -1168,6 +1168,7 @@ function AppInner() {
         latestPersistedConfigRef.current = next;
         saveConfig(next);
         setConfig(next);
+        amrModelsRef.current = null;
         void refreshAgents();
       });
     };

@@ -411,12 +411,18 @@ describe('App AMR polling', () => {
     expect(mockedFetchAmrModels).toHaveBeenCalledTimes(1);
   });
 
-  it('refreshes renderer config and agents after a desktop app-config change event', async () => {
+  it('refreshes renderer config and clears stale AMR models after a desktop app-config change event', async () => {
     mockedLoadConfig.mockReturnValue({
       ...baseConfig,
       agentCliEnv: {
         amr: { OPEN_DESIGN_AMR_PROFILE: 'prod' },
       },
+    });
+    mockedFetchAmrModels.mockReset();
+    mockedFetchAmrModels.mockResolvedValue({
+      source: 'remote',
+      refreshing: false,
+      models: [{ id: 'old-remote', label: 'old-remote' }],
     });
     mockedFetchDaemonConfig
       .mockResolvedValueOnce({})
@@ -429,9 +435,33 @@ describe('App AMR polling', () => {
       ...local,
       agentCliEnv: daemon?.agentCliEnv ?? local.agentCliEnv,
     }));
+    mockedFetchAgentsStream
+      .mockResolvedValueOnce([
+        {
+          id: 'amr',
+          name: 'AMR',
+          bin: 'vela',
+          available: true,
+          version: '1.0.0',
+          models: [],
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'amr',
+          name: 'AMR',
+          bin: 'vela',
+          available: true,
+          version: '1.0.0',
+          models: [{ id: 'local-probe', label: 'local-probe' }],
+        },
+      ]);
 
     render(<App />);
 
+    await waitFor(() => {
+      expect(screen.getByTestId('amr-model').textContent).toBe('old-remote');
+    });
     await waitFor(() => {
       expect(screen.getByTestId('amr-profile').textContent).toBe('prod');
     });
@@ -442,7 +472,11 @@ describe('App AMR polling', () => {
       expect(screen.getByTestId('amr-profile').textContent).toBe('local');
     });
     await waitFor(() => {
+      expect(screen.getByTestId('amr-model').textContent).toBe('local-probe');
+    });
+    await waitFor(() => {
       expect(mockedFetchAgentsStream).toHaveBeenCalledTimes(2);
     });
+    expect(mockedFetchAmrModels).toHaveBeenCalledTimes(1);
   });
 });
