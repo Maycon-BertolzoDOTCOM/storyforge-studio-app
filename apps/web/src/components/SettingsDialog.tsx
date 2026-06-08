@@ -84,6 +84,7 @@ import {
 } from '../state/maxTokens';
 import type {
   AgentInfo,
+  AgentModelChoice,
   ApiProtocol,
   ApiProtocolConfig,
   AppConfig,
@@ -841,6 +842,14 @@ export function updateAgentCliEnvValue(
 const AMR_PROFILE_AGENT_ID = 'amr';
 const AMR_PROFILE_ENV_KEY = 'OPEN_DESIGN_AMR_PROFILE';
 
+function sameAgentModelChoice(
+  left: AgentModelChoice | undefined,
+  right: AgentModelChoice | undefined,
+): boolean {
+  return (left?.model ?? null) === (right?.model ?? null)
+    && (left?.reasoning ?? null) === (right?.reasoning ?? null);
+}
+
 export function reconcileAmrProfileEnv(
   currentAgentCliEnv: AppConfig['agentCliEnv'] | undefined,
   nextInitialAgentCliEnv: AppConfig['agentCliEnv'] | undefined,
@@ -867,6 +876,31 @@ export function reconcileAmrProfileEnv(
   }
 
   return Object.keys(nextAgentCliEnv).length > 0 ? nextAgentCliEnv : {};
+}
+
+export function reconcileAmrModelChoice(
+  currentAgentModels: AppConfig['agentModels'] | undefined,
+  previousInitial: AppConfig,
+  nextInitial: AppConfig,
+): AppConfig['agentModels'] | undefined {
+  const previousAmrProfile = previousInitial.agentCliEnv?.[AMR_PROFILE_AGENT_ID]?.[AMR_PROFILE_ENV_KEY];
+  const nextAmrProfile = nextInitial.agentCliEnv?.[AMR_PROFILE_AGENT_ID]?.[AMR_PROFILE_ENV_KEY];
+  if (previousAmrProfile === nextAmrProfile) return currentAgentModels;
+
+  const previousChoice = previousInitial.agentModels?.[AMR_PROFILE_AGENT_ID];
+  const currentChoice = currentAgentModels?.[AMR_PROFILE_AGENT_ID];
+  if (!sameAgentModelChoice(currentChoice, previousChoice)) {
+    return currentAgentModels;
+  }
+
+  const nextChoice = nextInitial.agentModels?.[AMR_PROFILE_AGENT_ID];
+  const nextAgentModels = { ...(currentAgentModels ?? {}) };
+  if (nextChoice) {
+    nextAgentModels[AMR_PROFILE_AGENT_ID] = nextChoice;
+  } else {
+    delete nextAgentModels[AMR_PROFILE_AGENT_ID];
+  }
+  return Object.keys(nextAgentModels).length > 0 ? nextAgentModels : {};
 }
 
 export function agentRefreshOptionsForConfig(cfg: AppConfig): AgentRefreshOptions {
@@ -1045,6 +1079,7 @@ export function SettingsDialog({
   const [pendingMediaProviderEditIds, setPendingMediaProviderEditIds] = useState<
     ReadonlySet<string>
   >(() => new Set());
+  const previousInitialRef = useRef(initial);
   const lastSavedAppearanceRef = useRef({
     theme: initial.theme ?? 'system',
     accentColor: resolveAccentColor(initial.accentColor),
@@ -1064,12 +1099,20 @@ export function SettingsDialog({
   }, [initial.theme, initial.accentColor]);
 
   useEffect(() => {
+    const previousInitial = previousInitialRef.current;
     setCfg((current) => {
       const nextAgentCliEnv = reconcileAmrProfileEnv(current.agentCliEnv, initial.agentCliEnv);
-      if (nextAgentCliEnv === current.agentCliEnv) return current;
+      const nextAgentModels = reconcileAmrModelChoice(current.agentModels, previousInitial, initial);
+      if (
+        nextAgentCliEnv === current.agentCliEnv
+        && nextAgentModels === current.agentModels
+      ) {
+        return current;
+      }
       return {
         ...current,
         agentCliEnv: nextAgentCliEnv,
+        agentModels: nextAgentModels,
       };
     });
     autosaveLastSavedRef.current = {
@@ -1078,8 +1121,14 @@ export function SettingsDialog({
         autosaveLastSavedRef.current.agentCliEnv,
         initial.agentCliEnv,
       ),
+      agentModels: reconcileAmrModelChoice(
+        autosaveLastSavedRef.current.agentModels,
+        previousInitial,
+        initial,
+      ),
     };
-  }, [initial.agentCliEnv]);
+    previousInitialRef.current = initial;
+  }, [initial]);
 
   // Revert the live theme preview to the most recently persisted appearance.
   // That is the initial appearance until autosave succeeds; after autosave,

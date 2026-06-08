@@ -91,6 +91,7 @@ vi.mock('../../src/analytics/provider', () => ({
 
 import { SettingsDialog } from '../../src/components/SettingsDialog';
 import type { AgentRefreshOptions, SettingsSection } from '../../src/components/SettingsDialog';
+import { reconcileAmrModelChoice } from '../../src/components/SettingsDialog';
 import { reconcileAmrProfileEnv } from '../../src/components/SettingsDialog';
 import { I18nProvider } from '../../src/i18n';
 import { LOCALES } from '../../src/i18n/types';
@@ -3522,6 +3523,12 @@ describe('SettingsDialog appearance interactions', () => {
         mode: 'daemon',
         agentId: 'amr',
         theme: 'dark',
+        agentModels: {
+          amr: {
+            model: 'prod-only-model',
+            reasoning: 'default',
+          },
+        },
         agentCliEnv: {
           codex: { CODEX_BIN: '/tmp/codex-dev' },
           amr: {
@@ -3564,6 +3571,7 @@ describe('SettingsDialog appearance interactions', () => {
       view.onPersist,
       expect.objectContaining({
         theme: 'light',
+        agentModels: {},
         agentCliEnv: {
           codex: { CODEX_BIN: '/tmp/codex-dev' },
           amr: {
@@ -3574,6 +3582,42 @@ describe('SettingsDialog appearance interactions', () => {
       }),
       {},
     );
+  });
+
+  it('clears a stale AMR draft model when the external profile changes and the draft still matches the previous config', () => {
+    expect(
+      reconcileAmrModelChoice(
+        {
+          amr: {
+            model: 'prod-only-model',
+            reasoning: 'default',
+          },
+        },
+        {
+          ...baseConfig,
+          agentModels: {
+            amr: {
+              model: 'prod-only-model',
+              reasoning: 'default',
+            },
+          },
+          agentCliEnv: {
+            amr: {
+              OPEN_DESIGN_AMR_PROFILE: 'prod',
+            },
+          },
+        },
+        {
+          ...baseConfig,
+          agentModels: {},
+          agentCliEnv: {
+            amr: {
+              OPEN_DESIGN_AMR_PROFILE: 'local',
+            },
+          },
+        },
+      ),
+    ).toEqual({});
   });
 
   it('preserves unrelated draft env entries when reconciling the AMR profile', () => {
