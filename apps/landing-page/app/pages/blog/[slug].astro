@@ -63,7 +63,21 @@ const explicitField = (field: 'title' | 'summary' | 'category' | 'bodyHtml') => 
 };
 const localizedPostField = (field: 'title' | 'summary' | 'category') =>
   explicitField(field) ?? fallbackPost[field];
-const localizedBodyHtml = explicitField('bodyHtml') ?? fallbackPost.bodyHtml;
+// Translated `bodyHtml` is authored with root-relative internal links
+// (`href="/blog/..."`), which point at the default English routes. On a
+// localized page (`/zh/blog/...`) those links would bounce the reader back to
+// English, so rewrite each internal `href` through `localizedHref` before the
+// HTML is injected verbatim via `set:html`. Only `href` is rewritten — `src`
+// (images and other locale-agnostic static assets) is left untouched, and
+// `localizedHref` already passes through absolute/external/anchor URLs.
+const localizeBodyHtmlLinks = (html: string): string =>
+  html.replace(
+    /(\bhref=)(["'])(\/[^"']*)\2/g,
+    (_match, attr: string, quote: string, path: string) =>
+      `${attr}${quote}${href(path)}${quote}`,
+  );
+const rawBodyHtml = explicitField('bodyHtml') ?? fallbackPost.bodyHtml;
+const localizedBodyHtml = rawBodyHtml ? localizeBodyHtmlLinks(rawBodyHtml) : rawBodyHtml;
 const DISCORD = 'https://discord.gg/9ptkbbqRu';
 const sourceUrl = `https://github.com/nexu-io/open-design/blob/main/apps/landing-page/app/content/blog/${post.id}.md`;
 const category = post.data.category.toLowerCase();
