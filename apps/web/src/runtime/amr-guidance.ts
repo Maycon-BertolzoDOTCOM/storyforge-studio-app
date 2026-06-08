@@ -19,6 +19,10 @@ export function amrConsoleUrlForProfile(profile: string | null | undefined): str
   return AMR_CONSOLE_URL_BY_PROFILE[normalized] ?? AMR_CONSOLE_URL;
 }
 
+export function amrRechargeUrlForProfile(profile: string | null | undefined): string {
+  return amrConsoleUrlForProfile(profile);
+}
+
 export function amrProfileBadgeLabel(profile: string | null | undefined): string | null {
   if (profile === 'test') return 'TEST';
   if (profile === 'local') return 'LOCAL';

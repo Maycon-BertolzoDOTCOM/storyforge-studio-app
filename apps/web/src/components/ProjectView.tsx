@@ -5441,6 +5441,7 @@ export function ProjectView({
               messagesConversationId={messagesConversationId}
               onSelectConversation={handleSelectConversation}
               onDeleteConversation={handleDeleteConversation}
+              config={config}
               onOpenSettings={onOpenSettings}
               showByokRecoveryAction={
                 config.mode === 'api' &&
