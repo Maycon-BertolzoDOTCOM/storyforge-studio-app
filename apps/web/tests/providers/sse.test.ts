@@ -68,11 +68,13 @@ describe('streamViaDaemon', () => {
     expect(body.currentPrompt).toBe('post-consent revision');
   });
 
-  it('does not surface an error when a transient failure is auto-recovered by a same-run retry', async () => {
+  it('does not surface an error when a still-running same-run retry later succeeds', async () => {
     // The daemon emits the `error` frame for the failed first attempt BEFORE it
-    // decides to retry; the same-run retry then succeeds and the run ends
-    // 'succeeded'. The consumer must NOT turn that recovered run into a visible
-    // failure (nor drop the successful stream).
+    // decides to retry. At that moment the run status is still `running` (the
+    // retry is in flight — it may be slow). The consumer must NOT surface the
+    // transient error; it keeps consuming and the later `end` frame resolves the
+    // run as a success. Surfacing here (or on a poll timeout) would turn a
+    // recovered run into a visible failure and drop the successful stream.
     const handlers = createDaemonHandlers();
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -84,7 +86,8 @@ describe('streamViaDaemon', () => {
         );
       }
       if (url === '/api/runs/run-1') {
-        return jsonResponse({ id: 'run-1', status: 'succeeded', resumable: false });
+        // Retry still in flight when the error frame is observed.
+        return jsonResponse({ id: 'run-1', status: 'running' });
       }
       throw new Error(`unexpected fetch ${url}`);
     });
