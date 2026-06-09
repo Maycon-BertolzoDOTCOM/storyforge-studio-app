@@ -2762,6 +2762,7 @@ const MEDIA_TASK_HINTS = [
     patterns: [
       /\b(generate|create|make|render|produce)\s+(?:me\s+|an?\s+|the\s+|some\s+)?(?:[\w-]+\s+){0,2}(image|picture|photo|illustration|poster|logo|icon|banner|portrait|moodboard)\b/i,
       /\b(draw|illustrate|sketch|design|paint)\s+(?:me\s+|an?\s+|the\s+|some\s+)?(?:[\w-]+\s+){0,2}(image|picture|photo|illustration|poster|logo|icon|banner|portrait|moodboard)\b/i,
+      /^\s*(?:an?\s+|the\s+)?(?:[\w-]+\s+){0,2}(image|picture|photo|illustration|poster|logo|icon|banner|portrait|moodboard)\s*[.!?]?\s*$/i,
       /\b(gpt-image(?:-\d+)?)\b/i,
       /(生图|配图|生成图片)/,
     ],
@@ -2770,6 +2771,7 @@ const MEDIA_TASK_HINTS = [
     taskType: 'Video',
     patterns: [
       /\b(generate|create|make|render|produce)\s+(?:me\s+|an?\s+|the\s+|some\s+)?(?:[\w-]+\s+){0,2}(video|animation|clip|trailer|reel|teaser|storyboard)\b/i,
+      /^\s*(?:an?\s+|the\s+)?(?:[\w-]+\s+){0,2}(video|animation|clip|trailer|reel|teaser|storyboard)\s*[.!?]?\s*$/i,
       /(生成视频|做视频)/,
     ],
   },
@@ -2777,6 +2779,7 @@ const MEDIA_TASK_HINTS = [
     taskType: 'Audio',
     patterns: [
       /\b(generate|create|make|produce)\s+(?:me\s+|an?\s+|the\s+|some\s+)?(?:[\w-]+\s+){0,2}(audio|soundtrack|voiceover|music|sound effect|podcast)\b/i,
+      /^\s*(?:an?\s+|the\s+)?(?:[\w-]+\s+){0,2}(audio|soundtrack|voiceover|music|sound effect|podcast)\s*[.!?]?\s*$/i,
       /(生成音频|做音频|配音)/,
     ],
   },

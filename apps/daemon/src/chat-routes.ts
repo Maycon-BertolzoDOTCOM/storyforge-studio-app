@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import type { RouteDeps } from './server-context.js';
 import { seedProviderIfMissing } from './media-config.js';
+import { getProject } from './db.js';
 import {
   buildLegacyMaxTokensParam,
   buildMaxCompletionTokensParam,
@@ -8,10 +9,13 @@ import {
   isUnsupportedMaxTokensError,
 } from './openai-chat-token-params.js';
 import {
+  BYOK_MEDIA_IMAGE_TOOL,
   BYOK_SENSEAUDIO_TOOLS,
+  executeGenerateMediaImage,
   executeGenerateImage,
   executeGenerateSpeech,
   executeGenerateVideo,
+  type BYOKMediaImageToolContext,
   isSenseAudioImageModel,
   type BYOKToolContext,
 } from './byok-tools.js';
@@ -806,82 +810,214 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
       `[proxy:openai] ${req.method} ${validated.parsed!.hostname} model=${model}`,
     );
 
+    const projectId =
+      typeof proxyBody.projectId === 'string' && isSafeProjectId(proxyBody.projectId)
+        ? proxyBody.projectId
+        : null;
+    const projectRow = projectId ? getProject(db, projectId) : null;
+    const imageProjectMetadata =
+      projectRow?.metadata && typeof projectRow.metadata === 'object' && projectRow.metadata.kind === 'image'
+        ? projectRow.metadata
+        : null;
+    const imageProjectModel = typeof imageProjectMetadata?.imageModel === 'string' && imageProjectMetadata.imageModel.trim()
+      ? imageProjectMetadata.imageModel.trim()
+      : imageProjectMetadata
+        ? 'gpt-image-2'
+        : null;
+    const usesOpenAIImageModel =
+      typeof imageProjectModel === 'string'
+      && /^(gpt-image-|dall-e-)/.test(imageProjectModel);
+    const openAIImageToolContext: BYOKMediaImageToolContext | null =
+      imageProjectMetadata
+      && usesOpenAIImageModel
+      && /(^|\.)openai\.com$/i.test(validated.parsed!.hostname)
+      && projectId
+        ? {
+            projectRoot: ctx.paths.PROJECT_ROOT,
+            projectsRoot: ctx.paths.PROJECTS_DIR,
+            projectId,
+            upstreamApiKey: apiKey,
+            upstreamBaseUrl: baseUrl,
+            requestInit: {},
+            mediaModel: imageProjectModel,
+            ...(typeof imageProjectMetadata.imageAspect === 'string' && imageProjectMetadata.imageAspect.trim()
+              ? { defaultAspect: imageProjectMetadata.imageAspect.trim() }
+              : {}),
+            seedProviderId: 'openai',
+          }
+        : null;
+
     const payloadMessages = Array.isArray(messages) ? [...messages] : [];
     if (typeof systemPrompt === 'string' && systemPrompt) {
-      payloadMessages.unshift({ role: 'system', content: systemPrompt });
+      payloadMessages.unshift({
+        role: 'system',
+        content: openAIImageToolContext
+          ? `${systemPrompt}\n\n---\n\n${openAIImageToolOverride(openAIImageToolContext.mediaModel, openAIImageToolContext.defaultAspect)}`
+          : systemPrompt,
+      });
     }
-
-    const payload: any = {
-      model,
-      messages: payloadMessages,
-      ...buildOpenAIChatTokenParam(
-        model,
-        typeof maxTokens === 'number' && maxTokens > 0 ? maxTokens : 8192,
-      ),
-      stream: true,
-    };
 
     const sse = createSseResponse(res);
     let proxyDispatcher: ReturnType<typeof proxyDispatcherRequestInit> | null = null;
     try {
       proxyDispatcher = proxyDispatcherRequestInit();
+      const requestInit = proxyDispatcher.requestInit;
+      if (openAIImageToolContext) {
+        openAIImageToolContext.requestInit = requestInit;
+      }
       sse.send('start', { model });
-      const response = await fetch(url, {
-        ...proxyDispatcher.requestInit,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-          ...(validated.parsed!.hostname === 'openrouter.ai' ? {
-            'HTTP-Referer': 'https://opendesign.dev',
-            'X-Title': 'Open Design',
-          } : {}),
-        },
-        body: JSON.stringify(payload),
-        redirect: 'error',
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `[proxy:openai] upstream error: ${response.status} ${redactAuthTokens(errorText)}`,
-        );
-        sendProxyError(sse, `Upstream error: ${response.status}`, {
-          code: proxyErrorCode(response.status),
-          details: errorText,
-          retryable: response.status === 429 || response.status >= 500,
+      const runOpenAITurn = async (messagesForTurn: any[]): Promise<TurnResult> => {
+        const payload: any = {
+          model,
+          messages: messagesForTurn,
+          ...buildOpenAIChatTokenParam(
+            model,
+            typeof maxTokens === 'number' && maxTokens > 0 ? maxTokens : 8192,
+          ),
+          stream: true,
+          ...(openAIImageToolContext
+            ? { tools: [BYOK_MEDIA_IMAGE_TOOL], tool_choice: 'auto' }
+            : {}),
+        };
+        const response = await fetch(url, {
+          ...requestInit,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+            ...(validated.parsed!.hostname === 'openrouter.ai' ? {
+              'HTTP-Referer': 'https://opendesign.dev',
+              'X-Title': 'Open Design',
+            } : {}),
+          },
+          body: JSON.stringify(payload),
+          redirect: 'error',
         });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            `[proxy:openai] upstream error: ${response.status} ${redactAuthTokens(errorText)}`,
+          );
+          sendProxyError(sse, `Upstream error: ${response.status}`, {
+            code: proxyErrorCode(response.status),
+            details: errorText,
+            retryable: response.status === 429 || response.status >= 500,
+          });
+          return { kind: 'error' };
+        }
+
+        let providerError = '';
+        let finishReason = '';
+        const accum: Record<number, AccumulatedToolCall> = {};
+        const guard = createDeltaGuard(sse);
+        await streamUpstreamSse(response, ({ payload, data }: any) => {
+          if (payload === '[DONE]') return true;
+          if (!data) return false;
+          const streamError = extractStreamErrorMessage(data);
+          if (streamError) {
+            providerError = streamError;
+            return true;
+          }
+          const choices = (data as any).choices;
+          if (!Array.isArray(choices) || choices.length === 0) return false;
+          const choice = choices[0] || {};
+          const delta = choice.delta || {};
+          if (typeof delta.content === 'string' && delta.content) {
+            guard.sendDelta(delta.content);
+            if (guard.contaminated) {
+              sse.send('end', {});
+              return true;
+            }
+          }
+          if (Array.isArray(delta.tool_calls)) {
+            for (const tc of delta.tool_calls) {
+              const idx = typeof tc?.index === 'number' ? tc.index : 0;
+              if (!accum[idx]) {
+                accum[idx] = { id: '', name: '', arguments: '' };
+              }
+              const slot = accum[idx];
+              if (typeof tc.id === 'string' && tc.id) slot.id = tc.id;
+              if (typeof tc.function?.name === 'string' && tc.function.name) {
+                slot.name = tc.function.name;
+              }
+              if (typeof tc.function?.arguments === 'string') {
+                slot.arguments += tc.function.arguments;
+              }
+            }
+          }
+          if (typeof choice.finish_reason === 'string' && choice.finish_reason) {
+            finishReason = choice.finish_reason;
+          }
+          return false;
+        });
+
+        if (providerError) {
+          sendProxyError(sse, `Provider error: ${providerError}`, { details: providerError });
+          return { kind: 'error' };
+        }
+
+        if (finishReason === 'tool_calls' && Object.keys(accum).length > 0) {
+          const indices = Object.keys(accum).map(Number).sort((a, b) => a - b);
+          const toolCalls = indices.map((i) => ({
+            id: accum[i]!.id || `call_${i}`,
+            type: 'function' as const,
+            function: {
+              name: accum[i]!.name,
+              arguments: accum[i]!.arguments,
+            },
+          }));
+          return {
+            kind: 'tool_calls',
+            assistantMessage: {
+              role: 'assistant',
+              content: null,
+              tool_calls: toolCalls,
+            },
+            toolCalls,
+          };
+        }
+
+        return { kind: 'text_end' };
+      };
+
+      if (!openAIImageToolContext) {
+        const turn = await runOpenAITurn(payloadMessages);
+        if (turn.kind === 'error') return sse.end();
+        sse.send('end', {});
         return sse.end();
       }
 
-      let ended = false;
-      const guard = createDeltaGuard(sse);
-      await streamUpstreamSse(response, ({ payload, data }: any) => {
-        if (payload === '[DONE]') {
+      for (let loop = 0; loop < MAX_BYOK_TOOL_LOOPS; loop++) {
+        const turn = await runOpenAITurn(payloadMessages);
+        if (turn.kind === 'error') return sse.end();
+        if (turn.kind === 'text_end') {
           sse.send('end', {});
-          ended = true;
-          return true;
+          return sse.end();
         }
-        if (!data) return false;
-        const streamError = extractStreamErrorMessage(data);
-        if (streamError) {
-          sendProxyError(sse, `Provider error: ${streamError}`, { details: data });
-          ended = true;
-          return true;
+        payloadMessages.push(turn.assistantMessage);
+        for (const call of turn.toolCalls) {
+          let args: any = {};
+          try {
+            args = JSON.parse(call.function.arguments || '{}');
+          } catch {
+            args = { __toolParseError: true };
+          }
+          const result = args.__toolParseError
+            ? { ok: false, error: 'tool arguments were not valid JSON' }
+            : await executeGenerateMediaImage(args, openAIImageToolContext);
+          payloadMessages.push({
+            role: 'tool',
+            tool_call_id: call.id,
+            content: result.ok
+              ? `Image generated successfully. URL: ${result.url}. Reply to the user with: ![generated image](${result.url})`
+              : `Image generation failed: ${result.error}. Apologize briefly and suggest a retry with a more specific prompt.`,
+          });
         }
-        const delta = extractOpenAIText(data);
-        if (delta) { 
-          guard.sendDelta(delta); 
-          if (guard.contaminated) { 
-            sse.send('end', {}); 
-            ended = true; 
-            return true; 
-          } 
-        }
-        return false;
-      });
-      if (!ended) sse.send('end', {});
-      sse.end();
+      }
+      console.warn('[proxy:openai] tool loop bounded at MAX_BYOK_TOOL_LOOPS=3');
+      sse.send('end', {});
+      return sse.end();
     } catch (err: any) {
       console.error(`[proxy:openai] internal error: ${err.message}`);
       sendProxyError(sse, err.message, { code: 'INTERNAL_ERROR' });
@@ -1265,6 +1401,21 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
         assistantMessage: any;
         toolCalls: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>;
       };
+
+  function openAIImageToolOverride(imageModel: string, aspect?: string): string {
+    const aspectNote = typeof aspect === 'string' && aspect.trim() ? aspect.trim() : '1:1';
+    return `# API mode exception — image generation tool is available in this project
+
+The general API-mode warning about tools does NOT apply to image generation here.
+One function tool is wired through for this Image project: \`generate_image\`.
+
+- Use \`generate_image\` when the user asks you to generate, render, draw, illustrate, or create the requested image.
+- The project image model is \`${imageModel}\` and the default aspect ratio is \`${aspectNote}\`.
+- Do NOT tell the user to run \`od media generate\` manually.
+- Do NOT claim tools are unavailable.
+- After the tool returns a URL, reply with markdown image syntax so the result renders inline: \`![generated image](url)\`.
+`;
+  }
 
   app.post('/api/proxy/senseaudio/stream', async (req, res) => {
     const proxyBody = req.body || {};

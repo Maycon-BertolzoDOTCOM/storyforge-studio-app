@@ -70,6 +70,101 @@ describe('API proxy routes', () => {
     );
   });
 
+  it('runs the OpenAI image tool loop for Image projects instead of narrating a shell command', async () => {
+    const configDir = await mkdtemp(path.join(tmpdir(), 'od-openai-image-proxy-'));
+    process.env.OD_MEDIA_CONFIG_DIR = configDir;
+    await mkdir(configDir, { recursive: true });
+
+    const projectId = 'openai-image-project';
+    const projectResponse = await realFetch(`${baseUrl}/api/projects`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        id: projectId,
+        name: 'OpenAI image project',
+        metadata: { kind: 'image', imageModel: 'gpt-image-2', imageAspect: '16:9' },
+      }),
+    });
+    expect(projectResponse.status).toBe(200);
+
+    const upstreamChatBodies: any[] = [];
+    let chatCallIndex = 0;
+    const pngBase64 = Buffer.from([0x89, 0x50, 0x4e, 0x47]).toString('base64');
+    const fetchMock = vi.fn(async (input: FetchInput, init?: FetchInit) => {
+      const url = String(input);
+      if (url.startsWith(baseUrl)) return realFetch(input, init);
+      if (url === 'https://api.openai.com/v1/chat/completions') {
+        upstreamChatBodies.push(JSON.parse(String(init?.body || '{}')));
+        chatCallIndex += 1;
+        if (chatCallIndex === 1) {
+          return sseResponse([
+            'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_img","type":"function","function":{"name":"generate_image","arguments":"{\\"prompt\\":\\"A dramatic Open Design poster\\"}"}}]},"finish_reason":null}]}',
+            '',
+            'data: {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}',
+            '',
+            'data: [DONE]',
+            '',
+          ].join('\n'));
+        }
+        return sseResponse([
+          'data: {"choices":[{"index":0,"delta":{"content":"Here is the render: "}}]}',
+          '',
+          'data: {"choices":[{"index":0,"delta":{"content":"![generated image](generated)"}}]}',
+          '',
+          'data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}',
+          '',
+          'data: [DONE]',
+          '',
+        ].join('\n'));
+      }
+      if (url === 'https://api.openai.com/v1/images/generations') {
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer sk-openai');
+        const imageBody = JSON.parse(String(init?.body));
+        expect(imageBody.model).toBe('gpt-image-2');
+        expect(imageBody.prompt).toBe('A dramatic Open Design poster');
+        expect(typeof imageBody.size).toBe('string');
+        return new Response(
+          JSON.stringify({ data: [{ b64_json: pngBase64 }] }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const res = await realFetch(`${baseUrl}/api/proxy/openai/stream`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'sk-openai',
+        model: 'gpt-5-chat-latest',
+        projectId,
+        systemPrompt: 'Base system prompt.',
+        messages: [{ role: 'user', content: 'Generate me a poster about Open Design.' }],
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('Here is the render');
+    expect(body).toContain('event: end');
+    expect(upstreamChatBodies).toHaveLength(2);
+    expect(upstreamChatBodies[0].tools).toMatchObject([
+      { type: 'function', function: { name: 'generate_image' } },
+    ]);
+    const firstSystemPrompt = String(upstreamChatBodies[0].messages[0].content);
+    expect(firstSystemPrompt).toContain('Do NOT tell the user to run `od media generate` manually');
+    expect(firstSystemPrompt.indexOf('Base system prompt.')).toBeLessThan(
+      firstSystemPrompt.indexOf('Do NOT tell the user to run `od media generate` manually'),
+    );
+    expect(upstreamChatBodies[1].messages.find((message: any) => message.role === 'tool')).toMatchObject({
+      role: 'tool',
+      tool_call_id: 'call_img',
+      content: expect.stringMatching(/Image generated successfully\. URL: \/api\/projects\/openai-image-project\/files\//),
+    });
+  });
+
   it.each([
     {
       provider: 'anthropic',

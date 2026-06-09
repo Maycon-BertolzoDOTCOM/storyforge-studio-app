@@ -16,8 +16,9 @@ import path from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { assertExternalAssetUrl } from './connectionTest.js';
-import { resolveProviderConfig } from './media-config.js';
+import { resolveProviderConfig, seedProviderIfMissing } from './media-config.js';
 import { IMAGE_MODELS } from './media-models.js';
+import { generateMedia } from './media.js';
 import { ensureProject } from './projects.js';
 
 // SenseAudio image model allowlist — derived from the shared media-models
@@ -201,6 +202,32 @@ export const BYOK_SENSEAUDIO_TOOLS = [
   },
 ];
 
+export const BYOK_MEDIA_IMAGE_TOOL = {
+  type: 'function' as const,
+  function: {
+    name: 'generate_image',
+    description:
+      'Generate an actual image file for the current Image project and return a URL to the rendered result. Use this instead of printing shell commands or saying tools are unavailable when the user asks you to create, render, draw, illustrate, or generate the requested image.',
+    parameters: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description:
+            'Detailed visual description of the image to render. Include subject, composition, style, lighting, and other important constraints. Maximum 2000 characters.',
+        },
+        aspect_ratio: {
+          type: 'string',
+          enum: ['1:1', '16:9', '9:16', '4:3', '3:4'],
+          description:
+            'Optional aspect ratio override. Omit this to keep the project default.',
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+};
+
 /**
  * Runtime context the BYOK tool executor needs. Passed by the chat
  * route on every call so the tool layer stays free of global state and
@@ -244,6 +271,12 @@ export interface BYOKToolContext {
    *  forward the current proxy dispatcher into every upstream/download
    *  fetch the BYOK tool executor performs. */
   requestInit?: Pick<RequestInit, 'dispatcher'>;
+}
+
+export interface BYOKMediaImageToolContext extends BYOKToolContext {
+  mediaModel: string;
+  defaultAspect?: string;
+  seedProviderId?: string;
 }
 
 export interface ImageToolResult {
@@ -522,6 +555,78 @@ export async function executeGenerateImage(
     ok: true,
     url: `/api/projects/${encodeURIComponent(ctx.projectId)}/files/${filename}`,
   };
+}
+
+export async function executeGenerateMediaImage(
+  args: { prompt?: unknown; aspect_ratio?: unknown },
+  ctx: BYOKMediaImageToolContext,
+): Promise<ImageToolResult> {
+  const promptRaw = typeof args.prompt === 'string' ? args.prompt.trim() : '';
+  if (!promptRaw) return { ok: false, error: 'prompt is required' };
+  if (typeof ctx.mediaModel !== 'string' || !ctx.mediaModel.trim()) {
+    return { ok: false, error: 'image model is not configured for this project' };
+  }
+  const prompt =
+    promptRaw.length > PROMPT_MAX_LENGTH
+      ? promptRaw.slice(0, PROMPT_MAX_LENGTH)
+      : promptRaw;
+  const aspect = typeof args.aspect_ratio === 'string' && args.aspect_ratio.trim()
+    ? sanitizeAspectRatio(args.aspect_ratio)
+    : typeof ctx.defaultAspect === 'string' && ctx.defaultAspect.trim()
+      ? sanitizeAspectRatio(ctx.defaultAspect)
+      : '1:1';
+
+  try {
+    if (ctx.seedProviderId) {
+      await seedProviderCredentialForMedia(ctx, ctx.seedProviderId);
+    }
+    const result = await generateMedia({
+      projectRoot: ctx.projectRoot,
+      projectsRoot: ctx.projectsRoot,
+      projectId: ctx.projectId,
+      surface: 'image',
+      model: ctx.mediaModel.trim(),
+      prompt,
+      aspect,
+      ...(ctx.requestInit ? { requestInit: ctx.requestInit } : {}),
+      ...((typeof ctx.upstreamApiKey === 'string' && ctx.upstreamApiKey.trim())
+        || (typeof ctx.upstreamBaseUrl === 'string' && ctx.upstreamBaseUrl.trim())
+        ? {
+            providerConfigOverride: {
+              ...(typeof ctx.upstreamApiKey === 'string' && ctx.upstreamApiKey.trim()
+                ? { apiKey: ctx.upstreamApiKey.trim() }
+                : {}),
+              ...(typeof ctx.upstreamBaseUrl === 'string' && ctx.upstreamBaseUrl.trim()
+                ? { baseUrl: ctx.upstreamBaseUrl.trim() }
+                : {}),
+            },
+          }
+        : {}),
+    });
+    return {
+      ok: true,
+      url: `/api/projects/${encodeURIComponent(ctx.projectId)}/files/${encodeURIComponent(result.name)}`,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+async function seedProviderCredentialForMedia(
+  ctx: BYOKToolContext,
+  providerId: string,
+): Promise<void> {
+  const apiKey = typeof ctx.upstreamApiKey === 'string' ? ctx.upstreamApiKey.trim() : '';
+  if (!apiKey) return;
+  await seedProviderIfMissing(ctx.projectRoot, providerId, {
+    apiKey,
+    ...(typeof ctx.upstreamBaseUrl === 'string' && ctx.upstreamBaseUrl.trim()
+      ? { baseUrl: ctx.upstreamBaseUrl.trim() }
+      : {}),
+  });
 }
 
 function sanitizeVideoAspectRatio(raw: unknown): (typeof SENSEAUDIO_VIDEO_ASPECT_RATIOS)[number] {

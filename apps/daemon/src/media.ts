@@ -296,6 +296,7 @@ export async function generateMedia(args: {
   prompt?: string; output?: string; aspect?: string; length?: number; duration?: number; voice?: string;
   audioKind?: AudioKind; language?: string; loop?: boolean; promptInfluence?: number;
   compositionDir?: string; image?: string; images?: string[]; onProgress?: ProgressFn; requestInit?: MediaRequestInit;
+  providerConfigOverride?: ProviderConfig;
 }) {
   const {
     projectRoot,
@@ -316,6 +317,7 @@ export async function generateMedia(args: {
     compositionDir,
     image,
     requestInit,
+    providerConfigOverride,
   } = args;
 
   if (!projectRoot) throw new Error('projectRoot required');
@@ -457,7 +459,7 @@ export async function generateMedia(args: {
     imageRefs,
   };
 
-  const credentials = await resolveProviderConfig(projectRoot, def.provider);
+  const credentials = providerConfigOverride ?? await resolveProviderConfig(projectRoot, def.provider);
   const customImageCredentials =
     surface === 'image' && def.provider === 'openai'
       ? await resolveProviderConfig(projectRoot, 'custom-image')
