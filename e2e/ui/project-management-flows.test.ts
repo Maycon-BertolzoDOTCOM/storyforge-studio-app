@@ -445,7 +445,7 @@ test('[P0] @critical project instructions flow into the next API run as project-
   await expectWorkspaceReady(page);
 
   const instructions = 'Use tabs for indentation and keep CTA copy terse.';
-  await page.getByTestId('project-instructions-add').click();
+  await openProjectInstructionsEditor(page);
   await page.getByTestId('project-instructions-textarea').fill(instructions);
   await page.getByTestId('project-instructions-save').click();
   await expect(page.getByTestId('project-instructions-preview')).toContainText(instructions);
@@ -1490,6 +1490,15 @@ async function openAvatarAgentMenu(page: Page): Promise<{
   }
   await expect(claudeButton).toBeVisible({ timeout: 20_000 });
   return { menu, claudeButton };
+}
+
+async function openProjectInstructionsEditor(page: Page) {
+  await page.getByTestId('project-instructions-open').click();
+  if (await page.getByTestId('project-instructions-textarea').isVisible().catch(() => false)) {
+    return;
+  }
+  await page.getByRole('dialog', { name: /Custom instructions/i }).getByRole('button', { name: /^Edit$/i }).click();
+  await expect(page.getByTestId('project-instructions-textarea')).toBeVisible();
 }
 
 async function expectWorkspaceReady(page: Page) {

@@ -5549,6 +5549,7 @@ export function ProjectView({
                         'project-instructions-chip',
                         instructionsMode === 'review' ? 'is-open' : '',
                       ].filter(Boolean).join(' ')}
+                      data-testid="project-instructions-open"
                       onClick={() => {
                         setInstructionsDraft(project.customInstructions ?? '');
                         setInstructionsMode('review');
@@ -5561,7 +5562,7 @@ export function ProjectView({
                     <button
                       type="button"
                       className="project-instructions-toggle"
-                      data-testid="project-instructions-add"
+                      data-testid="project-instructions-open"
                       aria-label={t('project.customInstructions')}
                       title={t('project.customInstructions')}
                       onClick={() => {
