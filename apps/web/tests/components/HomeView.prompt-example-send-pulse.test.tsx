@@ -70,12 +70,13 @@ describe('static prompt-example send pulse', () => {
     // matches the example filter → fallback static prompt-example cards.
     fireEvent.click(await screen.findByTestId('home-hero-rail-prototype'));
     const exampleCards = await screen.findAllByTestId('home-hero-prompt-example');
-    expect(exampleCards.length).toBeGreaterThan(0);
+    const firstExample = exampleCards[0];
+    if (!firstExample) throw new Error('expected at least one prompt-example card');
 
     const submit = screen.getByTestId('home-hero-submit');
     expect(submit.className).not.toContain('home-hero__attention-sheen');
 
-    fireEvent.click(exampleCards[0]);
+    fireEvent.click(firstExample);
     await waitFor(() => {
       expect(submit.className).toContain('home-hero__attention-sheen');
     });
