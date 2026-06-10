@@ -108,6 +108,43 @@ describe('Home first-run guide trail', () => {
     expect(readHomeGuideStage()).toBe('chip');
   });
 
+  it('closes an in-flight stage when projects resolve to an existing user', async () => {
+    stubPluginsFetch();
+    const { rerender } = render(
+      <I18nProvider initial="en">
+        <HomeView
+          projects={[] as never}
+          projectsLoading
+          onSubmit={() => undefined}
+          onOpenProject={() => undefined}
+          onViewAllProjects={() => undefined}
+        />
+      </I18nProvider>,
+    );
+
+    // The user clicks a chip while projects are still loading — the stage
+    // moves to 'card' before we know whether they are new.
+    fireEvent.click(await screen.findByTestId('home-hero-rail-prototype'));
+    expect(readHomeGuideStage()).toBe('card');
+
+    // Loading resolves: existing user. The stage must close so no chip's
+    // example cards ever show the first-preset sheen.
+    rerender(
+      <I18nProvider initial="en">
+        <HomeView
+          projects={[SAMPLE_PROJECT] as never}
+          projectsLoading={false}
+          onSubmit={() => undefined}
+          onOpenProject={() => undefined}
+          onViewAllProjects={() => undefined}
+        />
+      </I18nProvider>,
+    );
+    await waitFor(() => {
+      expect(readHomeGuideStage()).toBe('done');
+    });
+  });
+
   it('never replays once done', async () => {
     writeHomeGuideStage('done');
     stubPluginsFetch();

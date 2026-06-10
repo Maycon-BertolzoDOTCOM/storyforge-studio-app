@@ -560,17 +560,20 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     };
   }, [firstRunGuide]);
 
-  // Users with existing projects never see the trail — complete it silently
-  // so a later empty-projects state doesn't replay it.
+  // Users with existing projects never see the trail — complete ANY
+  // unfinished stage silently. A chip pick during the loading window can
+  // move the stage to 'card' before we know the user is not new, so 'chip'
+  // alone is not enough to close off.
   useEffect(() => {
     if (firstRunGuide !== false) return;
-    if (readHomeGuideStage() === 'chip') writeHomeGuideStage('done');
+    if (readHomeGuideStage() !== 'done') writeHomeGuideStage('done');
   }, [firstRunGuide]);
 
   // Beat 2: once the picked chip's example cards render, pulse the first
   // card exactly once, then the trail is done (the send pulse takes over
   // after a card pick).
   useEffect(() => {
+    if (firstRunGuide !== true) return;
     if (readHomeGuideStage() !== 'card') return;
     if (!activeChipId || filteredExamplePlugins.length === 0) return;
     const arm = window.setTimeout(() => {
@@ -582,7 +585,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
       window.clearTimeout(arm);
       window.clearTimeout(disarm);
     };
-  }, [activeChipId, filteredExamplePlugins.length]);
+  }, [firstRunGuide, activeChipId, filteredExamplePlugins.length]);
   const activePromptExamples = useMemo(
     () => activeChipId && activeExamplePlugins.length === 0
       ? homeHeroChipPromptExamples(activeChipId, locale)
