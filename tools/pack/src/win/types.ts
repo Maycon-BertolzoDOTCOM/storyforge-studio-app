@@ -338,6 +338,7 @@ export type WinInspectResult = {
   };
   screenshot?: DesktopScreenshotResult;
   status: DesktopStatusSnapshot | null;
+  statusError?: string;
   updateCache: ToolPackUpdateCacheLifecycleSnapshot;
   updateCacheSource: {
     kind: "tools-pack-runtime";

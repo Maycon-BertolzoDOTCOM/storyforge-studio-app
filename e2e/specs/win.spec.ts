@@ -228,6 +228,7 @@ type WinInspectResult = {
     path: string;
   };
   status: DesktopStatus | null;
+  statusError?: string;
   update?: {
     active?: {
       artifact?: {

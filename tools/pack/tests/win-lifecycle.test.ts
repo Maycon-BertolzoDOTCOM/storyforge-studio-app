@@ -86,4 +86,27 @@ describe("inspectPackedWinApp", () => {
       await rm(root, { force: true, recursive: true });
     }
   });
+
+  it("returns status errors with launcher diagnostics when status IPC fails", async () => {
+    const root = await mkdtemp(join(tmpdir(), "open-design-win-lifecycle-"));
+
+    try {
+      requestJsonIpc.mockReset();
+      requestJsonIpc.mockImplementation(async (_ipc: string, payload: { type?: string }) => {
+        if (payload.type === SIDECAR_MESSAGES.STATUS) {
+          throw new Error("IPC request timed out: test-pipe");
+        }
+        throw new Error(`unexpected IPC message: ${String(payload.type)}`);
+      });
+
+      const result = await inspectPackedWinApp(createConfig(root), {});
+
+      expect(result.status).toBeNull();
+      expect(result.statusError).toBe("IPC request timed out: test-pipe");
+      expect(result.launcher.exists).toBe(false);
+      expect(result.updateCache.releaseCount).toBe(0);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
 });

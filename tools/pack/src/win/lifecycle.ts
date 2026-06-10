@@ -474,7 +474,13 @@ async function requestDesktopEval(
 
 export async function inspectPackedWinApp(config: ToolPackConfig, options: { expr?: string; path?: string; updateAction?: string }): Promise<WinInspectResult> {
   const stamp = desktopStamp(config);
-  const status = await requestJsonIpc<DesktopStatusSnapshot>(stamp.ipc, { type: SIDECAR_MESSAGES.STATUS }, { timeoutMs: 2000 }).catch(() => null);
+  let status: DesktopStatusSnapshot | null = null;
+  let statusError: string | undefined;
+  try {
+    status = await requestJsonIpc<DesktopStatusSnapshot>(stamp.ipc, { type: SIDECAR_MESSAGES.STATUS }, { timeoutMs: 2000 });
+  } catch (error) {
+    statusError = error instanceof Error ? error.message : String(error);
+  }
   const updateAction = resolveUpdateAction(options.updateAction);
   const launcher = await readToolPackLauncherRuntimeSnapshot(config);
   const updateCache = await readToolPackUpdateCacheLifecycleSnapshot(config);
@@ -509,5 +515,6 @@ export async function inspectPackedWinApp(config: ToolPackConfig, options: { exp
       ),
     }),
     status,
+    ...(statusError == null ? {} : { statusError }),
   };
 }
