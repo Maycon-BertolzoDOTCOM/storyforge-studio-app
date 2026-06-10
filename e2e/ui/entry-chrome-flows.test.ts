@@ -499,8 +499,10 @@ test('[P1] home starters can browse registry and use a starter from Home', async
   await page.getByTestId('entry-nav-home').click();
   await expect(page.getByTestId('home-hero')).toBeVisible();
   // Community is a gallery now (no inline Use button): open the starter's
-  // detail modal and use it. Plain "Use" routes it as the active driver — its
-  // query/context bind on submit — rather than pre-filling the prompt text.
+  // detail modal and use it. This starter ships an example query, so the
+  // primary Use button replicates (seeds the prompt) while binding it as the
+  // active driver; this case only asserts the active-plugin chip, which
+  // appears on either Use variant.
   await page.getByTestId('plugins-home-details-localized-plugin').click({ force: true });
   await page.getByTestId('plugin-details-use-localized-plugin').click();
   await expect(page.getByTestId('home-hero-active-plugin')).toBeVisible();
@@ -790,9 +792,13 @@ test('[P1] home starters Use plugin from the details modal applies the plugin to
 
   const dialog = page.getByRole('dialog', { name: /Detail Use Plugin preview/i });
   await expect(dialog).toBeVisible();
-  await page.getByTestId('plugin-details-use-detail-use-plugin').click();
+  // This fixture ships an example query, so the primary Use button now
+  // replicates (seeds the prompt). The structure-only path that keeps the
+  // composer freeform lives in the caret menu's "Use plugin only" option.
+  await page.getByTestId('plugin-details-use-detail-use-plugin-menu').click();
+  await page.getByTestId('plugin-details-use-option-detail-use-plugin').click();
   await expect(dialog).toHaveCount(0);
-  // Plain "Use" now routes the plugin as the active driver (its own pipeline
+  // "Use plugin only" routes the plugin as the active driver (its own pipeline
   // applies on submit) and surfaces the active-plugin chip, but does not
   // inject prompt text, so the editor stays empty.
   await expect(page.getByTestId('home-hero-active-plugin')).toBeVisible();
@@ -875,9 +881,10 @@ test('[P1] home starters route the picked plugin as the active driver from its d
 
   const starterCard = page.locator('[data-plugin-id="localized-plugin"]').first();
   await starterCard.scrollIntoViewIfNeeded();
-  // Community is a gallery: open the starter's detail modal and use it. Plain
-  // "Use" routes the plugin as the active driver (active-plugin chip), so its
-  // pipeline/context bind on submit.
+  // Community is a gallery: open the starter's detail modal and use it. This
+  // starter ships an example query, so the primary Use button replicates and
+  // binds the plugin as the active driver (active-plugin chip); this case only
+  // asserts that chip, which appears on either Use variant.
   await page.getByTestId('plugins-home-details-localized-plugin').click({ force: true });
   await page.getByTestId('plugin-details-use-localized-plugin').click();
   await expect(page.getByTestId('home-hero-active-plugin')).toBeVisible();
@@ -900,9 +907,11 @@ test('[P0] @critical home starters Use with query carries the hydrated starter p
   const input = page.getByTestId('home-hero-input');
   const starterCard = page.locator('[data-plugin-id="localized-plugin"]').first();
   await starterCard.scrollIntoViewIfNeeded();
-  // Use the starter from its detail modal (gallery has no inline Use). Plain
-  // "Use" routes it as the active run driver; the gallery no longer pre-fills
-  // the prompt, so the user types their brief before submitting.
+  // Use the starter from its detail modal (gallery has no inline Use). This
+  // starter ships an example query, so the primary Use button replicates: it
+  // routes the plugin as the active run driver AND seeds the hydrated prompt.
+  // We still fill the same brief explicitly to keep the assertion robust to the
+  // async apply→seed roundtrip (the value is identical either way).
   await page.getByTestId('plugins-home-details-localized-plugin').click({ force: true });
   await page.getByTestId('plugin-details-use-localized-plugin').click();
   await expect(page.getByTestId('home-hero-active-plugin')).toBeVisible();
