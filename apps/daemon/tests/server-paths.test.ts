@@ -117,4 +117,24 @@ describe('resolveDaemonPluginPreviewsDir', () => {
       resolveDaemonPluginPreviewsDir({ env: {}, resourceRoot: undefined, projectRoot }),
     ).toBe(path.join(projectRoot, 'data', 'plugin-previews'));
   });
+
+  it('honors an OD_PLUGIN_PREVIEWS_DIR override from the injected env', () => {
+    const projectRoot = '/repo';
+
+    // Absolute override passes through; a relative one resolves against projectRoot.
+    expect(
+      resolveDaemonPluginPreviewsDir({
+        env: { OD_PLUGIN_PREVIEWS_DIR: '/abs/previews' },
+        resourceRoot: '/res/open-design',
+        projectRoot,
+      }),
+    ).toBe('/abs/previews');
+    expect(
+      resolveDaemonPluginPreviewsDir({
+        env: { OD_PLUGIN_PREVIEWS_DIR: 'rel/previews' },
+        resourceRoot: '/res/open-design',
+        projectRoot,
+      }),
+    ).toBe(path.join(projectRoot, 'rel', 'previews'));
+  });
 });

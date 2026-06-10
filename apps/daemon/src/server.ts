@@ -1353,7 +1353,13 @@ function resolveDaemonResourceDir(resourceRoot, segment, fallback) {
 // the sidecar) and has no data/. An explicit OD_PLUGIN_PREVIEWS_DIR override and
 // the dev PROJECT_ROOT layout still win. Exported for regression coverage.
 export function resolveDaemonPluginPreviewsDir({ env = process.env, resourceRoot, projectRoot }) {
-  if (env.OD_PLUGIN_PREVIEWS_DIR) return resolvePluginPreviewsDir(projectRoot);
+  // Resolve the override from the injected `env` (absolute passthrough, relative
+  // against projectRoot) rather than re-reading process.env, so the helper is
+  // pure and the override path is actually testable.
+  const override = env.OD_PLUGIN_PREVIEWS_DIR;
+  if (override) {
+    return path.isAbsolute(override) ? override : path.resolve(projectRoot, override);
+  }
   return resolveDaemonResourceDir(
     resourceRoot,
     path.join('data', 'plugin-previews'),
