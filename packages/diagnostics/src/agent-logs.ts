@@ -100,6 +100,16 @@ export interface AgentCliLogOptions {
    * the default `<dataDir>/amr/opencode-home`.
    */
   amrOpenCodeHome?: string | null;
+  /**
+   * Effective Claude config home (`CLAUDE_CONFIG_DIR`). Honors a user
+   * `agentCliEnv.claude.CLAUDE_CONFIG_DIR` override; falls back to `~/.claude`.
+   */
+  claudeConfigDir?: string | null;
+  /**
+   * Effective Codex home (`CODEX_HOME`). Honors a user
+   * `agentCliEnv.codex.CODEX_HOME` override; falls back to `~/.codex`.
+   */
+  codexHome?: string | null;
   /** XDG_DATA_HOME, if set, used for OpenCode's data dir resolution. */
   xdgDataHome?: string | null;
   /** Max log files to include per agent (most-recent first). */
@@ -131,13 +141,19 @@ export async function buildAgentCliLogSources(options: AgentCliLogOptions): Prom
     ? join(xdg, "opencode", "log")
     : join(home, ".local", "share", "opencode", "log");
 
+  // Effective CLI homes honor the user's app-config overrides
+  // (`CLAUDE_CONFIG_DIR` / `CODEX_HOME`), falling back to the defaults — the
+  // same fix as AMR's `OPENCODE_TEST_HOME` so relocated homes are not missed.
+  const claudeDir = options.claudeConfigDir?.trim() || join(home, ".claude");
+  const codexHome = options.codexHome?.trim() || join(home, ".codex");
+
   // Per-agent log directories. `*.log` only; secret files (auth.json,
   // config.json) live outside these dirs and are never swept.
   const agentDirs: Array<{ agent: string; dir: string }> = [
     // Claude Code operational logs (bash-commands / cost-tracker / daemon).
-    { agent: "claude", dir: join(home, ".claude") },
+    { agent: "claude", dir: claudeDir },
     // Codex tracing logs (codex-tui.log can be very large — tail-bounded).
-    { agent: "codex", dir: join(home, ".codex", "log") },
+    { agent: "codex", dir: join(codexHome, "log") },
     // OpenCode session logs (provider errors live here in headless mode).
     { agent: "opencode", dir: openCodeUserLogDir },
   ];

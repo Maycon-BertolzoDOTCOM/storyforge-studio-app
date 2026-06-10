@@ -102,6 +102,24 @@ describe("buildAgentCliLogSources", () => {
     expect(amrNames).not.toContain("agent-cli-logs/amr/default.log");
   });
 
+  it("honors claudeConfigDir / codexHome overrides over the home defaults", async () => {
+    const home = join(tempDir, "home");
+    const claudeDir = join(tempDir, "custom-claude");
+    const codexHome = join(tempDir, "custom-codex");
+    // Default homes have logs that must be ignored when overrides are set.
+    await touch(join(home, ".claude", "daemon.log"));
+    await touch(join(home, ".codex", "log", "codex-tui.log"));
+    await touch(join(claudeDir, "cost-tracker.log"));
+    await touch(join(codexHome, "log", "session.log"));
+
+    const sources = await buildAgentCliLogSources({ homeDir: home, claudeConfigDir: claudeDir, codexHome });
+    const names = sources.map((s) => s.name);
+    expect(names).toContain("agent-cli-logs/claude/cost-tracker.log");
+    expect(names).toContain("agent-cli-logs/codex/session.log");
+    expect(names).not.toContain("agent-cli-logs/claude/daemon.log");
+    expect(names).not.toContain("agent-cli-logs/codex/codex-tui.log");
+  });
+
   it("honors XDG_DATA_HOME for the opencode user log dir", async () => {
     const home = join(tempDir, "home");
     const xdg = join(tempDir, "xdg");

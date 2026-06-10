@@ -42,27 +42,40 @@ function safeUsername(): string | undefined {
   }
 }
 
-// Best-effort read of a user `agentCliEnv.amr.OPENCODE_TEST_HOME` override from
-// the daemon's app-config so the AMR log sweep targets the same OpenCode home a
-// real run uses. The daemon resolves this authoritatively via spawnEnvForAgent;
-// the desktop main process may not import daemon internals, so it reads the
-// config file directly and applies only leading-`~` expansion (overrides are
-// effectively always absolute). Returns null on any miss; the collector then
-// falls back to the default `<dataDir>/amr/opencode-home`.
-async function readAmrOpenCodeHomeOverride(dataDir: string): Promise<string | null> {
+function expandTilde(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+  const trimmed = value.trim();
+  if (trimmed === "~") return homedir();
+  if (trimmed.startsWith("~/")) return join(homedir(), trimmed.slice(2));
+  return trimmed;
+}
+
+interface AgentHomeOverrides {
+  amrOpenCodeHome: string | null;
+  claudeConfigDir: string | null;
+  codexHome: string | null;
+}
+
+// Best-effort read of user `agentCliEnv.<agent>.*` home overrides
+// (`OPENCODE_TEST_HOME` / `CLAUDE_CONFIG_DIR` / `CODEX_HOME`) from the daemon's
+// app-config, so the log sweep targets the same homes a real run uses. The
+// daemon resolves these authoritatively via spawnEnvForAgent; the desktop main
+// process may not import daemon internals, so it reads the config file directly
+// and applies only leading-`~` expansion (overrides are effectively absolute).
+// Missing values fall back to the collector's defaults.
+async function readAgentHomeOverrides(dataDir: string): Promise<AgentHomeOverrides> {
   try {
     const raw = await readFile(join(dataDir, "app-config.json"), "utf8");
-    const parsed = JSON.parse(raw) as {
-      agentCliEnv?: { amr?: Record<string, unknown> };
+    const agentCliEnv = (JSON.parse(raw) as {
+      agentCliEnv?: Record<string, Record<string, unknown> | undefined>;
+    }).agentCliEnv;
+    return {
+      amrOpenCodeHome: expandTilde(agentCliEnv?.amr?.OPENCODE_TEST_HOME),
+      claudeConfigDir: expandTilde(agentCliEnv?.claude?.CLAUDE_CONFIG_DIR),
+      codexHome: expandTilde(agentCliEnv?.codex?.CODEX_HOME),
     };
-    const value = parsed.agentCliEnv?.amr?.OPENCODE_TEST_HOME;
-    if (typeof value !== "string" || value.trim().length === 0) return null;
-    const trimmed = value.trim();
-    if (trimmed === "~") return homedir();
-    if (trimmed.startsWith("~/")) return join(homedir(), trimmed.slice(2));
-    return trimmed;
   } catch {
-    return null;
+    return { amrOpenCodeHome: null, claudeConfigDir: null, codexHome: null };
   }
 }
 
@@ -147,18 +160,18 @@ export async function exportDiagnosticsToFile(
     });
     const dataDir = join(namespaceRoot, "data");
     const runsDir = join(dataDir, "runs");
+    // Honor user `agentCliEnv.<agent>.*` home overrides so relocated CLI homes
+    // are not missed; absent values fall back to the collector's defaults.
+    const agentHomes = await readAgentHomeOverrides(dataDir);
     const sources: LogSource[] = [
       ...buildSidecarLogSources(runtime),
       ...(await buildRunEventLogSources(runsDir)),
       ...(await buildAgentCliLogSources({
         homeDir: homedir(),
         dataDir,
-        // Honor a user `agentCliEnv.amr.OPENCODE_TEST_HOME` override so the AMR
-        // provider logs are not missed when it points outside the default home.
-        // The daemon resolves this authoritatively; here (no daemon imports
-        // allowed) we read the override straight from app-config and fall back
-        // to the dataDir default when absent.
-        amrOpenCodeHome: await readAmrOpenCodeHomeOverride(dataDir),
+        amrOpenCodeHome: agentHomes.amrOpenCodeHome,
+        claudeConfigDir: agentHomes.claudeConfigDir,
+        codexHome: agentHomes.codexHome,
         xdgDataHome: process.env.XDG_DATA_HOME ?? null,
       })),
     ];

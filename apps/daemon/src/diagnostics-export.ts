@@ -28,21 +28,40 @@ import { readCurrentAppVersionInfo } from './app-version.js';
 import { agentCliEnvForAgent, readAppConfig } from './app-config.js';
 import { spawnEnvForAgent } from './agents.js';
 
-// Resolve the AMR OpenCode home (OPENCODE_TEST_HOME) exactly as a real AMR run
-// would, so the diagnostics sweep honors a user `agentCliEnv.amr.OPENCODE_TEST_HOME`
-// override instead of only looking under the default `<dataDir>/amr/opencode-home`.
-// Reuses the live env resolver so the two cannot drift. Returns null on any
-// failure; the collector then falls back to the dataDir default.
-async function resolveAmrOpenCodeHome(dataDir: string | null | undefined): Promise<string | null> {
-  if (!dataDir) return null;
+interface ResolvedAgentHomes {
+  amrOpenCodeHome: string | null;
+  claudeConfigDir: string | null;
+  codexHome: string | null;
+}
+
+// Resolve each agent CLI's effective home (OPENCODE_TEST_HOME / CLAUDE_CONFIG_DIR
+// / CODEX_HOME) exactly as a real run would, by running the live
+// `spawnEnvForAgent` resolver over the user's app-config overrides. This makes
+// the diagnostics sweep honor `agentCliEnv.<agent>.*` relocations instead of
+// only looking under the hardcoded defaults, and cannot drift from the spawn
+// path. Returns nulls on any failure; the collector then falls back to defaults.
+async function resolveAgentHomes(dataDir: string | null | undefined): Promise<ResolvedAgentHomes> {
+  const empty: ResolvedAgentHomes = { amrOpenCodeHome: null, claudeConfigDir: null, codexHome: null };
+  if (!dataDir) return empty;
   try {
     const appConfig = await readAppConfig(dataDir);
-    const configuredEnv = agentCliEnvForAgent(appConfig.agentCliEnv, 'amr');
-    const amrEnv = spawnEnvForAgent('amr', { ...process.env, OD_DATA_DIR: dataDir }, configuredEnv);
-    const home = amrEnv.OPENCODE_TEST_HOME?.trim();
-    return home && home.length > 0 ? home : null;
+    const envFor = (agentId: string) =>
+      spawnEnvForAgent(
+        agentId,
+        { ...process.env, OD_DATA_DIR: dataDir },
+        agentCliEnvForAgent(appConfig.agentCliEnv, agentId),
+      );
+    const clean = (value: string | undefined): string | null => {
+      const trimmed = value?.trim();
+      return trimmed && trimmed.length > 0 ? trimmed : null;
+    };
+    return {
+      amrOpenCodeHome: clean(envFor('amr').OPENCODE_TEST_HOME),
+      claudeConfigDir: clean(envFor('claude').CLAUDE_CONFIG_DIR),
+      codexHome: clean(envFor('codex').CODEX_HOME),
+    };
   } catch {
-    return null;
+    return empty;
   }
 }
 
@@ -119,14 +138,16 @@ export function createDiagnosticsExportHandler(options: DiagnosticsHandlerOption
     try {
       const versionInfo = await readCurrentAppVersionInfo().catch(() => null);
       const home = homedir();
-      const amrOpenCodeHome = await resolveAmrOpenCodeHome(options.dataDir);
+      const agentHomes = await resolveAgentHomes(options.dataDir);
       const sources = [
         ...buildSidecarLogSources(options.runtime),
         ...(await buildRunEventLogSources(options.runsDir)),
         ...(await buildAgentCliLogSources({
           homeDir: home,
           dataDir: options.dataDir ?? null,
-          amrOpenCodeHome,
+          amrOpenCodeHome: agentHomes.amrOpenCodeHome,
+          claudeConfigDir: agentHomes.claudeConfigDir,
+          codexHome: agentHomes.codexHome,
           xdgDataHome: process.env.XDG_DATA_HOME ?? null,
         })),
       ];
