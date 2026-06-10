@@ -1021,17 +1021,12 @@ export function attachAcpSession({
               });
             }
             if (dsmlArtifactSuppressor) {
-              const wasSuppressingArtifact = dsmlArtifactSuppressor.isSuppressing();
               const strippedDelta = dsmlArtifactSuppressor.strip(delta);
               if (strippedDelta) {
                 emittedVisibleTextChunk = true;
                 send('agent', { type: 'text_delta', delta: strippedDelta });
               }
-              if (
-                !dsmlArtifactSuppressor.isSuppressing() &&
-                !dsmlArtifactSuppressor.hasPendingCandidate() &&
-                (wasSuppressingArtifact || strippedDelta !== delta)
-              ) {
+              if (!dsmlArtifactSuppressor.isSuppressing() && !dsmlArtifactSuppressor.hasPendingCandidate()) {
                 dsmlArtifactSuppressor = null;
               }
             } else {
