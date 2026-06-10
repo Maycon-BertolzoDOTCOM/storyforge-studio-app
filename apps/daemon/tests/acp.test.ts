@@ -321,6 +321,12 @@ test('attachAcpSession stops after duplicate DSML artifact text starts', () => {
   writeAcpResult(child, 1, {});
   writeAcpResult(child, 2, { sessionId: 'session-1' });
   writeAcpUpdate(child, {
+    sessionUpdate: 'tool_call_update',
+    toolCallId: 'call-1',
+    title: 'edit',
+    status: 'completed',
+  });
+  writeAcpUpdate(child, {
     sessionUpdate: 'agent_message_chunk',
     content: { text: 'Build passes. No AI slop detected.\n\n< | DSML artifact identifier="page" type="text/html">' },
   });
@@ -358,6 +364,12 @@ test('attachAcpSession stops after duplicate legacy artifact text starts', () =>
   writeAcpResult(child, 1, {});
   writeAcpResult(child, 2, { sessionId: 'session-1' });
   writeAcpUpdate(child, {
+    sessionUpdate: 'tool_call_update',
+    toolCallId: 'call-1',
+    title: 'edit',
+    status: 'completed',
+  });
+  writeAcpUpdate(child, {
     sessionUpdate: 'agent_message_chunk',
     content: { text: 'Ready to output.\n\n<art' },
   });
@@ -374,6 +386,36 @@ test('attachAcpSession stops after duplicate legacy artifact text starts', () =>
     .map((entry) => (entry.payload as { delta?: unknown }).delta);
 
   assert.deepEqual(textDeltas, ['Ready to output.\n\n']);
+});
+
+test('attachAcpSession preserves literal artifact prose before any write echo is expected', () => {
+  const child = new FakeAcpChild();
+  const events: Array<{ event: string; payload: unknown }> = [];
+
+  attachAcpSession({
+    child: child as never,
+    prompt: 'document artifact syntax',
+    cwd: '/tmp/od-project',
+    model: null,
+    mcpServers: [],
+    send: (event, payload) => events.push({ event, payload }),
+  });
+
+  const literal = 'To show the syntax, write <artifact identifier="page">literal</artifact> in docs.';
+
+  writeAcpResult(child, 1, {});
+  writeAcpResult(child, 2, { sessionId: 'session-1' });
+  writeAcpUpdate(child, {
+    sessionUpdate: 'agent_message_chunk',
+    content: { text: literal },
+  });
+  writeAcpResult(child, 3, { usage: { inputTokens: 1, outputTokens: 2 } });
+
+  const textDeltas = events
+    .filter((entry) => entry.event === 'agent' && (entry.payload as { type?: unknown }).type === 'text_delta')
+    .map((entry) => (entry.payload as { delta?: unknown }).delta);
+
+  assert.deepEqual(textDeltas, [literal]);
 });
 
 test('attachAcpSession exposes abort and sends session cancel after session creation', () => {

@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   createDsmlArtifactTextSuppressor,
   emitWithTextSuppressor,
+  type ArtifactTextSuppressor,
 } from './artifact-text-suppression.js';
 
 const ACP_PROTOCOL_VERSION = 1;
@@ -326,6 +327,26 @@ function currentModelFromSessionResult(result: JsonObject): string | null {
   return typeof models?.currentModelId === 'string' && models.currentModelId.trim()
     ? models.currentModelId.trim()
     : null;
+}
+
+function acpUpdateStatus(update: JsonObject): string {
+  return typeof update.status === 'string'
+    ? update.status.trim().toLowerCase().replace(/[\s_-]+/g, '')
+    : '';
+}
+
+function isAcpCompletedStatus(update: JsonObject): boolean {
+  const status = acpUpdateStatus(update);
+  return status === 'completed' || status === 'complete' || status === 'succeeded' || status === 'success';
+}
+
+function isAcpArtifactWriteUpdate(update: JsonObject): boolean {
+  if (!isAcpCompletedStatus(update)) return false;
+  const label = [
+    typeof update.title === 'string' ? update.title : '',
+    typeof update.name === 'string' ? update.name : '',
+  ].join(' ');
+  return /\b(?:edit|write|create|update|save|patch|replace)\b/i.test(label);
 }
 
 export function createJsonLineStream(onMessage: (message: unknown, rawLine: string) => void) {
@@ -741,7 +762,7 @@ export function attachAcpSession({
   let fatal = false;
   let aborted = false;
   let stageTimer: TimerHandle | null = null;
-  const dsmlArtifactSuppressor = createDsmlArtifactTextSuppressor();
+  let dsmlArtifactSuppressor: ArtifactTextSuppressor | null = null;
 
   const stageWatchdogDisabled = stageTimeoutMs <= 0;
   const resetStageTimer = (label: string) => {
@@ -852,7 +873,7 @@ export function attachAcpSession({
 
   const finishCleanPrompt = (usageSource?: unknown) => {
     if (finished) return;
-    const flushedText = dsmlArtifactSuppressor.flush();
+    const flushedText = dsmlArtifactSuppressor?.flush() ?? '';
     if (flushedText) {
       emittedVisibleTextChunk = true;
       send('agent', { type: 'text_delta', delta: flushedText });
@@ -983,14 +1004,19 @@ export function attachAcpSession({
                 ttftMs: Date.now() - runStartedAt,
               });
             }
-            const emitted = emitWithTextSuppressor(
-              dsmlArtifactSuppressor,
-              (event) => send('agent', event),
-              delta,
-            );
-            if (emitted) emittedVisibleTextChunk = true;
-            if (emittedVisibleTextChunk && dsmlArtifactSuppressor.isSuppressing()) {
-              finishCleanPrompt();
+            if (dsmlArtifactSuppressor) {
+              const emitted = emitWithTextSuppressor(
+                dsmlArtifactSuppressor,
+                (event) => send('agent', event),
+                delta,
+              );
+              if (emitted) emittedVisibleTextChunk = true;
+              if (emittedVisibleTextChunk && dsmlArtifactSuppressor.isSuppressing()) {
+                finishCleanPrompt();
+              }
+            } else {
+              emittedVisibleTextChunk = true;
+              send('agent', { type: 'text_delta', delta });
             }
           }
         }
@@ -1004,6 +1030,9 @@ export function attachAcpSession({
         // when the model emits no closing assistant text. Track it so the prompt-complete
         // handler does not misreport such a turn as "no output / model unavailable".
         emittedToolCall = true;
+        if (isAcpArtifactWriteUpdate(update)) {
+          dsmlArtifactSuppressor = createDsmlArtifactTextSuppressor();
+        }
         return;
       }
       return;
