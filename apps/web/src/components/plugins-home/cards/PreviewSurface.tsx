@@ -24,13 +24,22 @@ interface Props {
 }
 
 export function PreviewSurface({ pluginId, pluginTitle, preview, eager = false }: Props) {
-  // `inView` (a generous margin) mounts the surface so its poster / first frame
-  // is ready before it scrolls in; `visible` (no margin) gates the expensive
-  // part — decoding/playing a baked clip — to tiles truly on screen, so the
-  // off-screen tiles inside the mount margin don't all spin up decodes + clip
-  // downloads at once.
+  // Three nested visibility zones for a baked clip:
+  //  - `inView` (tight): mount cheap-but-live content — iframes, design surfaces.
+  //    Kept tight so a 350-plugin gallery never spins up dozens of live iframes.
+  //  - `keep` (wide): keep the <video> + poster MOUNTED across a few screens, so
+  //    scrolling away and back doesn't remount + reload the clip. The bytes are
+  //    HTTP-cached (immutable), but a fresh <video> still re-fetches metadata and
+  //    re-decodes the first frame, which reads as a load every scroll-back.
+  //  - `visible` (no margin): only DECODE/play while truly on screen, so the
+  //    kept-mounted off-screen clips stay paused on their poster instead of all
+  //    running simultaneous decodes.
   const { ref: nearRef, inView } = useInView<HTMLDivElement>({
     rootMargin: eager ? '480px' : '120px',
+    once: false,
+  });
+  const { ref: keepRef, inView: keep } = useInView<HTMLDivElement>({
+    rootMargin: eager ? '1800px' : '1500px',
     once: false,
   });
   const { ref: visibleRef, inView: visible } = useInView<HTMLDivElement>({
@@ -40,9 +49,10 @@ export function PreviewSurface({ pluginId, pluginTitle, preview, eager = false }
   const setRef = useCallback(
     (node: HTMLDivElement | null) => {
       nearRef.current = node;
+      keepRef.current = node;
       visibleRef.current = node;
     },
-    [nearRef, visibleRef],
+    [nearRef, keepRef, visibleRef],
   );
 
   return (
@@ -55,7 +65,7 @@ export function PreviewSurface({ pluginId, pluginTitle, preview, eager = false }
         <MediaSurface
           preview={preview}
           pluginTitle={pluginTitle}
-          inView={inView}
+          inView={keep}
           visible={visible}
         />
       ) : preview.kind === 'html' ? (
