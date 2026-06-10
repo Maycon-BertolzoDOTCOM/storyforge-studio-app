@@ -87,7 +87,9 @@ describe('OnboardingDropdown', () => {
     fireEvent.click(screen.getByRole('button', { name: /Very long Windows model option 1/ }));
 
     const listbox = screen.getByRole('listbox', { name: 'Model' });
-    expect(listbox.parentElement?.getAttribute('data-placement')).toBe('top');
-    expect(listbox.style.getPropertyValue('--onboarding-select-menu-max-height')).toBe('240px');
+    const field = listbox.closest('.onboarding-view__select-field');
+    const menu = listbox.closest('.onboarding-view__select-menu') as HTMLElement | null;
+    expect(field?.getAttribute('data-placement')).toBe('top');
+    expect(menu?.style.getPropertyValue('--onboarding-select-menu-max-height')).toBe('240px');
   });
 });
