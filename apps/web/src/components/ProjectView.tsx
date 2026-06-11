@@ -288,6 +288,7 @@ interface Props {
   routeConversationId?: string | null;
   config: AppConfig;
   agents: AgentInfo[];
+  agentsLoading?: boolean;
   // Mentionable functional skills — already filtered by config.disabledSkills
   // upstream, so this drives only the chat composer's @-picker scope. For
   // resolving an existing project's `skillId` (which can also point at a
@@ -801,6 +802,7 @@ export function ProjectView({
   routeConversationId = null,
   config,
   agents,
+  agentsLoading = false,
   skills,
   designTemplates,
   designSystems,
@@ -4030,8 +4032,8 @@ export function ProjectView({
   const [pendingAmrRetry, setPendingAmrRetry] = useState<ChatMessage | null>(null);
   const [pendingAmrSend, setPendingAmrSend] = useState<AmrPreflightSendDraft | null>(null);
   const amrSendPreflightIssue = useMemo(
-    () => resolveAmrSendPreflightIssue(config, agents),
-    [config, agents],
+    () => resolveAmrSendPreflightIssue(config, agents, { agentsLoading }),
+    [agents, agentsLoading, config],
   );
   const handleSwitchToAmr = useCallback(() => {
     if (currentConversationActionDisabled) return false;
@@ -5720,6 +5722,7 @@ export function ProjectView({
                 onModeChange('daemon');
               }}
               agents={agents}
+              agentsLoading={agentsLoading}
               onOpenAmrSettings={onOpenAmrSettings}
               onSwitchToAmrAndRetry={handleSwitchToAmrAndRetry}
               onSwitchToAmrAndSend={handleSwitchToAmrAndSend}

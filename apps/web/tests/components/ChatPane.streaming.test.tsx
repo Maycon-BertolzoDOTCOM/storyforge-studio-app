@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatPane, buildRunErrorDiagnosticText, retryableAssistantMessage } from '../../src/components/ChatPane';
 import { DESIGN_SYSTEM_WORKSPACE_PROMPT_PREFIX } from '../../src/design-system-auto-prompt';
 import { readExpandedIndexCss } from '../helpers/read-expanded-css';
-import type { ChatMessage, Conversation, ProjectMetadata } from '../../src/types';
+import type { AppConfig, ChatMessage, Conversation, ProjectMetadata } from '../../src/types';
 
 const composerMocks = vi.hoisted(() => ({
   focus: vi.fn(),
@@ -735,6 +735,104 @@ Expected output:
     expect(spacer!.style.height).toBe('0px');
   });
 
+  it('does not run AMR send preflight in chat panes without AMR handoff callbacks', () => {
+    const onSend = vi.fn();
+    render(
+      <ChatPane
+        projectKindForTracking="prototype"
+        messages={[]}
+        streaming={false}
+        error={null}
+        projectId="project-1"
+        projectFiles={[]}
+        onEnsureProject={async () => 'project-1'}
+        onSend={onSend}
+        onStop={vi.fn()}
+        conversations={conversations}
+        activeConversationId="conv-1"
+        onSelectConversation={vi.fn()}
+        onDeleteConversation={vi.fn()}
+        projectMetadata={projectMetadata}
+        config={localCliConfig}
+        agents={[]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('composer-submit'));
+
+    expect(onSend).toHaveBeenCalledOnce();
+    expect(composerMocks.restoreDraft).not.toHaveBeenCalled();
+    expect(screen.queryByText('chat.amrPreflight.title')).toBeNull();
+  });
+
+  it('does not block a configured local CLI while the agent probe is still loading', () => {
+    const onSend = vi.fn();
+    render(
+      <ChatPane
+        projectKindForTracking="prototype"
+        messages={[]}
+        streaming={false}
+        error={null}
+        projectId="project-1"
+        projectFiles={[]}
+        onEnsureProject={async () => 'project-1'}
+        onSend={onSend}
+        onStop={vi.fn()}
+        conversations={conversations}
+        activeConversationId="conv-1"
+        onSelectConversation={vi.fn()}
+        onDeleteConversation={vi.fn()}
+        projectMetadata={projectMetadata}
+        config={localCliConfig}
+        agents={[]}
+        agentsLoading={true}
+        onOpenSettings={vi.fn()}
+        onOpenAmrSettings={vi.fn()}
+        onSwitchToAmrAndSend={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('composer-submit'));
+
+    expect(onSend).toHaveBeenCalledOnce();
+    expect(composerMocks.restoreDraft).not.toHaveBeenCalled();
+    expect(screen.queryByText('chat.amrPreflight.title')).toBeNull();
+  });
+
+  it('blocks a settled missing local CLI when the AMR handoff is wired', async () => {
+    const onSend = vi.fn();
+    render(
+      <ChatPane
+        projectKindForTracking="prototype"
+        messages={[]}
+        streaming={false}
+        error={null}
+        projectId="project-1"
+        projectFiles={[]}
+        onEnsureProject={async () => 'project-1'}
+        onSend={onSend}
+        onStop={vi.fn()}
+        conversations={conversations}
+        activeConversationId="conv-1"
+        onSelectConversation={vi.fn()}
+        onDeleteConversation={vi.fn()}
+        projectMetadata={projectMetadata}
+        config={localCliConfig}
+        agents={[]}
+        agentsLoading={false}
+        onOpenSettings={vi.fn()}
+        onOpenAmrSettings={vi.fn()}
+        onSwitchToAmrAndSend={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('composer-submit'));
+
+    expect(onSend).not.toHaveBeenCalled();
+    await waitFor(() => expect(composerMocks.restoreDraft).toHaveBeenCalledOnce());
+    expect(screen.getByText('chat.amrPreflight.title')).toBeTruthy();
+  });
+
   it('passes a stopped inline todo after a terminal run without a final TodoWrite', () => {
     const messages: ChatMessage[] = [
       {
@@ -1030,4 +1128,14 @@ const conversations: Conversation[] = [
 
 const projectMetadata: ProjectMetadata = {
   kind: 'prototype',
+};
+
+const localCliConfig: AppConfig = {
+  mode: 'daemon',
+  apiKey: '',
+  baseUrl: '',
+  model: '',
+  agentId: 'claude',
+  skillId: null,
+  designSystemId: null,
 };

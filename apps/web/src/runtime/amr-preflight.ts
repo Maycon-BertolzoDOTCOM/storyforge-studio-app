@@ -17,9 +17,14 @@ export interface AmrSendPreflightIssue {
   missingByokFields?: AmrByokField[];
 }
 
+export interface ResolveAmrSendPreflightOptions {
+  agentsLoading?: boolean;
+}
+
 export function resolveAmrSendPreflightIssue(
   config: AppConfig | undefined,
   agents: readonly AgentInfo[] | undefined,
+  options: ResolveAmrSendPreflightOptions = {},
 ): AmrSendPreflightIssue | null {
   if (!config) return null;
 
@@ -41,7 +46,10 @@ export function resolveAmrSendPreflightIssue(
   if (agentId === 'amr') return null;
 
   const selectedAgent = agents?.find((agent) => agent.id === agentId);
-  if (!selectedAgent) return { kind: 'agent-unavailable', agentId };
+  if (!selectedAgent) {
+    if (options.agentsLoading) return null;
+    return { kind: 'agent-unavailable', agentId };
+  }
 
   if (selectedAgent.authStatus === 'missing') {
     return { kind: 'agent-auth-missing', agentId };

@@ -523,6 +523,7 @@ interface Props {
   showByokRecoveryAction?: boolean;
   onSwitchToLocalCli?: () => void;
   agents?: AgentInfo[];
+  agentsLoading?: boolean;
   onOpenAmrSettings?: () => void;
   onSwitchToAmrAndRetry?: (failedAssistant: ChatMessage) => void;
   onSwitchToAmrAndSend?: (draft: AmrPreflightSendDraft) => void;
@@ -726,6 +727,7 @@ export function ChatPane({
   showByokRecoveryAction = false,
   onSwitchToLocalCli,
   agents = [],
+  agentsLoading = false,
   onOpenAmrSettings,
   onSwitchToAmrAndRetry,
   onSwitchToAmrAndSend,
@@ -967,9 +969,15 @@ export function ChatPane({
   const showByokRecoveryCta = showByokRecoveryAction && Boolean(onSwitchToLocalCli);
   const showErrorActions =
     showByokRecoveryCta || Boolean(retryAssistant && onRetry && runFailureUi);
+  const amrPreflightEnabled = Boolean(
+    onOpenSettings && onOpenAmrSettings && onSwitchToAmrAndSend,
+  );
   const amrPreflightIssue = useMemo(
-    () => resolveAmrSendPreflightIssue(config, agents),
-    [agents, config],
+    () =>
+      amrPreflightEnabled
+        ? resolveAmrSendPreflightIssue(config, agents, { agentsLoading })
+        : null,
+    [agents, agentsLoading, amrPreflightEnabled, config],
   );
   const [amrPreflightDraft, setAmrPreflightDraft] =
     useState<AmrPreflightBlockedDraft | null>(null);
