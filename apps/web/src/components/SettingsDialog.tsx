@@ -1201,6 +1201,24 @@ export function SettingsDialog({
     };
   }, [agents]);
 
+  // The promoted AMR card has no select state of its own: completing the
+  // sign-in IS the act of choosing AMR, so a live signed-out → signed-in
+  // transition switches the draft config to daemon/AMR. Keyed on the
+  // transition (not on `loggedIn === true`) so merely opening Settings while
+  // already signed in never hijacks a CLI/BYOK config the user picked later.
+  const amrWasSignedOutRef = useRef(false);
+  useEffect(() => {
+    const loggedIn = amrCardStatus?.loggedIn;
+    if (loggedIn === false) {
+      amrWasSignedOutRef.current = true;
+      return;
+    }
+    if (loggedIn === true && amrWasSignedOutRef.current) {
+      amrWasSignedOutRef.current = false;
+      setCfg((c) => ({ ...c, mode: 'daemon' as const, agentId: 'amr' }));
+    }
+  }, [amrCardStatus?.loggedIn, setCfg]);
+
   // Reconcile AMR sign-in state whenever the user returns to the window. The
   // vela device-login flow completes in an external browser / AMR console; if
   // the in-pill poll has already timed out (or the login finished fully
@@ -1405,9 +1423,8 @@ export function SettingsDialog({
   const handleUseAmrRescue = useCallback(() => {
     recordAmrEntry(analytics.track, 'settings_config_failure_amr');
     setCfg((c) => ({ ...c, mode: 'daemon' as const, agentId: 'amr' }));
-    // The promoted AMR card sits above the mode tabs and is always mounted,
-    // but the coachmark anchor inside it only exists once the card is active,
-    // so defer the scroll/highlight past that re-render.
+    // Defer the scroll/highlight one beat so it lands after the config-switch
+    // re-render instead of racing it.
     window.setTimeout(() => {
       amrCardRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       setAmrCoachmarkDismissed(false);
@@ -2127,10 +2144,10 @@ export function SettingsDialog({
       case 'agent_auth_required':
         return result.detail || 'Agent authentication is required.';
       case 'agent_spawn_failed':
-        return t('settings.testAgentSpawn', {
-          agentName,
-          detail: result.detail ?? '',
-        });
+        // Deliberately no raw stderr/exit-code detail here: the audience is
+        // non-technical, and the full detail is still reachable via the
+        // status row's title tooltip.
+        return t('settings.testAgentSpawn', { agentName });
       default:
         return t('settings.testUnknown', { detail: result.detail ?? '' });
     }
@@ -3294,22 +3311,20 @@ export function SettingsDialog({
             <>
               {promotedAmrAgent ? (() => {
                 const a = promotedAmrAgent;
-                const active = cfg.mode === 'daemon' && cfg.agentId === 'amr';
                 const amrBenefits = [
                   t('settings.amrBenefitOfficial'),
                   t('settings.amrBenefitLowerPrice'),
                   t('settings.amrBenefitManyModels'),
                 ];
                 const amrCardEmail =
-                  active && amrCardStatus?.loggedIn
+                  amrCardStatus?.loggedIn
                     ? amrCardStatus.user?.email || t('settings.amrSignedIn')
                     : '';
                 const amrCardProfileBadge =
-                  active && amrCardStatus?.loggedIn
+                  amrCardStatus?.loggedIn
                     ? amrProfileBadgeLabel(amrCardStatus.profile)
                     : null;
                 const amrRevealPendingCancelAction =
-                  active &&
                   hoveredAgentCardId === a.id &&
                   amrCardStatus?.loggedIn !== true &&
                   amrCardStatus?.loginInFlight === true;
@@ -3319,11 +3334,9 @@ export function SettingsDialog({
                     data-testid="settings-agent-card-amr"
                     className={
                       'agent-card agent-card-installed agent-card--amr-promoted' +
-                      (active ? ' active' : '') +
                       (amrHighlightActive ? ' agent-card--amr-highlight' : '')
                     }
                     onMouseEnter={() => {
-                      if (!active) return;
                       setHoveredAgentCardId(a.id);
                     }}
                     onMouseLeave={() => {
@@ -3332,26 +3345,13 @@ export function SettingsDialog({
                     }}
                   >
                     <div className="agent-card-main">
-                      <button
-                        type="button"
-                        className="agent-card-select"
+                      {/* The promoted card has no selected/unselected state:
+                          AMR becomes the active config automatically on
+                          sign-in (see the auto-select effect), so the body is
+                          a static description, not a select button. */}
+                      <div
+                        className="agent-card-select agent-card-select--static"
                         data-testid="settings-agent-select-amr"
-                        onClick={() => {
-                          trackSettingsLocalCliClick(analytics.track, {
-                            page_name: 'settings',
-                            area: 'configure_execution_mode_local_cli',
-                            element: 'cli_provider',
-                            cli_provider_id: agentIdToTracking(a.id),
-                            install_status: 'installed',
-                          });
-                          recordAmrEntry(analytics.track, 'settings_amr_agent_card');
-                          setCfg((c) => ({
-                            ...c,
-                            mode: 'daemon' as const,
-                            agentId: a.id,
-                          }));
-                        }}
-                        aria-pressed={active}
                       >
                         <AgentIcon id={a.id} size={32} />
                         <div className="agent-card-body">
@@ -3389,8 +3389,8 @@ export function SettingsDialog({
                             </div>
                           ) : null}
                         </div>
-                      </button>
-                      {active && amrCardStatusReady ? (
+                      </div>
+                      {amrCardStatusReady ? (
                         <span
                           className="amr-auth-anchor"
                           onMouseEnter={() => setAmrCoachmarkDismissed(true)}
@@ -3437,7 +3437,6 @@ export function SettingsDialog({
                         />
                       )}
                     </div>
-                    {active ? renderAgentModelConfig(a) : null}
                   </div>
                 );
               })() : null}
@@ -3757,39 +3756,22 @@ export function SettingsDialog({
                                           ? 'status'
                                           : 'alert'
                                       }
+                                      title={
+                                        agentTestState.result.ok
+                                          ? undefined
+                                          : agentTestState.result.detail
+                                      }
                                     >
                                       {renderTestMessage(
                                         agentTestState.result,
                                         'cli',
                                       )}
                                     </p>
-                                    {!agentTestState.result.ok ? (
-                                      <div className="settings-test-actions">
-                                        {amrRescueAvailable ? (
-                                          <span className="settings-test-actions-hint">
-                                            {t('settings.amrRescueSeeAbove')}
-                                          </span>
-                                        ) : null}
-                                        <div className="settings-test-actions-row">
-                                          <button
-                                            type="button"
-                                            className="ghost icon-btn settings-test-btn"
-                                            onClick={() => void handleTestAgent()}
-                                          >
-                                            <Icon name="reload" size={13} />
-                                            <span>{t('settings.testRetry')}</span>
-                                          </button>
-                                          {amrRescueAvailable ? (
-                                            <button
-                                              type="button"
-                                              className="settings-test-btn"
-                                              onClick={handleUseAmrRescue}
-                                            >
-                                              {t('settings.amrRescueCta')}
-                                            </button>
-                                          ) : null}
-                                        </div>
-                                      </div>
+                                    {!agentTestState.result.ok &&
+                                    amrRescueAvailable ? (
+                                      <AmrRescueInlineHint
+                                        onUseAmr={handleUseAmrRescue}
+                                      />
                                     ) : null}
                                     {cfg.agentId === 'codex' && (() => {
                                       const repair = codexPathRepairState(
@@ -4150,20 +4132,7 @@ export function SettingsDialog({
               {amrRescueAvailable &&
               providerTestState.status === 'done' &&
               !providerTestState.result.ok ? (
-                <div className="settings-test-actions settings-byok-amr-rescue">
-                  <span className="settings-test-actions-hint">
-                    {t('settings.amrRescueSeeAbove')}
-                  </span>
-                  <div className="settings-test-actions-row">
-                    <button
-                      type="button"
-                      className="settings-test-btn"
-                      onClick={handleUseAmrRescue}
-                    >
-                      {t('settings.amrRescueCta')}
-                    </button>
-                  </div>
-                </div>
+                <AmrRescueInlineHint onUseAmr={handleUseAmrRescue} />
               ) : null}
               {byokPreconditionNotice && !byokPreconditionNotice.field ? (
                 <p
@@ -4739,6 +4708,33 @@ export function SettingsDialog({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * One-line AMR rescue hint under a failed CLI/BYOK connection test. The
+ * "Open Design AMR" phrase itself is the action (an inline link button that
+ * scrolls to and highlights the promoted card) — deliberately no separate
+ * button row, and no retry button: the card's own Test button already covers
+ * retrying. The sentence is split on the `{amr}` placeholder so every locale
+ * keeps its own word order around the link.
+ */
+function AmrRescueInlineHint({ onUseAmr }: { onUseAmr: () => void }) {
+  const { t } = useI18n();
+  const template = t('settings.amrRescueSeeAbove');
+  const [before, after] = template.split('{amr}');
+  return (
+    <p className="settings-test-actions-hint settings-amr-rescue-hint">
+      {before}
+      <button
+        type="button"
+        className="settings-amr-rescue-link"
+        onClick={onUseAmr}
+      >
+        {t('settings.amrRescueLinkLabel')}
+      </button>
+      {after ?? ''}
+    </p>
   );
 }
 

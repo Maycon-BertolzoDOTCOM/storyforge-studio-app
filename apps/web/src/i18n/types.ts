@@ -1999,7 +1999,7 @@ export interface Dict {
   'chat.amrPreflight.signInUseAmrCta': string;
   'chat.amrPreflight.pendingNotice': string;
   'settings.amrRescueSeeAbove': string;
-  'settings.amrRescueCta': string;
+  'settings.amrRescueLinkLabel': string;
   'chat.amrError.authMessage': string;
   'chat.amrError.balanceMessage': string;
   'chat.amrError.authorizeCta': string;

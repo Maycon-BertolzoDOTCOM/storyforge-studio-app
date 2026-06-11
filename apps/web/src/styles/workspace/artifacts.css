@@ -987,6 +987,20 @@
   overflow: hidden;
 }
 
+/* Promoted AMR card: a stateless recommendation banner, not a selectable
+   option. There is no selected/unselected toggle — completing the sign-in is
+   what activates AMR — so the card drops the pointer cursor and the hover
+   border shift that the selectable CLI cards use. */
+.agent-card--amr-promoted {
+  cursor: default;
+}
+.agent-card--amr-promoted:hover:not(.disabled) {
+  border-color: var(--border);
+}
+.agent-card-select--static {
+  cursor: default;
+}
+
 /* Failed-run AMR nudge: when the chat error card's "Try Open Design AMR" link
    opens Settings, the AMR card scrolls into view and pulses a couple of times.
    The card's own box-shadow is not clipped by `overflow: hidden`, so the glow

@@ -1901,7 +1901,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     ).toBeTruthy();
   });
 
-  it('uses the existing Settings card picker for AMR without exposing custom stale models', () => {
+  it('renders the promoted AMR card without an inline model picker', () => {
     renderSettingsDialog(
       {
         mode: 'daemon',
@@ -1923,18 +1923,14 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^Open Design AMR\b/ }));
 
-    const modelPickers = screen.getAllByRole('combobox', {
-      name: en['settings.modelPicker'],
-    });
-    expect(modelPickers).toHaveLength(1);
-    expect(modelPickers[0]?.textContent).toContain('GLM 5');
-    fireEvent.click(modelPickers[0]!);
-    const modelPopover = screen.getByTestId('settings-agent-model-popover-amr');
+    // The promoted card is a stateless banner: model choice lives in the chat
+    // model switcher, so the card never renders a picker (and therefore can
+    // never leak a stale custom model either).
+    expect(screen.getByTestId('settings-agent-card-amr')).toBeTruthy();
     expect(
-      within(modelPopover).getAllByRole('option').map((option) => option.textContent?.trim()),
-    ).toEqual(['GLM 5', 'GLM 5.1']);
+      screen.queryByRole('combobox', { name: en['settings.modelPicker'] }),
+    ).toBeNull();
     expect(screen.queryByLabelText(en['settings.modelCustomLabel'])).toBeNull();
   });
 
@@ -2220,7 +2216,9 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
 
-    expect(screen.getByRole('button', { name: /^Open Design AMR\b/ })).toBeTruthy();
+    expect(screen.getByTestId('settings-agent-card-amr')).toBeTruthy();
+    // Stateless banner: the card body is not a select button.
+    expect(screen.queryByRole('button', { name: /^Open Design AMR\b/ })).toBeNull();
     expect(screen.queryByText('1.0.0')).toBeNull();
     expect(screen.queryByText(/AMR \(vela\)/i)).toBeNull();
     expect(screen.queryByText(/vela/i)).toBeNull();
@@ -2233,7 +2231,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     expect(screen.queryByRole('button', { name: 'Test' })).toBeNull();
   });
 
-  it('only shows the AMR authorization action after selecting the AMR card', async () => {
+  it('shows the AMR authorization action even while another CLI is the active config', async () => {
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = input.toString();
       if (url === '/api/memory') {
@@ -2260,11 +2258,9 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*2 installed/i }));
-    expect(screen.getByRole('button', { name: /^Open Design AMR\b/ })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Authorize' })).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: /^Open Design AMR\b/ }));
-
+    expect(screen.getByTestId('settings-agent-card-amr')).toBeTruthy();
+    // The promoted card has no select step: the authorize action is the only
+    // interaction and is available regardless of the current agent choice.
     expect(await screen.findByRole('button', { name: 'Authorize' })).toBeTruthy();
   });
 
@@ -2299,8 +2295,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
-    const amrCardButton = screen.getByRole('button', { name: /^Open Design AMR\b/ });
-    const amrCard = amrCardButton.closest('.agent-card') as HTMLElement;
+    const amrCard = screen.getByTestId('settings-agent-card-amr');
     expect(amrCard).toBeTruthy();
     expect(await screen.findByText('Signing in…')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
@@ -2363,7 +2358,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
-    const amrCard = screen.getByRole('button', { name: /^Open Design AMR\b/ }).closest('.agent-card') as HTMLElement;
+    const amrCard = screen.getByTestId('settings-agent-card-amr');
     expect(await screen.findByText('Signing in…')).toBeTruthy();
 
     fireEvent.mouseEnter(amrCard);
@@ -2428,7 +2423,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
-    const amrCard = screen.getByRole('button', { name: /^Open Design AMR\b/ }).closest('.agent-card') as HTMLElement;
+    const amrCard = screen.getByTestId('settings-agent-card-amr');
     expect(await screen.findByText('Signing in…')).toBeTruthy();
 
     fireEvent.mouseEnter(amrCard);
@@ -2509,7 +2504,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
-    const amrCard = screen.getByRole('button', { name: /^Open Design AMR\b/ }).closest('.agent-card') as HTMLElement;
+    const amrCard = screen.getByTestId('settings-agent-card-amr');
     expect(await screen.findByText('Signing in…')).toBeTruthy();
 
     fireEvent.mouseEnter(amrCard);
@@ -2565,7 +2560,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
 
     expect(await screen.findByRole('button', { name: 'Sign out' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Open Design AMR\b/ })).toBeTruthy();
+    expect(screen.getByTestId('settings-agent-card-amr')).toBeTruthy();
     expect(screen.getByText('signed-in@example.com')).toBeTruthy();
     expect(screen.queryByText(/AMR \(vela\)/i)).toBeNull();
     expect(screen.queryByText(/^vela$/i)).toBeNull();
@@ -2603,7 +2598,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
 
     expect(await screen.findByRole('button', { name: 'Sign out' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Open Design AMR\b/ })).toBeTruthy();
+    expect(screen.getByTestId('settings-agent-card-amr')).toBeTruthy();
     expect(screen.queryByText(/@/i)).toBeNull();
     expect(screen.queryByText(/AMR \(vela\)/i)).toBeNull();
   });
@@ -2700,12 +2695,12 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
     expect(await screen.findByRole('button', { name: 'Sign out' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Open Design AMR\b/ })).toBeTruthy();
+    expect(screen.getByTestId('settings-agent-card-amr')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
 
     expect(await screen.findByRole('button', { name: 'Authorize' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Open Design AMR\b/ })).toBeTruthy();
+    expect(screen.getByTestId('settings-agent-card-amr')).toBeTruthy();
     expect(
       onPersist.mock.calls.some(
         ([nextConfig]) =>

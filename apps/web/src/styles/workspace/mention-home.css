@@ -1430,6 +1430,29 @@
   font-size: 12px;
   color: var(--text-muted);
 }
+/* AMR rescue: a single sentence under the failed test where the product name
+   itself is the action. Inline link-style button — no separate button row. */
+.settings-amr-rescue-hint {
+  margin-top: 6px;
+}
+.settings-amr-rescue-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  min-height: unset;
+  font-size: inherit;
+  font-weight: 650;
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.settings-amr-rescue-link:hover:not(:disabled) {
+  background: none;
+  border-color: transparent;
+  color: var(--accent);
+}
 .settings-test-actions-row {
   display: flex;
   flex-wrap: wrap;
