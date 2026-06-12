@@ -900,6 +900,19 @@ jobs:
           name: open-design-preview-linux-x64-publish-manifest
           path: ${{ runner.temp }}/release-platform-manifests
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10.33.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Publish preview metadata
         env:
           BASE_VERSION: ${{ needs.metadata.outputs.base_version }}

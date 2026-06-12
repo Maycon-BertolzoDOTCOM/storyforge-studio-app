@@ -10,6 +10,12 @@ function sectionBetween(content: string, start: string, end: string): string {
   return content.slice(startIndex, endIndex);
 }
 
+function sectionAfter(content: string, start: string): string {
+  const startIndex = content.indexOf(start);
+  expect(startIndex).toBeGreaterThanOrEqual(0);
+  return content.slice(startIndex);
+}
+
 function countOccurrences(content: string, needle: string): number {
   return content.split(needle).length - 1;
 }
@@ -42,9 +48,13 @@ describe("release workflows", () => {
     const win = sectionBetween(beta, "  build_win_x64:", "  build_linux_x64:");
     const linux = sectionBetween(beta, "  build_linux_x64:", "  publish:");
     const betaMetadata = sectionBetween(beta, "  metadata:", "  build_mac_arm64:");
+    const betaPublish = sectionAfter(beta, "  publish:");
     const previewMetadata = sectionBetween(preview, "  metadata:", "  verify:");
+    const previewPublish = sectionBetween(preview, "  publish:", "  cleanup_partial_release_assets:");
     const prereleaseMetadata = sectionBetween(prerelease, "  metadata:", "  verify:");
+    const prereleasePublish = sectionBetween(prerelease, "  publish:", "  cleanup_partial_release_assets:");
     const stableMetadata = sectionBetween(stable, "  metadata:", "  verify:");
+    const stablePublish = sectionBetween(stable, "  publish:", "  cleanup_partial_release_assets:");
     const selfHostedMac = sectionBetween(betaSelfHosted, "  build_mac_arm64:", "  build_win_x64:");
     const selfHostedWin = sectionBetween(betaSelfHosted, "  build_win_x64:", "  publish:");
 
@@ -81,6 +91,13 @@ describe("release workflows", () => {
       expect(metadata).toContain("uses: pnpm/action-setup@v5");
       expect(metadata).toContain("run: pnpm install --frozen-lockfile");
       expect(metadata.indexOf("run: pnpm install --frozen-lockfile")).toBeLessThan(metadata.indexOf("tools-release prepare"));
+    }
+    for (const publish of [betaPublish, previewPublish, prereleasePublish, stablePublish]) {
+      expect(publish).toContain("uses: pnpm/action-setup@v5");
+      expect(publish).toContain("run: pnpm install --frozen-lockfile");
+      expect(publish.indexOf("run: pnpm install --frozen-lockfile")).toBeLessThan(
+        publish.indexOf("tools-release publish-metadata"),
+      );
     }
     expect(betaSelfHosted).toContain("mac_arm64_update_metadata_url:");
     expect(betaSelfHosted).toContain("mac_arm64_delivery_mode:");
