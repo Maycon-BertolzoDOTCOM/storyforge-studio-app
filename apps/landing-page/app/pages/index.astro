@@ -182,7 +182,7 @@ const matterRuntime = readFileSync(
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={heroImage} />
+    <meta property="og:image" content={new URL(heroImage, Astro.site).toString()} />
     <meta property="og:locale" content={localeDef.ogLocale} />
     {LANDING_LOCALES.filter((entry) => entry.code !== locale).map((entry) => (
       <meta property="og:locale:alternate" content={entry.ogLocale} />
@@ -191,7 +191,7 @@ const matterRuntime = readFileSync(
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={heroImage} />
+    <meta name="twitter:image" content={new URL(heroImage, Astro.site).toString()} />
 
     {/*
      * Single @graph JSON-LD block — WebSite + Organization +
