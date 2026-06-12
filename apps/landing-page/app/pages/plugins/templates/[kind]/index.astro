@@ -17,7 +17,6 @@
  */
 import Layout from '../../../../_components/sub-page-layout.astro';
 import TemplateCard from '../../../../_components/template-card.astro';
-import TemplateCardAutoplay from '../../../../_components/template-card-autoplay.astro';
 import {
   getBundledPlugins,
   type BundledPluginRecord,
@@ -345,8 +344,6 @@ const jsonLd = {
     document.addEventListener('astro:page-load', initTemplatesKindPage);
   </script>
 </Layout>
-
-<TemplateCardAutoplay />
 
 <style>
   /*
