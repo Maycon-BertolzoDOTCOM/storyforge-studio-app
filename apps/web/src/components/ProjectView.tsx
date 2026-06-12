@@ -1086,6 +1086,7 @@ export function ProjectView({
   // the agent's Write actually completes, without the previous synthetic
   // "live" tab that was causing flicker against manual opens.
   const pendingWritesRef = useRef<Map<string, string>>(new Map());
+  const traceTouchedFilePathsRef = useRef<Set<string>>(new Set());
   // Track which conversation the current messages belong to, so we can
   // correctly gate new-conversation creation even during async loads.
   const messagesConversationIdRef = useRef<string | null>(null);
@@ -1322,6 +1323,7 @@ export function ProjectView({
     setArtifact(null);
     savedArtifactRef.current = null;
     pendingWritesRef.current.clear();
+    traceTouchedFilePathsRef.current.clear();
     (async () => {
       try {
         const list = await listConversations(project.id);
@@ -1426,6 +1428,7 @@ export function ProjectView({
     setStreamingConversationId(null);
     savedArtifactRef.current = null;
     pendingWritesRef.current.clear();
+    traceTouchedFilePathsRef.current.clear();
     if (messagesConversationIdRef.current !== activeConversationId) {
       messagesConversationIdRef.current = null;
     }
@@ -1444,6 +1447,7 @@ export function ProjectView({
         setError(null);
         savedArtifactRef.current = null;
         pendingWritesRef.current.clear();
+        traceTouchedFilePathsRef.current.clear();
         messagesConversationIdRef.current = activeConversationId;
         setMessagesConversationId(activeConversationId);
         setFailedMessagesConversationId(null);
@@ -1457,6 +1461,7 @@ export function ProjectView({
         setError(message);
         savedArtifactRef.current = null;
         pendingWritesRef.current.clear();
+        traceTouchedFilePathsRef.current.clear();
         messagesConversationIdRef.current = null;
         setMessagesConversationId(null);
         setFailedMessagesConversationId(activeConversationId);
@@ -2799,12 +2804,20 @@ export function ProjectView({
                 }
                 const diff = computeProducedFiles(beforeFileNames, nextFiles) ?? [];
                 const produced = mergeRecoveredArtifact(diff, recoveredExistingArtifact);
+                const traceObjectFiles = mergeRecoveredTraceObjectFile(
+                  computeTraceObjectFiles(
+                    beforeFileNames,
+                    nextFiles,
+                    extractTouchedFilePathsFromEvents(message.events),
+                  ) ?? [],
+                  recoveredExistingArtifact,
+                );
                 const producedHtmlToOpen = selectAutoOpenProducedHtml(produced);
                 if (producedHtmlToOpen) requestOpenFile(producedHtmlToOpen);
-                if (produced.length > 0) {
+                if (produced.length > 0 || traceObjectFiles.length > 0) {
                   updateMessageById(
                     message.id,
-                    (prev) => ({ ...prev, producedFiles: produced }),
+                    (prev) => ({ ...prev, producedFiles: produced, traceObjectFiles }),
                     true,
                     { telemetryFinalized: true },
                   );
@@ -3309,7 +3322,7 @@ export function ProjectView({
             return next;
           });
         }
-        if (ev.kind === 'tool_use' && ((ev.name === 'Write' || ev.name === 'write') || ev.name === 'Edit')) {
+        if (ev.kind === 'tool_use' && isFileWriteToolName(ev.name)) {
           const input = ev.input as { file_path?: unknown; filePath?: unknown } | null;
           const filePath = input?.file_path ?? input?.filePath;
           if (typeof filePath === 'string' && filePath.length > 0) {
@@ -3326,6 +3339,7 @@ export function ProjectView({
           if (filePath) {
             pendingWritesRef.current.delete(ev.toolUseId);
             if (!ev.isError) {
+              traceTouchedFilePathsRef.current.add(filePath);
               // Refresh first so FileWorkspace's file list (and the tab
               // body) sees the new content before we ask it to focus.
               // Only auto-open if the file actually landed in the project's
@@ -3531,18 +3545,24 @@ export function ProjectView({
               nextFiles = await refreshProjectFiles();
             }
             const produced = computeProducedFiles(beforeFileNames, nextFiles) ?? [];
+            const traceObjectFiles = computeTraceObjectFiles(
+              beforeFileNames,
+              nextFiles,
+              traceTouchedFilePathsRef.current,
+            ) ?? [];
             const producedHtmlToOpen = selectAutoOpenProducedHtml(produced);
             if (producedHtmlToOpen) requestOpenFile(producedHtmlToOpen);
             setMessages((curr) => {
               const updated = curr.map((m) =>
                 m.id === assistantId
-                  ? { ...m, producedFiles: produced }
+                  ? { ...m, producedFiles: produced, traceObjectFiles }
                   : m,
               );
               const finalized = updated.find((m) => m.id === assistantId);
               if (finalized) persistMessage(finalized, { telemetryFinalized: true });
               return updated;
             });
+            traceTouchedFilePathsRef.current.clear();
             await auditDesignSystemWorkspaceAfterRun(assistantId);
           })();
           onProjectsRefresh();
@@ -6283,6 +6303,61 @@ export function computeProducedFiles(
   return filterImplicitProducedFiles(next.filter((f) => !set.has(f.name)));
 }
 
+export function computeTraceObjectFiles(
+  beforeNames: ReadonlySet<string> | readonly string[] | undefined,
+  next: readonly ProjectFile[],
+  touchedPaths: Iterable<string> = [],
+): ProjectFile[] | undefined {
+  if (!beforeNames) return undefined;
+  const set = beforeNames instanceof Set ? beforeNames : new Set(beforeNames);
+  const byName = new Map<string, ProjectFile>();
+  for (const file of filterImplicitProducedFiles(next.filter((f) => !set.has(f.name)))) {
+    byName.set(file.name, { ...file, traceObjectReason: 'new' });
+  }
+  for (const rawPath of touchedPaths) {
+    const file = findTouchedProjectFile(rawPath, next);
+    if (!file) continue;
+    byName.set(file.name, {
+      ...file,
+      traceObjectReason: set.has(file.name) ? 'modified' : 'new',
+    });
+  }
+  return [...byName.values()];
+}
+
+function findTouchedProjectFile(rawPath: string, files: readonly ProjectFile[]): ProjectFile | null {
+  const normalized = normalizeComparableFilePath(rawPath);
+  if (!normalized) return null;
+  const basename = normalized.split('/').pop() ?? normalized;
+  const normalizedFiles = files.map((file) => ({
+    file,
+    candidates: [
+      normalizeComparableFilePath(file.path ?? ''),
+      normalizeComparableFilePath(file.name),
+    ].filter(Boolean),
+  }));
+  const exact = normalizedFiles.find(({ candidates }) =>
+    candidates.some((candidate) =>
+      candidate === normalized ||
+      candidate.endsWith(`/${normalized}`) ||
+      normalized.endsWith(`/${candidate}`),
+    ),
+  );
+  if (exact) return exact.file;
+  const basenameMatches = normalizedFiles.filter(({ candidates }) =>
+    candidates.some((candidate) => candidate.split('/').pop() === basename),
+  );
+  return basenameMatches.length === 1 ? basenameMatches[0]!.file : null;
+}
+
+function normalizeComparableFilePath(value: string): string {
+  return value
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter((part) => part && part !== '.')
+    .join('/');
+}
+
 // Reattach with a recovered (on-disk) artifact must still include any
 // other files the turn produced before the artifact write — replacing
 // the diff with a single file was the regression noted on PR #2383.
@@ -6293,6 +6368,56 @@ export function mergeRecoveredArtifact(
   if (!recovered) return [...diff];
   if (diff.some((f) => f.name === recovered.name)) return [...diff];
   return [...diff, recovered];
+}
+
+export function mergeRecoveredTraceObjectFile(
+  files: readonly ProjectFile[],
+  recovered: ProjectFile | null,
+): ProjectFile[] {
+  const out = [...files];
+  if (!recovered) return out;
+  const existing = out.findIndex((file) => file.name === recovered.name);
+  const tagged = { ...recovered, traceObjectReason: 'recovered' as const };
+  if (existing >= 0) {
+    out[existing] = { ...out[existing]!, traceObjectReason: out[existing]!.traceObjectReason ?? 'recovered' };
+    return out;
+  }
+  return [...out, tagged];
+}
+
+export function extractTouchedFilePathsFromEvents(events: ChatMessage['events']): string[] {
+  if (!Array.isArray(events)) return [];
+  const pending = new Map<string, string>();
+  const touched: string[] = [];
+  for (const event of events) {
+    if (!event || typeof event !== 'object') continue;
+    const rec = event as Record<string, unknown>;
+    if (rec.kind === 'tool_use' && isFileWriteToolName(rec.name)) {
+      const input = rec.input && typeof rec.input === 'object'
+        ? rec.input as Record<string, unknown>
+        : null;
+      const filePath = input?.file_path ?? input?.filePath ?? input?.path;
+      if (typeof rec.id === 'string' && typeof filePath === 'string' && filePath) {
+        pending.set(rec.id, filePath);
+      }
+    }
+    if (rec.kind === 'tool_result') {
+      const toolUseId = typeof rec.toolUseId === 'string'
+        ? rec.toolUseId
+        : typeof rec.tool_use_id === 'string'
+          ? rec.tool_use_id
+          : '';
+      const filePath = pending.get(toolUseId);
+      if (!filePath) continue;
+      pending.delete(toolUseId);
+      if (rec.isError !== true) touched.push(filePath);
+    }
+  }
+  return touched;
+}
+
+function isFileWriteToolName(value: unknown): boolean {
+  return value === 'Write' || value === 'write' || value === 'Edit';
 }
 
 export function clearStreamingConversationMarker(
