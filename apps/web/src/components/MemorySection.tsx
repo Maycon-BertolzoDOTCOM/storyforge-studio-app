@@ -6,6 +6,7 @@ import {
   useState,
   type CSSProperties,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@open-design/components';
 import { Icon, type IconName } from './Icon';
 import { ConnectorLogo, useResolvedTheme } from './ConnectorLogo';
@@ -1623,6 +1624,8 @@ export function MemorySection({
     );
   };
 
+  const modalHost = typeof document === 'undefined' ? null : document.body;
+
   return (
     <>
       <section
@@ -1767,7 +1770,7 @@ export function MemorySection({
         </div>
       ) : null}
 
-      {addModalOpen ? (
+      {modalHost && addModalOpen ? createPortal(
       <div
         className="memory-action-modal-backdrop"
         role="presentation"
@@ -2323,7 +2326,8 @@ export function MemorySection({
 
           </div>
         </div>
-      </div>
+      </div>,
+      modalHost,
       ) : null}
 
       </section>
@@ -2446,7 +2450,7 @@ export function MemorySection({
         </div>
       </section>
 
-      {advancedModalOpen ? (
+      {modalHost && advancedModalOpen ? createPortal(
       <div
         className="memory-action-modal-backdrop"
         role="presentation"
@@ -2623,7 +2627,8 @@ export function MemorySection({
           </div>
           </div>
         </div>
-      </div>
+      </div>,
+      modalHost,
       ) : null}
       </>
       ) : null}

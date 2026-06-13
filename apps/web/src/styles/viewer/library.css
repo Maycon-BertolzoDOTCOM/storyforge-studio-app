@@ -1349,18 +1349,19 @@
 .memory-action-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1300;
+  z-index: 1700;
   display: grid;
   place-items: center;
-  padding: 32px;
+  padding: 0;
   background: color-mix(in srgb, var(--overlay-scrim, rgba(0, 0, 0, 0.42)) 72%, transparent);
 }
 
 .memory-action-modal {
   display: flex;
   flex-direction: column;
-  width: min(920px, calc(100vw - 64px));
-  max-height: min(78vh, 780px);
+  width: min(920px, calc(100vw - 48px));
+  height: min(720px, calc(100vh - 64px));
+  max-height: min(720px, calc(100vh - 64px));
   overflow: hidden;
   border: 1px solid var(--border-soft);
   border-radius: 14px;
@@ -1369,7 +1370,7 @@
 }
 
 .memory-action-modal--advanced {
-  width: min(760px, calc(100vw - 64px));
+  width: min(920px, calc(100vw - 48px));
 }
 
 .memory-action-modal-head {
@@ -1423,6 +1424,7 @@
 .memory-action-modal-body {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   gap: 12px;
   min-height: 0;
   overflow: auto;
@@ -2833,6 +2835,7 @@
   .memory-action-modal,
   .memory-action-modal--advanced {
     width: min(100%, calc(100vw - 32px));
+    height: calc(100vh - 32px);
     max-height: calc(100vh - 32px);
   }
 }
