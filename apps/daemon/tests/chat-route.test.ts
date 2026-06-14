@@ -2108,24 +2108,47 @@ process.exit(0);
 
   it('preserves the first buffered stdout timestamp for Antigravity Gemini assistant text', () => {
     const timestamp = bufferedAntigravityGeminiFirstTokenAt(
-      [
-        JSON.stringify({ type: 'init', session_id: 'agy-1', model: 'gemini-3.5-flash' }),
-        JSON.stringify({ type: 'message', role: 'assistant', content: 'Hello from Antigravity.', delta: true }),
-        JSON.stringify({ type: 'result', status: 'success', stats: { input_tokens: 4, output_tokens: 5 } }),
-      ].join('\n'),
-      1_234,
+      [{
+        receivedAt: 1_234,
+        text: [
+          JSON.stringify({ type: 'init', session_id: 'agy-1', model: 'gemini-3.5-flash' }),
+          JSON.stringify({ type: 'message', role: 'assistant', content: 'Hello from Antigravity.', delta: true }),
+          JSON.stringify({ type: 'result', status: 'success', stats: { input_tokens: 4, output_tokens: 5 } }),
+        ].join('\n'),
+      }],
     );
 
     expect(timestamp).toBe(1_234);
   });
 
+  it('stamps Antigravity Gemini assistant text from the chunk that completes the first assistant message', () => {
+    const timestamp = bufferedAntigravityGeminiFirstTokenAt([
+      {
+        receivedAt: 1_234,
+        text: `${JSON.stringify({ type: 'init', session_id: 'agy-1', model: 'gemini-3.5-flash' })}\n`,
+      },
+      {
+        receivedAt: 5_678,
+        text: `${JSON.stringify({ type: 'message', role: 'assistant', content: 'Hello from Antigravity.', delta: true })}\n`,
+      },
+      {
+        receivedAt: 9_999,
+        text: `${JSON.stringify({ type: 'result', status: 'success', stats: { input_tokens: 4, output_tokens: 5 } })}\n`,
+      },
+    ]);
+
+    expect(timestamp).toBe(5_678);
+  });
+
   it('does not stamp a first token timestamp for Antigravity Gemini streams without assistant text', () => {
     const timestamp = bufferedAntigravityGeminiFirstTokenAt(
-      [
-        JSON.stringify({ type: 'init', session_id: 'agy-1', model: 'gemini-3.5-flash' }),
-        JSON.stringify({ type: 'result', status: 'success', stats: { input_tokens: 4, output_tokens: 0 } }),
-      ].join('\n'),
-      1_234,
+      [{
+        receivedAt: 1_234,
+        text: [
+          JSON.stringify({ type: 'init', session_id: 'agy-1', model: 'gemini-3.5-flash' }),
+          JSON.stringify({ type: 'result', status: 'success', stats: { input_tokens: 4, output_tokens: 0 } }),
+        ].join('\n'),
+      }],
     );
 
     expect(timestamp).toBeNull();

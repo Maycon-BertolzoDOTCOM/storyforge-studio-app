@@ -4601,6 +4601,7 @@ function resolveAcpStageTimeoutMs(): number | undefined {
 }
 
 type GeminiJsonEventStreamEvent = Record<string, unknown>;
+type BufferedStdoutChunk = { text: string; receivedAt: number };
 
 function parseGeminiJsonEventStreamEvents(text: string): GeminiJsonEventStreamEvent[] | null {
   const lines = text
@@ -4660,15 +4661,40 @@ function geminiJsonEventStreamHasVisibleAssistantText(
 }
 
 export function bufferedAntigravityGeminiFirstTokenAt(
-  text: string,
-  firstBufferedStdoutAt: number | null,
+  chunks: readonly BufferedStdoutChunk[],
 ): number | null {
-  if (firstBufferedStdoutAt === null) return null;
+  if (chunks.length === 0) return null;
+  const text = chunks.map((chunk) => chunk.text).join('');
   const events = parseGeminiJsonEventStreamEvents(text);
   if (!isGeminiJsonEventStream(events)) return null;
-  return geminiJsonEventStreamHasVisibleAssistantText(events)
-    ? firstBufferedStdoutAt
-    : null;
+  if (!geminiJsonEventStreamHasVisibleAssistantText(events)) return null;
+
+  let offset = 0;
+  for (const line of text.split(/(\r?\n)/u)) {
+    const nextOffset = offset + line.length;
+    if (line.length > 0 && line.trim().length > 0) {
+      try {
+        const event = JSON.parse(line) as GeminiJsonEventStreamEvent;
+        if (
+          event?.type === 'message' &&
+          event.role === 'assistant' &&
+          typeof event.content === 'string' &&
+          event.content.length > 0
+        ) {
+          let consumed = 0;
+          for (const chunk of chunks) {
+            consumed += chunk.text.length;
+            if (consumed >= nextOffset) return chunk.receivedAt;
+          }
+          return chunks.at(-1)?.receivedAt ?? null;
+        }
+      } catch {
+        return null;
+      }
+    }
+    offset = nextOffset;
+  }
+  return null;
 }
 
 export async function startServer({
@@ -13301,7 +13327,7 @@ export async function startServer({
     // time before deciding whether to forward it. The auth-prompt guard
     // in the close handler suppresses the buffer when the output is an
     // OAuth prompt; otherwise the flush below sends the chunks in order.
-    const plaintextStdoutBuffer: string[] = [];
+    const plaintextStdoutBuffer: BufferedStdoutChunk[] = [];
     // Arrival time of the first buffered plain-text stdout chunk
     // (antigravity). First-token timing is stamped from this value only
     // when the buffer is actually flushed to the client at close time. If
@@ -13490,13 +13516,10 @@ export async function startServer({
       ) {
         return false;
       }
-      const bufferedStdout = plaintextStdoutBuffer.join('');
+      const bufferedStdout = plaintextStdoutBuffer.map((chunk) => chunk.text).join('');
       if (!looksLikeGeminiJsonEventStream(bufferedStdout)) return false;
       trackingSubstantiveOutput = true;
-      const firstTokenAt = bufferedAntigravityGeminiFirstTokenAt(
-        bufferedStdout,
-        firstBufferedStdoutAt,
-      );
+      const firstTokenAt = bufferedAntigravityGeminiFirstTokenAt(plaintextStdoutBuffer);
       if (firstTokenAt !== null) noteFirstTokenAt(firstTokenAt);
       const handler = createJsonEventStreamHandler('gemini', sendAgentEvent);
       handler.feed(bufferedStdout);
@@ -13710,8 +13733,9 @@ export async function startServer({
       // suppressed OAuth-prompt path never reports a TTFT (PR #3412).
       child.stdout.on('data', (chunk) => {
         noteAgentActivity();
-        if (firstBufferedStdoutAt === null) firstBufferedStdoutAt = Date.now();
-        plaintextStdoutBuffer.push(String(chunk));
+        const receivedAt = Date.now();
+        if (firstBufferedStdoutAt === null) firstBufferedStdoutAt = receivedAt;
+        plaintextStdoutBuffer.push({ text: String(chunk), receivedAt });
       });
     } else {
       // Plain / BYOK mode: guard raw stdout chunks (#3247).
@@ -14090,7 +14114,7 @@ export async function startServer({
         noteFirstTokenAt(firstBufferedStdoutAt);
       }
       for (const chunk of plaintextStdoutBuffer) {
-        send('stdout', { chunk });
+        send('stdout', { chunk: chunk.text });
       }
       // Capture the pi session file path for conversational continuity.
       // The session path is discovered by attachPiRpcSession when it
