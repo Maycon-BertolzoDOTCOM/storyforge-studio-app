@@ -79,6 +79,35 @@ const VISUAL_PROJECTS = [
 
 type VisualProject = (typeof VISUAL_PROJECTS)[number];
 
+const VISUAL_PROJECT_FILE_HTML =
+  '<!doctype html><html><body><main><h1>Visual CSS Smoke</h1><p>Workspace preview remains framed.</p></main></body></html>';
+
+const VISUAL_PROJECT_FILES = [
+  {
+    name: 'index.html',
+    path: 'index.html',
+    type: 'file',
+    size: VISUAL_PROJECT_FILE_HTML.length,
+    mtime: 1_700_000_200_000,
+    kind: 'html',
+    mime: 'text/html; charset=utf-8',
+    artifactKind: 'html',
+    artifactManifest: {
+      version: 1,
+      kind: 'html',
+      title: 'Visual CSS Smoke',
+      entry: 'index.html',
+      renderer: 'html',
+      status: 'complete',
+      exports: ['html', 'pdf', 'zip'],
+      primary: true,
+      createdAt: '2026-06-15T00:00:00.000Z',
+      updatedAt: '2026-06-15T00:00:00.000Z',
+      metadata: { identifier: 'visual-css-smoke', artifactType: 'text/html', inferred: false },
+    },
+  },
+] as const;
+
 type VisualPageOptions = {
   projects?: readonly VisualProject[];
   config?: Partial<VisualConfig>;
@@ -238,6 +267,25 @@ export async function configureVisualPage(page: Page, options: VisualPageOptions
 
   await page.route('**/api/projects', async (route) => {
     await fulfillGet(route, { projects });
+  });
+
+  await page.route('**/api/projects/*/files', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.continue();
+      return;
+    }
+    await fulfillGet(route, { files: VISUAL_PROJECT_FILES });
+  });
+
+  await page.route('**/api/projects/*/raw/*', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({
+      contentType: 'text/html; charset=utf-8',
+      body: VISUAL_PROJECT_FILE_HTML,
+    });
   });
 
   await page.route('**/api/projects/*/upload', async (route) => {
