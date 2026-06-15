@@ -249,6 +249,7 @@ describe("release workflows", () => {
     expect(prerelease).toContain("version_metadata_url: ${{ steps.outputs.outputs.version_metadata_url }}");
     expect(prerelease).not.toContain("RELEASE_CHANNEL: Prerelease");
     expect(prerelease).not.toContain("tools-release prepare preview");
+    expect(prereleaseMetadata).toContain("GH_TOKEN: ${{ github.token }}");
     expect(prereleaseMetadata).toContain("OPEN_DESIGN_RELEASE_CHANNEL: prerelease");
     expect(prereleasePublish).toContain('GITHUB_RELEASE_ENABLED: "false"');
     expect(prerelease).not.toContain("gh release");

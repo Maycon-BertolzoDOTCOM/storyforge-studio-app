@@ -81,6 +81,7 @@ jobs:
     name: Prepare prerelease metadata
     runs-on: ubuntu-latest
     env:
+      GH_TOKEN: ${{ github.token }}
       OPEN_DESIGN_PRERELEASE_METADATA_URL: ${{ vars.CLOUDFLARE_R2_RELEASES_PUBLIC_ORIGIN }}/prerelease/latest/metadata.json
       OPEN_DESIGN_RELEASE_CHANNEL: prerelease
       OPEN_DESIGN_STABLE_VERSION: ${{ inputs.release_version }}
