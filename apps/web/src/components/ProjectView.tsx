@@ -1086,10 +1086,6 @@ export function ProjectView({
   // the agent's Write actually completes, without the previous synthetic
   // "live" tab that was causing flicker against manual opens.
   const pendingWritesRef = useRef<Map<string, string>>(new Map());
-  const traceTouchedFilePathsRef = useRef<Set<string>>(new Set());
-  const clearTraceTouchedFilePaths = useCallback(() => {
-    traceTouchedFilePathsRef.current.clear();
-  }, []);
   // Track which conversation the current messages belong to, so we can
   // correctly gate new-conversation creation even during async loads.
   const messagesConversationIdRef = useRef<string | null>(null);
@@ -1326,7 +1322,6 @@ export function ProjectView({
     setArtifact(null);
     savedArtifactRef.current = null;
     pendingWritesRef.current.clear();
-    traceTouchedFilePathsRef.current.clear();
     (async () => {
       try {
         const list = await listConversations(project.id);
@@ -1431,7 +1426,6 @@ export function ProjectView({
     setStreamingConversationId(null);
     savedArtifactRef.current = null;
     pendingWritesRef.current.clear();
-    traceTouchedFilePathsRef.current.clear();
     if (messagesConversationIdRef.current !== activeConversationId) {
       messagesConversationIdRef.current = null;
     }
@@ -1450,7 +1444,6 @@ export function ProjectView({
         setError(null);
         savedArtifactRef.current = null;
         pendingWritesRef.current.clear();
-        traceTouchedFilePathsRef.current.clear();
         messagesConversationIdRef.current = activeConversationId;
         setMessagesConversationId(activeConversationId);
         setFailedMessagesConversationId(null);
@@ -1464,7 +1457,6 @@ export function ProjectView({
         setError(message);
         savedArtifactRef.current = null;
         pendingWritesRef.current.clear();
-        traceTouchedFilePathsRef.current.clear();
         messagesConversationIdRef.current = null;
         setMessagesConversationId(null);
         setFailedMessagesConversationId(activeConversationId);
@@ -3260,6 +3252,10 @@ export function ProjectView({
       // agent finishes and surface anything new (e.g. a generated .pptx)
       // as download chips on the assistant message.
       const beforeFileNames = new Set(preTurnFileNames);
+      const traceTouchedFilePaths = new Set<string>();
+      const clearTraceTouchedFilePaths = () => {
+        traceTouchedFilePaths.clear();
+      };
 
       const parser = createArtifactParser();
       let parsedArtifact: Artifact | null = null;
@@ -3341,7 +3337,7 @@ export function ProjectView({
           if (filePath) {
             pendingWritesRef.current.delete(ev.toolUseId);
             if (!ev.isError) {
-              traceTouchedFilePathsRef.current.add(filePath);
+              traceTouchedFilePaths.add(filePath);
               // Refresh first so FileWorkspace's file list (and the tab
               // body) sees the new content before we ask it to focus.
               // Only auto-open if the file actually landed in the project's
@@ -3553,7 +3549,7 @@ export function ProjectView({
               const traceObjectFiles = computeTraceObjectFiles(
                 beforeFileNames,
                 nextFiles,
-                traceTouchedFilePathsRef.current,
+                traceTouchedFilePaths,
               ) ?? [];
               const producedHtmlToOpen = selectAutoOpenProducedHtml(produced);
               if (producedHtmlToOpen) requestOpenFile(producedHtmlToOpen);
@@ -3864,7 +3860,6 @@ export function ProjectView({
       requestOpenFile,
       persistMessage,
       persistMessageById,
-      clearTraceTouchedFilePaths,
       auditDesignSystemWorkspaceAfterRun,
       patchAttachedStatuses,
       updateMessageById,
@@ -3898,7 +3893,6 @@ export function ProjectView({
       controller.abort();
     }
     reattachControllersRef.current.clear();
-    clearTraceTouchedFilePaths();
     setStreaming(false);
     streamingConversationIdRef.current = null;
     setStreamingConversationId(null);
@@ -3907,7 +3901,7 @@ export function ProjectView({
       for (const message of finalized) persistMessage(message, { telemetryFinalized: true });
       return next;
     });
-  }, [cancelSendTextBuffer, cancelReattachTextBuffers, clearTraceTouchedFilePaths, persistMessage]);
+  }, [cancelSendTextBuffer, cancelReattachTextBuffers, persistMessage]);
 
   // Flip the deck preview to the slide a queued send's marked element lives on
   // the moment that send starts processing. No-op for plain prompts or marks
