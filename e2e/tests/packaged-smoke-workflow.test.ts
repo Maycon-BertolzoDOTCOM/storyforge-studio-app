@@ -198,8 +198,13 @@ describe("packaged smoke workflow", () => {
     expect(releaseBetaWorkflow).toContain("RELEASE_TARGET: mac_x64");
     expect(releaseBetaWorkflow).toContain("RELEASE_TARGET: linux_x64");
     const betaBuildScript = await readFile(releaseBetaPosixBuildScriptPath, "utf8");
-    expect(betaBuildScript).toContain("OD_PACKAGED_E2E_RELEASE_CHANNEL=beta");
+    expect(betaBuildScript).toContain('release_channel="${RELEASE_CHANNEL:-beta}"');
+    expect(betaBuildScript).toContain('OD_PACKAGED_E2E_RELEASE_CHANNEL="$release_channel"');
     expect(betaBuildScript).toContain('OD_PACKAGED_E2E_RELEASE_VERSION="$RELEASE_VERSION"');
+    const betaWindowsBuildScript = await readFile(releaseBetaWindowsBuildScriptPath, "utf8");
+    expect(betaWindowsBuildScript).toContain('$ReleaseChannel = if ([string]::IsNullOrWhiteSpace($env:RELEASE_CHANNEL)) { "beta" } else { $env:RELEASE_CHANNEL }');
+    expect(betaWindowsBuildScript).toContain('Test-JsonString $manifest.channel "channel" $ReleaseChannel');
+    expect(betaWindowsBuildScript).toContain('$env:OD_PACKAGED_E2E_RELEASE_CHANNEL = $ReleaseChannel');
   });
 
   it("[P2] keeps counted release workflow calls on a consistent ref and output contract", async () => {
@@ -285,9 +290,9 @@ describe("packaged smoke workflow", () => {
   it("[P2] validates stable dry-run prerelease metadata from a non-release ref", async () => {
     const objects: Record<string, unknown> = {};
     const fixture = await startStablePrereleaseMetadataServer(objects);
-    objects["prerelease/versions/0.10.1-prerelease.12/metadata.json"] = stablePrereleaseMetadataFixture(
-      "0.10.1",
-      "0.10.1-prerelease.12",
+    objects["prerelease/versions/0.10.2-prerelease.12/metadata.json"] = stablePrereleaseMetadataFixture(
+      "0.10.2",
+      "0.10.2-prerelease.12",
       fixture.origin,
     );
     const runnerTemp = await mkdtemp(join(tmpdir(), "od-release-stable-dry-run-"));
@@ -309,17 +314,17 @@ describe("packaged smoke workflow", () => {
           OPEN_DESIGN_RELEASE_DRY_RUN: "true",
           OPEN_DESIGN_RELEASES_PUBLIC_ORIGIN: fixture.origin,
           OPEN_DESIGN_GH_NODE_SCRIPT: join(runnerTemp, "bin", "gh"),
-          OPEN_DESIGN_STABLE_PRERELEASE_VERSION: "0.10.1-prerelease.12",
-          OPEN_DESIGN_STABLE_VERSION: "0.10.1",
+          OPEN_DESIGN_STABLE_PRERELEASE_VERSION: "0.10.2-prerelease.12",
+          OPEN_DESIGN_STABLE_VERSION: "0.10.2",
           Path: fakePath,
           PATH: fakePath,
         },
       });
 
-      expect(result.stdout).toContain("[release-stable] validated prerelease: 0.10.1-prerelease.12");
+      expect(result.stdout).toContain("[release-stable] validated prerelease: 0.10.2-prerelease.12");
       expect(result.stdout).toContain("[release-stable] channel: stable");
       expect(result.stdout).toContain("[release-stable] dry run: true");
-      expect(result.stdout).toContain("[release-stable] version tag: open-design-v0.10.1");
+      expect(result.stdout).toContain("[release-stable] version tag: open-design-v0.10.2");
     } finally {
       await fixture.close();
       await rm(runnerTemp, { force: true, recursive: true });

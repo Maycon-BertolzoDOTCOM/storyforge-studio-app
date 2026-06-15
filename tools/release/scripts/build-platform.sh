@@ -202,6 +202,7 @@ esac
 mkdir -p "$RELEASE_WORK_DIR" "$TOOLS_PACK_CACHE_DIR" "$(dirname "$BUILD_JSON_PATH")" "$(dirname "$BUILD_LOG_PATH")"
 : > "$BUILD_LOG_PATH"
 release_timings_json=""
+release_channel="${RELEASE_CHANNEL:-beta}"
 
 case "$RELEASE_TARGET" in
   mac_arm64 | mac_x64)
@@ -306,8 +307,8 @@ else
   update_build_json_path=""
   update_version=""
   if [ "$RELEASE_SMOKE_MODE" = "full" ] && [ "$RELEASE_TARGET" = "mac_arm64" ] && [ -z "${OD_PACKAGED_E2E_MAC_UPDATE_METADATA_URL:-}" ]; then
-    if [[ "$RELEASE_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-beta\.([0-9]+)$ ]]; then
-      update_version="${BASH_REMATCH[1]}-beta.$((BASH_REMATCH[2] + 1))"
+    if [[ "$RELEASE_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-${release_channel}\.([0-9]+)$ ]]; then
+      update_version="${BASH_REMATCH[1]}-${release_channel}.$((BASH_REMATCH[2] + 1))"
       update_fixture_dir="$RELEASE_WORK_DIR/tools-pack-update-fixture"
       update_build_json_path="$RELEASE_WORK_DIR/mac-tools-pack-update-build.json"
       update_args=(
@@ -328,7 +329,7 @@ else
       }
       measure_step "tools-pack mac build update fixture" build_mac_update_fixture
     else
-      echo "full mac payload smoke requires beta version x.y.z-beta.N; got $RELEASE_VERSION" >&2
+      echo "full mac payload smoke requires counted version x.y.z-$release_channel.N; got $RELEASE_VERSION" >&2
       exit 1
     fi
   fi
@@ -340,7 +341,7 @@ else
   OD_PACKAGED_E2E_MAC_UPDATE_VERSION="${OD_PACKAGED_E2E_MAC_UPDATE_VERSION:-$update_version}" \
   OD_PACKAGED_E2E_MAC_SMOKE_PROFILE="$RELEASE_SMOKE_MODE" \
   OD_PACKAGED_E2E_NAMESPACE="$RELEASE_NAMESPACE" \
-  OD_PACKAGED_E2E_RELEASE_CHANNEL=beta \
+  OD_PACKAGED_E2E_RELEASE_CHANNEL="$release_channel" \
   OD_PACKAGED_E2E_RELEASE_VERSION="$RELEASE_VERSION" \
   OD_PACKAGED_E2E_REPORT_DIR="$RELEASE_REPORT_DIR" \
   OD_PACKAGED_E2E_TOOLS_PACK_DIR="$TOOLS_PACK_DIR" \

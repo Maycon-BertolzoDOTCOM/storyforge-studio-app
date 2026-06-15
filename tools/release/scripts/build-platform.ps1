@@ -35,6 +35,7 @@ $ErrorActionPreference = "Stop"
 $startedAt = Get-Date
 $timings = @()
 $failureMessage = $null
+$ReleaseChannel = if ([string]::IsNullOrWhiteSpace($env:RELEASE_CHANNEL)) { "beta" } else { $env:RELEASE_CHANNEL }
 
 function Format-Duration([int64]$Milliseconds) {
   if ($Milliseconds -ge 60000) {
@@ -182,7 +183,7 @@ function Validate-WinLauncherPayloadArchive([string]$PayloadPath, [string]$Expec
     }
     $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding utf8 | ConvertFrom-Json
     Test-JsonString $manifest.schemaVersion "schemaVersion" "1"
-    Test-JsonString $manifest.channel "channel" "beta"
+    Test-JsonString $manifest.channel "channel" $ReleaseChannel
     Test-JsonString $manifest.namespace "namespace" $ReleaseNamespace
     Test-JsonString $manifest.version "version" $ExpectedVersion
     Test-JsonString $manifest.platform "platform" "win32"
@@ -254,11 +255,12 @@ try {
   $hasExternalUpdateArtifactPair = -not [string]::IsNullOrWhiteSpace($externalUpdateArtifactPath) -and -not [string]::IsNullOrWhiteSpace($externalUpdateVersion)
 
   if ($SmokeMode -eq "full" -and -not $hasExternalUpdateMetadata -and -not $hasExternalUpdateArtifactPair) {
-    $match = [System.Text.RegularExpressions.Regex]::Match($ReleaseVersion, '^(?<base>\d+\.\d+\.\d+)-beta\.(?<number>\d+)$')
+    $releaseChannelPattern = [System.Text.RegularExpressions.Regex]::Escape($ReleaseChannel)
+    $match = [System.Text.RegularExpressions.Regex]::Match($ReleaseVersion, "^(?<base>\d+\.\d+\.\d+)-$releaseChannelPattern\.(?<number>\d+)$")
     if (-not $match.Success) {
-      throw "full Windows smoke requires a beta version like x.y.z-beta.N; got $ReleaseVersion"
+      throw "full Windows smoke requires a counted version like x.y.z-$ReleaseChannel.N; got $ReleaseVersion"
     }
-    $localUpdateVersion = "$($match.Groups['base'].Value)-beta.$([int]$match.Groups['number'].Value + 1)"
+    $localUpdateVersion = "{0}-{1}.{2}" -f $match.Groups['base'].Value, $ReleaseChannel, ([int]$match.Groups['number'].Value + 1)
     $fixtureDir = Join-Path $WorkRoot "tools-pack-update-fixture"
     $fixtureJsonPath = Join-Path $WorkRoot "windows-tools-pack-update-build.json"
     $updateArgs = @(
@@ -312,7 +314,7 @@ try {
       $env:OD_PACKAGED_E2E_WIN = "1"
       $env:OD_PACKAGED_E2E_WIN_SMOKE_PROFILE = $SmokeMode
       $env:OD_PACKAGED_E2E_NAMESPACE = $ReleaseNamespace
-      $env:OD_PACKAGED_E2E_RELEASE_CHANNEL = "beta"
+      $env:OD_PACKAGED_E2E_RELEASE_CHANNEL = $ReleaseChannel
       $env:OD_PACKAGED_E2E_RELEASE_VERSION = $ReleaseVersion
       $env:OD_PACKAGED_E2E_REPORT_DIR = $ReportRoot
       $env:OD_PACKAGED_E2E_TOOLS_PACK_DIR = $ToolsPackDir
