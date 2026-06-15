@@ -120,20 +120,25 @@ C:\odtp-beta-release-fixed\out\win\namespaces\release-beta-win\builder\Open Desi
 
 - User installs `0.8.0-beta.5` through the NSIS UI.
 - User launches `Open Design Beta`.
-- App auto-checks the real beta feed, downloads the latest `platforms.win.artifacts.installer`, verifies sha256, and shows the web updater popup.
+- App auto-checks the real beta feed and selects the latest Windows launcher payload when the package-launcher context is valid. The installer is the fallback path when the payload artifact or launcher context is unavailable.
+- For the payload path, the app downloads `platforms.win.artifacts.payload`, verifies sha256, prepares the payload under `%APPDATA%\Open Design\launcher\channels\beta\namespaces\release-beta-win\versions\<version>\payload`, and shows the web updater popup.
 - The native File menu must not expose update actions.
 - The updater popup uses i18n strings and download progress must not flash to 100% before real bytes arrive.
-- Clicking `Open installer` opens the real downloaded beta installer. Installing it should overwrite the same `Open Design-release-beta-win` registry key, not create a second beta key.
+- Applying the payload update should quit and relaunch into the prepared payload version, then mark launcher `active` and `lastSuccessful` to that version.
+- If the updater falls back to the installer path, clicking `Open installer` opens the real downloaded beta installer. Installing it should overwrite the same `Open Design-release-beta-win` registry key, not create a second beta key.
 
-5. Registry sanity check after beta.6 install:
+5. Registry and launcher sanity check after beta.6 update:
 
 ```powershell
 Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
   Where-Object { $_.DisplayName -like 'Open Design*' } |
   Select-Object PSChildName,DisplayName,DisplayVersion,InstallLocation
+
+Get-Content "$env:APPDATA\Open Design\launcher\channels\beta\namespaces\release-beta-win\runtime.json"
 ```
 
 For a clean beta channel result, expect one beta entry with `PSChildName` `Open Design-release-beta-win` and the latest `DisplayVersion`.
+For the payload path, also expect launcher `active.version` and `lastSuccessful.version` to match the latest beta version.
 Windows Settings > Apps may cache uninstall metadata within the current view. If Settings still shows the previous beta version after the registry query is correct, switch away from the Apps view and back, or reopen Settings, before treating it as an installer failure. The registry query above is the source of truth for this harness.
 
 6. Avoid leaving validation residue. Stop running app processes first, then use tools-pack uninstall/cleanup for tool-managed namespaces. Only delete explicit temp roots after verifying the resolved path is exactly the intended directory.
