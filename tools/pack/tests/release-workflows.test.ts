@@ -139,6 +139,8 @@ describe("release workflows", () => {
     expect(prepareWin).toContain("open-design-$ReleaseVersion$ReleaseAssetSuffix-win-x64-payload.7z");
     expect(publishPlatform).toContain("open-design-${releaseVersion}${assetSuffix}-win-x64-payload.7z");
     expect(publishPlatform).toContain("payload: assetEntry(payload)");
+    expect(publishPlatform).toContain("versionLockObjectKey(releaseVersion, countedReleaseChannel)");
+    expect(publishPlatform).toContain("assertCurrentVersionReservation(storage, releaseVersion, versionLockKey, countedReleaseChannel)");
     expect(buildWin).toContain("function Validate-WinLauncherPayloadArchive");
     expect(buildWin).toContain('Measure-Step "clean tools-pack win namespace"');
     expect(buildWin.indexOf('Measure-Step "clean tools-pack win namespace"')).toBeLessThan(buildWin.indexOf('Measure-Step "tools-pack win build"'));

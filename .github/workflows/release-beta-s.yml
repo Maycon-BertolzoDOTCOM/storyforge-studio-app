@@ -763,7 +763,7 @@ jobs:
           RELEASE_TARGET: win_x64
           RELEASE_VERSION: ${{ needs.metadata.outputs.release_version }}
           REPORT_TITLE: self-hosted win_x64 betas build
-        run: '& "C:\Users\runner\.cargo\bin\fnm.exe" exec --using=24 -- pnpm exec tools-release write-report'
+        run: '& "C:\Users\runner\.cargo\bin\fnm.exe" exec --using=24 -- pnpm.cmd exec tools-release write-report'
 
       - name: Publish win_x64 report summary
         if: ${{ always() }}

@@ -52,6 +52,7 @@ type TargetDef = {
 
 const storage = storageConfigFromEnv();
 const releaseChannel = releaseChannelDescriptor(required("RELEASE_CHANNEL")).channel;
+const countedReleaseChannel = releaseChannel === "stable" ? null : releaseChannel;
 const releaseVersion = required("RELEASE_VERSION");
 const publicOrigin = required("RELEASE_PUBLIC_ORIGIN").replace(/\/+$/, "");
 const metadataDir = required("RELEASE_METADATA_DIR");
@@ -62,12 +63,18 @@ const latestPrefix = `${releaseChannel}/latest`;
 const currentCommit = optional("RELEASE_COMMIT");
 const currentRunId = Number(optional("RELEASE_RUN_ID", "0"));
 const versionLockRequired = process.env.RELEASE_VERSION_LOCK_REQUIRED === "true";
-const versionLockKey = optional("RELEASE_VERSION_LOCK_KEY", versionLockObjectKey(releaseVersion));
+const versionLockKey = optional(
+  "RELEASE_VERSION_LOCK_KEY",
+  countedReleaseChannel == null ? "" : versionLockObjectKey(releaseVersion, countedReleaseChannel),
+);
 const latestCasRequired = process.env.RELEASE_LATEST_CAS_REQUIRED === "true";
 
 if (versionLockRequired) {
-  await assertCurrentVersionReservation(storage, releaseVersion, versionLockKey);
-  console.log(`verified beta version reservation ${versionLockKey}`);
+  if (countedReleaseChannel == null) {
+    throw new Error("stable releases do not use counted version reservations");
+  }
+  await assertCurrentVersionReservation(storage, releaseVersion, versionLockKey, countedReleaseChannel);
+  console.log(`verified ${countedReleaseChannel} version reservation ${versionLockKey}`);
 }
 
 const targetDefs: TargetDef[] = [

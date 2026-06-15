@@ -38,6 +38,7 @@ type TargetConfig = {
 
 const target = requiredTarget();
 const releaseChannel = releaseChannelDescriptor(required("RELEASE_CHANNEL")).channel;
+const countedReleaseChannel = releaseChannel === "stable" ? null : releaseChannel;
 const releaseVersion = required("RELEASE_VERSION");
 const publicOrigin = required("RELEASE_PUBLIC_ORIGIN").replace(/\/+$/, "");
 const releaseAssetsDir = required("RELEASE_ASSETS_DIR");
@@ -50,11 +51,17 @@ const latestPrefix = `${releaseChannel}/latest`;
 const reportRoot = optional("RELEASE_REPORT_DIR");
 const reportZipPath = optional("RELEASE_REPORT_ZIP_PATH");
 const versionLockRequired = bool("RELEASE_VERSION_LOCK_REQUIRED");
-const versionLockKey = optional("RELEASE_VERSION_LOCK_KEY", versionLockObjectKey(releaseVersion));
+const versionLockKey = optional(
+  "RELEASE_VERSION_LOCK_KEY",
+  countedReleaseChannel == null ? "" : versionLockObjectKey(releaseVersion, countedReleaseChannel),
+);
 
 if (versionLockRequired) {
-  await assertCurrentVersionReservation(storage, releaseVersion, versionLockKey);
-  console.log(`verified beta version reservation ${versionLockKey}`);
+  if (countedReleaseChannel == null) {
+    throw new Error("stable releases do not use counted version reservations");
+  }
+  await assertCurrentVersionReservation(storage, releaseVersion, versionLockKey, countedReleaseChannel);
+  console.log(`verified ${countedReleaseChannel} version reservation ${versionLockKey}`);
 }
 
 function assetEntry(name: string): AssetEntry {
