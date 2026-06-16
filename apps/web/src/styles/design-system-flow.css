@@ -108,10 +108,12 @@
    so the hero column sticks just beneath the sticky top bar. The embedded
    onboarding variant keeps its single-column stack. */
 .ds-setup-shell:not(.ds-setup-shell--embedded) .ds-setup-form {
-  width: min(1200px, calc(100vw - 56px));
+  width: min(1280px, calc(100vw - 56px));
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(380px, 480px);
-  gap: 56px;
+  /* Hero column is intro/marketing — keep it compact so the working form
+     column on the right gets the room its labels and inputs need. */
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 48px;
   align-items: start;
 }
 .ds-setup-hero-col {

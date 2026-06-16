@@ -109,6 +109,12 @@
   setHTML(shadow, `
     <style>
       .bar {
+        /* Pointer across the whole pill (inherited) so the bar reads as one
+           interactive surface — no arrow/hand flicker over the padding, the 2px
+           gaps, or the separators. The grip keeps its own grab/grabbing and the
+           busy veil resets to default below. */
+        cursor: pointer;
+        position: relative; /* containing block for the absolute .busy-veil */
         display: flex; align-items: center; gap: 2px; padding: 6px 8px;
         background: rgba(32,32,32,0.94);
         -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
@@ -185,7 +191,7 @@
          instead of vanishing for the whole capture-and-save round-trip. */
       .busy-veil {
         position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
-        border-radius: inherit; background: rgba(32,32,32,0.62);
+        border-radius: inherit; background: rgba(32,32,32,0.62); cursor: default;
         -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
       }
       .bar.busy .busy-veil { display: flex; }
@@ -316,6 +322,23 @@
   const bar = shadow.querySelector('.bar');
   let dragging = false;
   let pointerStartX = 0, pointerStartY = 0, originLeft = 0, originTop = 0;
+
+  // Toggle the bar's spinner overlay for the lifetime of a capture-and-save, so
+  // the bar reads as "working" in place rather than disappearing.
+  function setBusy(on) {
+    bar.classList.toggle('busy', Boolean(on));
+  }
+
+  // Does the bar's on-screen box intersect a capture rect (viewport coords)?
+  // Cropped captures (element/region) only need the bar pulled out of frame when
+  // it would actually land in the crop; otherwise it stays put with its spinner
+  // and never blinks. Both rects are viewport-relative (getBoundingClientRect).
+  function barOverlapsRect(r) {
+    if (!toolbarVisible || hiddenForCapture) return false;
+    const b = host.getBoundingClientRect();
+    if (!b.width || !b.height) return false;
+    return b.left < r.x + r.width && b.right > r.x && b.top < r.y + r.height && b.bottom > r.y;
+  }
 
   function clampToViewport(left, top) {
     const rect = host.getBoundingClientRect();
@@ -596,8 +619,10 @@
     return meta;
   }
 
-  // Hide our own UI, screenshot the visible tab, crop to the element. Runs after
-  // the picker is torn down so nothing of ours lands in the capture.
+  // Screenshot the visible tab and crop to the element. The picker is torn down
+  // first; the worker pulls the bar out of frame for just the screenshot itself
+  // (see captureElement in background.js), so the bar stays put — wearing a
+  // spinner — through the slower save instead of vanishing for the whole trip.
   async function commitCapture(el) {
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -609,8 +634,10 @@
     const html = (el.outerHTML || '').slice(0, 200000);
     const payloadRect = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
     endElementPick();
-    setCapturing(true);
-    // Two frames so our removed UI is fully off the compositor before capture.
+    setBusy(true);
+    const hideBar = barOverlapsRect(payloadRect);
+    // Two frames so our torn-down picker surface is off the compositor before the
+    // worker screenshots.
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     let res;
     try {
@@ -624,14 +651,15 @@
         meta,
         sourceUrl: location.href,
         sourceTitle: document.title,
+        hideBar,
       });
     } catch (err) {
       console.warn('[Open Design] element capture failed', err);
-      setCapturing(false);
+      setBusy(false);
       toast('Extension error — reload the page');
       return;
     }
-    setCapturing(false);
+    setBusy(false);
     if (!res || !res.ok) {
       toast(res && res.error === 'not running'
         ? 'Open Design isn’t running — start the app'
@@ -639,14 +667,6 @@
       return;
     }
     toast(res.deduped ? 'Element already in library' : 'Saved element to library');
-  }
-
-  // Pull all of our on-page UI out of frame for the duration of a screenshot.
-  function setCapturing(on) {
-    hiddenForCapture = on;
-    applyVisibility();
-    hideImageBadge();
-    if (on) toastHost.style.display = 'none';
   }
 
   function startElementPick() {
@@ -751,6 +771,13 @@
              track breaks the cycle and lays every row out cleanly. */
           grid-auto-rows: 116px; align-content: start;
           gap: 10px; padding: 14px 16px; overflow-y: auto; overflow-x: hidden;
+          /* min-height:0 lets this flex child shrink below its content so it
+             actually scrolls. Without it the default min-height:auto floors the
+             grid at full content height: the panel sticks at max-height and
+             clips the overflow rows instead of scrolling them. With it, the
+             panel hugs the thumbnails when there are few and the grid scrolls
+             when there are many. */
+          min-height: 0;
         }
         .cell {
           position: relative; min-width: 0; display: block; border: 1px solid #e1e5eb; border-radius: 10px;
@@ -998,8 +1025,10 @@
   async function commitRegionCapture(r) {
     const payloadRect = { x: r.x, y: r.y, width: r.w, height: r.h };
     endRegionPick();
-    setCapturing(true);
-    // Two frames so our removed surface is fully off the compositor before capture.
+    setBusy(true);
+    const hideBar = barOverlapsRect(payloadRect);
+    // Two frames so our torn-down picker surface is off the compositor before
+    // the worker screenshots.
     await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
     let res;
     try {
@@ -1011,13 +1040,14 @@
         dpr: window.devicePixelRatio || 1,
         sourceUrl: location.href,
         sourceTitle: document.title,
+        hideBar,
       });
     } catch {
-      setCapturing(false);
+      setBusy(false);
       toast('Extension error — reload the page');
       return;
     }
-    setCapturing(false);
+    setBusy(false);
     if (!res || !res.ok) {
       toast(res && res.error === 'not running'
         ? 'Open Design isn’t running — start the app'
@@ -1189,8 +1219,12 @@
         sendResponse({ ok: true, alive: true });
         return false;
       case 'odClipper:hideForCapture': {
+        // Pull every piece of our on-page UI out of frame for the screenshot:
+        // the bar, the cursor-following image badge, and any visible toast.
         hiddenForCapture = true;
         applyVisibility();
+        hideImageBadge();
+        toastHost.style.display = 'none';
         requestAnimationFrame(() => requestAnimationFrame(() => sendResponse({ ok: true })));
         return true; // async response
       }

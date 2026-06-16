@@ -384,12 +384,22 @@ export function LibrarySection({ active, onOpenProject }: Props) {
         }
         const attachments: ChatAttachment[] = [];
         for (const a of chosen) {
-          const relPath = await applyLibraryAsset(a.id, projectId);
-          if (relPath) {
+          const res = await applyLibraryAsset(a.id, projectId, undefined, { includeElement: true });
+          if (res?.relPath) {
             attachments.push({
-              path: relPath,
-              name: relPath.split('/').pop() || relPath,
+              path: res.relPath,
+              name: res.relPath.split('/').pop() || res.relPath,
               kind: a.kind === 'image' ? 'image' : 'file',
+            });
+          }
+          // An element-pick capture also brings its markup; stage it so the
+          // design-system refinement can read the element's HTML, not just the
+          // screenshot.
+          if (res?.elementRelPath) {
+            attachments.push({
+              path: res.elementRelPath,
+              name: res.elementRelPath.split('/').pop() || res.elementRelPath,
+              kind: 'file',
             });
           }
         }

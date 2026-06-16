@@ -2331,12 +2331,16 @@ export function FileWorkspace({
             onConfirm={async (assets) => {
               // Copy each picked asset into the project's design files (under the
               // folder currently in view, if any). Apply records a provenance
-              // back-link so the registry knows the asset was consumed.
+              // back-link so the registry knows the asset was consumed. For
+              // element-pick captures, `includeElement` also drops the captured
+              // markup as a companion `.element.html` file so the element's text
+              // lands in Design Files alongside its screenshot.
               const dir = uploadDir || undefined;
               let lastRelPath: string | null = null;
               for (const asset of assets) {
-                const relPath = await applyLibraryAsset(asset.id, projectId, dir);
-                if (relPath) lastRelPath = relPath;
+                const res = await applyLibraryAsset(asset.id, projectId, dir, { includeElement: true });
+                if (res?.relPath) lastRelPath = res.relPath;
+                if (res?.elementRelPath) lastRelPath = res.elementRelPath;
               }
               await onRefreshFiles();
               if (lastRelPath) openFile(lastRelPath);

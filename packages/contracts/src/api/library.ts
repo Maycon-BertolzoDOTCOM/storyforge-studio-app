@@ -268,10 +268,22 @@ export interface LibraryApplyRequest {
   projectId: string;
   /** Optional subdirectory inside the project to copy into. */
   dir?: string;
+  /**
+   * When true and the asset is a clipper element-pick capture (an `image`
+   * asset carrying `metadata.element` + a `.element.html` sidecar), also copy
+   * the captured markup into the project as a companion `.element.html` file so
+   * the user/agent can consume the element's HTML, not just its screenshot.
+   */
+  includeElement?: boolean;
 }
 
 export interface LibraryApplyResponse {
   relPath: string;
+  /**
+   * Project-relative path of the companion element-markup file, present only
+   * when `includeElement` was requested for an element-pick capture.
+   */
+  elementRelPath?: string;
 }
 
 /**

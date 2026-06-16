@@ -2353,22 +2353,44 @@ export async function fetchLibraryAssets(query: LibraryAssetQuery = {}): Promise
  * Copy a library asset into a project's design files (default `library/`
  * subdir) and record a provenance back-link so the registry knows the asset
  * was consumed. Powers "Select from library" in the composer and Design Files.
- * Returns the project-relative path of the materialized file, or null on error.
+ * With `includeElement`, an element-pick capture also materializes its captured
+ * markup as a companion `.element.html` file (see `elementRelPath`). Returns the
+ * apply response (`relPath` + optional `elementRelPath`), or null on error.
  */
 export async function applyLibraryAsset(
   assetId: string,
   projectId: string,
   dir?: string,
-): Promise<string | null> {
+  opts?: { includeElement?: boolean },
+): Promise<LibraryApplyResponse | null> {
   try {
     const resp = await fetch(`/api/library/assets/${encodeURIComponent(assetId)}/apply`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ projectId, ...(dir ? { dir } : {}) }),
+      body: JSON.stringify({
+        projectId,
+        ...(dir ? { dir } : {}),
+        ...(opts?.includeElement ? { includeElement: true } : {}),
+      }),
     });
     if (!resp.ok) return null;
-    const json = (await resp.json()) as LibraryApplyResponse;
-    return json.relPath ?? null;
+    return (await resp.json()) as LibraryApplyResponse;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch the captured `outerHTML` of an element-pick library asset (served from
+ * `/api/library/assets/:id/element`). Returns null when the asset has no stored
+ * element markup or the request fails.
+ */
+export async function fetchLibraryAssetElementHtml(assetId: string): Promise<string | null> {
+  try {
+    const resp = await fetch(libraryAssetElementUrl(assetId));
+    if (!resp.ok) return null;
+    const html = await resp.text();
+    return html.trim() ? html : null;
   } catch {
     return null;
   }

@@ -307,7 +307,17 @@ async function cropToRect(tabDataUrl, rect, viewportWidth, dpr) {
 // outerHTML + metadata as one enriched image asset.
 async function captureElement(payload) {
   const tab = await activeTab();
-  const tabDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+  // Only pull the bar out of frame when it overlaps the crop region (the content
+  // script decides). Otherwise it stays visible with its spinner — no blink —
+  // while the bar is hidden for just the screenshot itself, not the whole save.
+  const hideBar = Boolean(payload.hideBar);
+  if (hideBar) await sendToTab(tab.id, { type: 'odClipper:hideForCapture' });
+  let tabDataUrl;
+  try {
+    tabDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+  } finally {
+    if (hideBar) await sendToTab(tab.id, { type: 'odClipper:restoreAfterCapture' });
+  }
   const cropped = await cropToRect(tabDataUrl, payload.rect || {}, payload.viewportWidth, payload.dpr);
   const meta = payload.meta || {};
   const r = await ingest({
@@ -326,7 +336,16 @@ async function captureElement(payload) {
 // path as element capture, minus the element markup/metadata.
 async function captureRegion(payload) {
   const tab = await activeTab();
-  const tabDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+  // Same as captureElement: hide the bar for the screenshot only if it would
+  // land inside the cropped region.
+  const hideBar = Boolean(payload.hideBar);
+  if (hideBar) await sendToTab(tab.id, { type: 'odClipper:hideForCapture' });
+  let tabDataUrl;
+  try {
+    tabDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+  } finally {
+    if (hideBar) await sendToTab(tab.id, { type: 'odClipper:restoreAfterCapture' });
+  }
   const cropped = await cropToRect(tabDataUrl, payload.rect || {}, payload.viewportWidth, payload.dpr);
   const r = await ingest({
     dataUrl: cropped,

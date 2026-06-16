@@ -134,7 +134,8 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
     projectId: string,
     sourceKind: LibrarySourceKind,
     dir?: string,
-  ): Promise<string> {
+    includeElement = false,
+  ): Promise<{ relPath: string; elementRelPath?: string }> {
     const bytesPath = resolveAssetBytesPath(asset, PROJECTS_DIR);
     if (!bytesPath) throw new Error('asset bytes not available');
     const project = getProject(db, projectId);
@@ -146,11 +147,30 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
       subdir,
       project.metadata,
     );
+    const stem = asset.contentHash.slice(0, 12);
     const ext = extForMime(asset.mime, undefined);
-    const name = `${asset.contentHash.slice(0, 12)}${ext}`;
+    const name = `${stem}${ext}`;
     await copyFile(bytesPath, path.join(absDir, name));
     addLibraryAssetSource(db, { assetId: asset.id, sourceKind, projectId });
-    return relDir ? `${relDir}/${name}` : name;
+    const relPath = relDir ? `${relDir}/${name}` : name;
+
+    // Element-pick captures carry the picked node's outerHTML in a sidecar.
+    // When requested, materialize it next to the screenshot so the element's
+    // markup is consumable as a file (not just the flat image).
+    let elementRelPath: string | undefined;
+    if (includeElement) {
+      const sidecar = resolveAssetElementSidecarPath(asset, LIBRARY_DIR);
+      if (sidecar) {
+        const elName = `${stem}.element.html`;
+        try {
+          await copyFile(sidecar, path.join(absDir, elName));
+          elementRelPath = relDir ? `${relDir}/${elName}` : elName;
+        } catch {
+          // No stored markup (older capture / missing sidecar) — image only.
+        }
+      }
+    }
+    return { relPath, elementRelPath };
   }
 
   // Live ingest/enrichment feed. Clipper captures flow through this route, so
@@ -464,8 +484,12 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
     const projectId = typeof req.body?.projectId === 'string' ? req.body.projectId : '';
     if (!projectId) return sendApiError(res, 400, 'BAD_REQUEST', 'projectId is required');
     try {
-      const relPath = await applyAssetToProject(asset, projectId, 'manual-upload', req.body?.dir);
-      res.json({ relPath });
+      const includeElement = req.body?.includeElement === true;
+      const result = await applyAssetToProject(asset, projectId, 'manual-upload', req.body?.dir, includeElement);
+      res.json({
+        relPath: result.relPath,
+        ...(result.elementRelPath ? { elementRelPath: result.elementRelPath } : {}),
+      });
     } catch (err) {
       return sendApiError(res, 500, 'APPLY_FAILED', err instanceof Error ? err.message : String(err));
     }
@@ -553,8 +577,12 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
     const projectId = grant.projectId ?? (typeof req.body?.projectId === 'string' ? req.body.projectId : '');
     if (!projectId) return sendApiError(res, 400, 'BAD_REQUEST', 'projectId is required');
     try {
-      const relPath = await applyAssetToProject(asset, projectId, 'agent-task', req.body?.dir);
-      res.json({ relPath });
+      const includeElement = req.body?.includeElement === true;
+      const result = await applyAssetToProject(asset, projectId, 'agent-task', req.body?.dir, includeElement);
+      res.json({
+        relPath: result.relPath,
+        ...(result.elementRelPath ? { elementRelPath: result.elementRelPath } : {}),
+      });
     } catch (err) {
       return sendApiError(res, 500, 'APPLY_FAILED', err instanceof Error ? err.message : String(err));
     }

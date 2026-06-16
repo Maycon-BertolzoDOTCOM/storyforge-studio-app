@@ -31,7 +31,7 @@ import type {
   DesignToolboxClickProps,
 } from '@open-design/contracts/analytics';
 import { deriveUploadCohort } from '../analytics/upload-tracking';
-import { projectRawUrl, uploadProjectFiles, openFolderDialog, fetchRecentLinkedDirs, pushRecentLinkedDir, dirExists, applyLibraryAsset } from "../providers/registry";
+import { projectRawUrl, uploadProjectFiles, openFolderDialog, fetchRecentLinkedDirs, pushRecentLinkedDir, dirExists, applyLibraryAsset, fetchLibraryAssetElementHtml } from "../providers/registry";
 import { WorkingDirPicker } from './WorkingDirPicker';
 import { patchProject } from "../state/projects";
 import { fetchMcpServers } from "../state/mcp";
@@ -53,8 +53,8 @@ import { buildVisualAnnotationAttachment, commentTargetDisplayName } from '../co
 import { Icon, type IconName } from "./Icon";
 import { ComposerPlusMenu } from './ComposerPlusMenu';
 import { LibraryPicker } from './LibraryPicker';
-import { assetTitle } from './LibraryAssetMeta';
-import type { LibraryAsset } from '@open-design/contracts';
+import { assetTitle, elementMetaOf } from './LibraryAssetMeta';
+import type { LibraryAsset, LibraryElementMeta } from '@open-design/contracts';
 import {
   DESIGN_TOOLBOX_ACTIONS,
   designToolboxActionBadge,
@@ -1370,21 +1370,35 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       const orderStart = reserveAttachmentOrders(assets.length);
       try {
         const applied: ChatAttachment[] = [];
+        // Element-pick captures carry their picked node's markup; collect it so
+        // we can drop the HTML straight into the composer input (the image still
+        // attaches as a normal reference).
+        const elementBlocks: string[] = [];
         let failed = 0;
         for (const asset of assets) {
-          const relPath = await applyLibraryAsset(asset.id, id);
-          if (!relPath) {
+          const res = await applyLibraryAsset(asset.id, id);
+          if (!res?.relPath) {
             failed += 1;
             continue;
           }
           applied.push({
-            path: relPath,
+            path: res.relPath,
             name: assetTitle(asset),
             kind: asset.kind === 'image' ? 'image' : 'file',
           });
+          const element = elementMetaOf(asset);
+          if (element?.hasHtml) {
+            const html = await fetchLibraryAssetElementHtml(asset.id);
+            if (html) elementBlocks.push(formatElementHtmlBlock(asset, element, html));
+          }
         }
         if (applied.length > 0) {
           appendOrderedStagedAttachments(assignChatAttachmentOrders(applied, orderStart));
+        }
+        if (elementBlocks.length > 0) {
+          const existing = editorRef.current?.getText() ?? '';
+          editorRef.current?.insertText((existing.trim() ? '\n\n' : '') + elementBlocks.join('\n\n'));
+          editorRef.current?.focus();
         }
         if (failed > 0) {
           setUploadError(
@@ -2666,6 +2680,31 @@ function buildComposerMentionEntities({
 
 function isFiniteAttachmentOrder(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+// Upper bound on element markup folded into the composer input so a huge node's
+// outerHTML can't swamp the prompt; the screenshot still attaches in full.
+const MAX_ELEMENT_HTML_CHARS = 8000;
+
+/**
+ * Render a captured element's markup as a composer-input block: a one-line
+ * descriptor (selector + rendered size) followed by a fenced HTML code block.
+ * Used when an element-pick library asset is pulled into the chat so the user
+ * sees — and can edit — the element's HTML inline before sending.
+ */
+function formatElementHtmlBlock(
+  asset: LibraryAsset,
+  element: LibraryElementMeta,
+  html: string,
+): string {
+  const descriptor = element.selector || element.tag || assetTitle(asset);
+  const size = element.width && element.height ? ` · ${element.width}×${element.height}` : '';
+  const trimmed = html.trim();
+  const body =
+    trimmed.length > MAX_ELEMENT_HTML_CHARS
+      ? `${trimmed.slice(0, MAX_ELEMENT_HTML_CHARS)}\n<!-- …truncated -->`
+      : trimmed;
+  return `Captured element ${descriptor}${size}\n\n\`\`\`html\n${body}\n\`\`\``;
 }
 
 function normalizeChatAttachmentOrders(attachments: ChatAttachment[]): ChatAttachment[] {
