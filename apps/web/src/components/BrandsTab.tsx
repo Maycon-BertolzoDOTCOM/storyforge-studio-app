@@ -33,6 +33,13 @@ export function BrandsTab({ onApplyDesignSystem }: BrandsTabProps = {}) {
   // preselects which brand the inline preview renders. Undefined on `/brands`.
   const routedBrandId =
     route.kind === 'home' && route.view === 'brands' ? route.brandId : undefined;
+  // EntryShell keeps every sub-view mounted and only toggles visibility, so a
+  // one-shot mount fetch goes stale: a brand that finishes extracting inside
+  // its backing project — or is created/removed from another surface — never
+  // reaches this list until a full reload. `isBrandsView` lets the effects
+  // below reconcile with `/api/brands` whenever the Brands view is the active
+  // one again.
+  const isBrandsView = route.kind === 'home' && route.view === 'brands';
   const [brands, setBrands] = useState<BrandSummary[] | null>(null);
   const [query, setQuery] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -47,9 +54,26 @@ export function BrandsTab({ onApplyDesignSystem }: BrandsTabProps = {}) {
     setBrands(next);
   }, []);
 
+  // Refresh on first activation and on every return to the Brands view, so the
+  // library always reconciles with the backend after the user comes back from
+  // an extraction running in its backing project.
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (isBrandsView) void refresh();
+  }, [isBrandsView, refresh]);
+
+  // While a brand is mid-extraction, poll so its card flips from `extracting`
+  // to the finalized preview without the user leaving and returning. Scoped to
+  // the active view and torn down once nothing is extracting, so a hidden tab
+  // never polls.
+  const hasExtracting = useMemo(
+    () => (brands ?? []).some((b) => b.meta.status === 'extracting'),
+    [brands],
+  );
+  useEffect(() => {
+    if (!isBrandsView || !hasExtracting) return;
+    const id = window.setInterval(() => void refresh(), 4000);
+    return () => window.clearInterval(id);
+  }, [isBrandsView, hasExtracting, refresh]);
 
   // The "Create Brand Kit" home chip routes here and asks the tab to open its
   // New Brand Kit modal. BrandsTab stays mounted across view switches, so we
