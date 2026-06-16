@@ -5388,11 +5388,20 @@ function HtmlViewer({
       baseHref: projectRawUrl(projectId, baseDirFor(file.name)),
       initialSlideIndex: htmlPreviewSlideState.get(previewStateKey)?.active ?? 0,
       selectionBridge: true,
-      editBridge: manualEditRequiresSrcDoc,
+      // Always inject the manual-edit bridge into the PREVIEW srcDoc (not the
+      // export path), so the document is byte-identical across preview /
+      // comment / draw / edit. The bridge boots dormant (`enabled=false`) and
+      // only acts on the host's `od-edit-mode {enabled:true}` postMessage
+      // (sent by syncBridgeModes), with all its handlers gated on `enabled`
+      // and its styles scoped to `html[data-od-edit-mode]`. Gating injection on
+      // edit mode instead changed the srcdoc string on entering Edit, which
+      // re-parses the whole document — the "reload from scratch on switch" the
+      // user hit. Mirrors the always-on tweaks bridge rationale above.
+      editBridge: true,
       paletteBridge: false,
       previewFocusGuard: true,
     }) : ''),
-    [previewSource, effectiveDeck, projectId, file.name, previewStateKey, manualEditRequiresSrcDoc],
+    [previewSource, effectiveDeck, projectId, file.name, previewStateKey],
   );
   const lazySrcDocTransport = useMemo(() => buildLazySrcdocTransport(), []);
   const [srcDocTransportResetKey, setSrcDocTransportResetKey] = useState(0);

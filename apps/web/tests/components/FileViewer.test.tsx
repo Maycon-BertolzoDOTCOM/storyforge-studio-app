@@ -3074,6 +3074,34 @@ describe('FileViewer tweaks toolbar', () => {
     expect(urlFrame.getAttribute('data-od-active')).toBe('true');
   });
 
+  it('always injects the manual-edit bridge into the preview srcDoc so entering Edit does not reload the document', async () => {
+    const { container } = render(
+      <FileViewer projectId="project-1" projectKind="prototype" file={htmlPreviewFile()}
+        liveHtml='<html><body><main data-od-id="hero">Stable doc</main></body></html>'
+      />,
+    );
+
+    // The edit bridge must be present in the preview srcDoc even though Edit is
+    // NOT active — so the document is byte-identical across modes. (Boots
+    // dormant; only acts on the host's od-edit-mode message.)
+    const srcDocBefore = await waitFor(() => {
+      const f = container.querySelector('iframe[data-od-render-mode="srcdoc"]') as HTMLIFrameElement;
+      expect(f.srcdoc).toContain('Stable doc');
+      expect(f.srcdoc).toContain('data-od-edit-bridge');
+      return f.srcdoc;
+    }, { timeout: 3000 });
+
+    // Entering Edit must NOT change the srcDoc document — same string means the
+    // browser does not re-parse/reload it; editing activates via postMessage.
+    clickAgentTool('manual-edit-mode-toggle');
+    await waitFor(() => {
+      const active = container.querySelector('iframe[data-od-render-mode="srcdoc"]') as HTMLIFrameElement;
+      expect(active.getAttribute('data-od-active')).toBe('true');
+    });
+    const srcDocAfter = (container.querySelector('iframe[data-od-render-mode="srcdoc"]') as HTMLIFrameElement).srcdoc;
+    expect(srcDocAfter).toBe(srcDocBefore);
+  });
+
   it('keeps the srcDoc iframe mounted across an annotation toggle once prewarmed (no remount/reload)', async () => {
     const { container } = render(
       <FileViewer projectId="project-1" projectKind="prototype" file={htmlPreviewFile()}
