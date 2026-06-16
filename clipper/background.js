@@ -535,8 +535,35 @@ async function ingestImages(payload) {
   return { count, total: images.length };
 }
 
+// Capture messages that should show a progress indicator. The on-page toolbar
+// shows a rich step strip, but it dies if the page reloads mid-capture (hostile
+// paywall sites do this). A per-tab badge on the EXTENSION ICON survives the
+// reload — it's the one progress surface a page navigation can't take down.
+const CAPTURE_TYPES = new Set([
+  'captureScreenshot', 'capturePageToLibrary', 'downloadFigma',
+  'captureDesignSystemToLibrary', 'captureElement', 'captureRegion',
+  'ingestImages', 'grabImages',
+]);
+
+async function setCaptureBadge(tabId, on) {
+  if (tabId == null) return;
+  try {
+    await chrome.action.setBadgeBackgroundColor({ color: '#7c3aed' });
+    await chrome.action.setBadgeText({ tabId, text: on ? '•••' : '' });
+  } catch {
+    // chrome.action may be unavailable in some embeds; the in-page strip still shows
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
+    const isCapture = Boolean(msg && CAPTURE_TYPES.has(msg.type));
+    let badgeTabId = null;
+    if (isCapture) {
+      badgeTabId = (_sender && _sender.tab && _sender.tab.id) ||
+        (await activeTab().catch(() => null))?.id || null;
+      setCaptureBadge(badgeTabId, true);
+    }
     try {
       switch (msg && msg.type) {
         case 'getStatus': {
@@ -602,6 +629,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       }
     } catch (err) {
       sendResponse({ ok: false, error: (err && err.message) || String(err) });
+    } finally {
+      if (isCapture) setCaptureBadge(badgeTabId, false);
     }
   })();
   return true; // keep the message channel open for the async response
