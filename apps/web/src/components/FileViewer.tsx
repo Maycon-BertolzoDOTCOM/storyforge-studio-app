@@ -5311,6 +5311,22 @@ function HtmlViewer({
     frozenPreviewSrcUrlRef.current = null;
   }
   const effectiveBasePreviewSrcUrl = frozenPreviewSrcUrlRef.current ?? basePreviewSrcUrl;
+  // Switching to a different file/project while an annotation tool is still
+  // open must NOT keep the viewer pinned to the previous artifact. The
+  // per-file annotation data is already reset on file.name change, but the
+  // freeze snapshots and the mode flags would otherwise survive — leaving the
+  // frozen source/URL stuck on the old file until the user manually closes the
+  // tool (and clearing the freeze alone would just re-freeze the old source
+  // before the new file's fetch lands). Close the per-file tools and drop both
+  // freezes on a file/project switch so the new artifact renders live, the way
+  // manualEditFrozenSource is reset just above.
+  useEffect(() => {
+    frozenPreviewSrcUrlRef.current = null;
+    setAnnotationFrozenSource(null);
+    setDrawOverlayOpen(false);
+    setBoardMode(false);
+    setInspectMode(false);
+  }, [projectId, file.name]);
   const activePreviewSrcUrl = (
     previewSrcUrl === effectiveBasePreviewSrcUrl ||
     previewSrcUrl.startsWith(`${effectiveBasePreviewSrcUrl}&`)

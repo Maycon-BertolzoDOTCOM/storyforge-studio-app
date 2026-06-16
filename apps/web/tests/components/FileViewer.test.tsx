@@ -2982,6 +2982,39 @@ describe('FileViewer tweaks toolbar', () => {
     });
   });
 
+  it('drops the annotation freeze when switching files so the new artifact shows immediately', async () => {
+    const { container, rerender } = render(
+      <FileViewer projectId="project-1" projectKind="prototype"
+        file={htmlPreviewFile({ name: 'a.html', path: 'a.html' })}
+        liveHtml='<html><body><main data-od-id="hero">Artifact A</main></body></html>'
+      />,
+    );
+
+    clickAgentTool('draw-overlay-toggle');
+    await waitFor(() => {
+      expect((screen.getByTestId('artifact-preview-frame') as HTMLIFrameElement).getAttribute('data-od-render-mode')).toBe('srcdoc');
+      expect(screen.getByPlaceholderText('Add a note for this mark')).toBeTruthy();
+    });
+
+    // Switch to a different file while Draw is still open. The viewer must not
+    // stay pinned to file A's frozen snapshot — the per-file tool closes and
+    // the new artifact renders live. Regression guard for nettee's review on
+    // the freeze having no projectId/file.name reset.
+    rerender(
+      <FileViewer projectId="project-1" projectKind="prototype"
+        file={htmlPreviewFile({ name: 'b.html', path: 'b.html' })}
+        liveHtml='<html><body><main data-od-id="hero">Artifact B</main></body></html>'
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText('Add a note for this mark')).toBeNull();
+      const urlFrame = container.querySelector('iframe[data-od-render-mode="url-load"]') as HTMLIFrameElement | null;
+      expect(urlFrame?.getAttribute('data-od-active')).toBe('true');
+      expect(urlFrame?.getAttribute('src') ?? '').toContain('b.html');
+    });
+  });
+
   it('preserves URL-loaded preview scroll when opening Draw', async () => {
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       cb(0);
