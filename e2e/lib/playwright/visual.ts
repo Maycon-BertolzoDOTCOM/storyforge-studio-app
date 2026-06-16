@@ -45,6 +45,12 @@ const VISUAL_CONFIG = {
 const visualStableTimeoutMs = 10_000;
 const visualStableFrameCount = 3;
 
+function waitForVisualTimeout(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, visualStableTimeoutMs);
+  });
+}
+
 const MOCK_AGENT = {
   id: 'mock',
   name: 'Mock Agent',
@@ -537,17 +543,22 @@ export async function waitForVisualStable(page: Page): Promise<void> {
 }
 
 async function waitForVisualFrameAssets(page: Page): Promise<void> {
-  for (const frame of page.frames()) {
-    await frame.evaluate(async () => {
-      await document.fonts.ready;
-      await Promise.all(
-        Array.from(document.images, async (image) => {
-          if (image.complete && image.naturalWidth > 0) return;
-          await image.decode().catch(() => {});
+  await Promise.all(
+    page.frames().map((frame) =>
+      Promise.race([
+        frame.evaluate(async () => {
+          await document.fonts.ready;
+          await Promise.all(
+            Array.from(document.images, async (image) => {
+              if (image.complete && image.naturalWidth > 0) return;
+              await image.decode().catch(() => {});
+            }),
+          );
         }),
-      );
-    }).catch(() => {});
-  }
+        waitForVisualTimeout(),
+      ]).catch(() => {}),
+    ),
+  );
 }
 
 async function waitForVisualLayoutStable(page: Page): Promise<void> {

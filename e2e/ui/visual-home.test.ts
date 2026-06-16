@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { ensureRailOpen } from '@/playwright/rail';
 import {
   captureVisual,
@@ -58,6 +59,17 @@ const VISUAL_AMR_AGENT = {
   ],
 } as const;
 
+async function revealVisualHomeTemplates(page: Page) {
+  const home = page.getByTestId('entry-view-home');
+  const hint = home.getByTestId('home-templates-hint');
+  if (await hint.isVisible().catch(() => false)) {
+    await hint.click();
+    await expect(home.locator('.home-templates-reveal')).toHaveClass(/is-revealed/);
+    await expect(home.locator('.home-templates-reveal__body')).not.toHaveAttribute('inert', '');
+  }
+  return home;
+}
+
 test('[P2] captures the onboarding runtime selection surface', async ({ page }) => {
   await configureVisualPage(page, {
     projects: [],
@@ -104,7 +116,7 @@ test('[P2] captures the home plugin catalog surface', async ({ page }) => {
   // `plugins-home-section` exists in both the home and plugins views, so
   // scope the lookup to the home view to keep these strict-mode locators
   // unambiguous.
-  const home = page.getByTestId('entry-view-home');
+  const home = await revealVisualHomeTemplates(page);
   await expect(page.getByTestId('recent-projects-strip')).toBeVisible();
   const community = home.getByTestId('plugins-home-section');
   await expect(community).toBeVisible();
@@ -119,7 +131,7 @@ test('[P2] captures the home plugin filtered surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
 
-  const home = page.getByTestId('entry-view-home');
+  const home = await revealVisualHomeTemplates(page);
   await home.getByTestId('plugins-home-pill-category-deck').click();
   await expect(home.locator('article.plugins-home__card[data-plugin-id="visual-deck-writer"]')).toBeVisible();
 
@@ -130,7 +142,7 @@ test('[P2] captures the home plugin detail surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
 
-  const home = page.getByTestId('entry-view-home');
+  const home = await revealVisualHomeTemplates(page);
   await home.getByTestId('plugins-home-pill-category-deck').click();
   const card = home.locator('article.plugins-home__card[data-plugin-id="visual-deck-writer"]');
   await expect(card).toBeVisible();
@@ -147,7 +159,7 @@ test('[P2] captures the plugin detail share menu surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
 
-  const home = page.getByTestId('entry-view-home');
+  const home = await revealVisualHomeTemplates(page);
   await home.getByTestId('plugins-home-pill-category-deck').click();
   const card = home.locator('article.plugins-home__card[data-plugin-id="visual-deck-writer"]');
   await expect(card).toBeVisible();
@@ -189,7 +201,7 @@ test('[P2] captures the home plugin use staged surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
 
-  const home = page.getByTestId('entry-view-home');
+  const home = await revealVisualHomeTemplates(page);
   await home.getByTestId('plugins-home-details-visual-prototype-starter').click({ force: true });
   await expect(page.getByRole('dialog', { name: /Prototype Starter details/i })).toBeVisible();
   await page.getByTestId('plugin-details-use-visual-prototype-starter').click();
@@ -203,7 +215,7 @@ test('[P2] captures the home plugin use with query surface', async ({ page }) =>
   await configureVisualPage(page);
   await gotoVisualHome(page);
 
-  const home = page.getByTestId('entry-view-home');
+  const home = await revealVisualHomeTemplates(page);
   await home.getByTestId('plugins-home-pill-category-deck').click();
   const card = home.locator('article.plugins-home__card[data-plugin-id="visual-deck-writer"]');
   await expect(card).toBeVisible();
