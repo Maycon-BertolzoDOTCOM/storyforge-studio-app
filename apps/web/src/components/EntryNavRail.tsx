@@ -150,22 +150,13 @@ export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose }
           <Icon name="folder" size={18} />
         </NavButton>
         <NavButton
-          active={view === 'brands'}
-          ariaLabel={t('entry.navBrands')}
-          tooltip={t('entry.navBrands')}
-          onClick={() => selectView('brands')}
-          testId="entry-nav-brands"
-        >
-          <Icon name="swatchbook" size={18} />
-        </NavButton>
-        <NavButton
           active={view === 'design-systems'}
           ariaLabel={t('entry.navDesignSystems')}
           tooltip={t('entry.navDesignSystems')}
           onClick={() => selectView('design-systems')}
           testId="entry-nav-design-systems"
         >
-          <Icon name="blocks" size={18} />
+          <Icon name="swatchbook" size={18} />
         </NavButton>
         <NavButton
           active={view === 'library'}

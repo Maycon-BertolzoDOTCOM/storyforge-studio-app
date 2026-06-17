@@ -2340,20 +2340,18 @@ function OnboardingView({
               <OnboardingPanelHeader
                 title={t('onboarding.brandTitle')}
                 body={t('onboarding.brandSubtitle')}
-                trailing={
-                  <button
-                    type="button"
-                    className="onboarding-view__skip-link"
-                    onClick={() => {
-                      void handlePrimaryAction();
-                    }}
-                    disabled={onboardingNavigationLocked}
-                  >
-                    <span>{t('onboarding.brandSkip')}</span>
-                    <Icon name="chevron-right" size={14} aria-hidden />
-                  </button>
-                }
               />
+              <div className="onboarding-view__actions onboarding-view__actions--top">
+                <button
+                  type="button"
+                  className="onboarding-view__primary"
+                  onClick={handlePrimaryAction}
+                  disabled={newsletterSubmitting}
+                  aria-busy={newsletterSubmitting ? true : undefined}
+                >
+                  <span>{primaryActionLabel}</span>
+                </button>
+              </div>
               <label className="onboarding-view__email-field">
                 <span className="onboarding-view__email-label">
                   {t('newBrand.urlLabel')}
@@ -2380,18 +2378,28 @@ function OnboardingView({
                 />
               </label>
               <div className="onboarding-view__email-field">
-                <button
-                  type="button"
-                  className={`onboarding-view__mini-button${brandExtractActive ? ' is-loading' : ''}`}
-                  onClick={() => {
-                    void handleOnboardingBrandExtract();
-                  }}
-                  disabled={!brandUrl.trim() || brandExtractActive}
-                >
-                  {brandExtractActive
-                    ? t('brand.extracting')
-                    : t('newBrand.extract')}
-                </button>
+                <div className="onboarding-view__extract-row">
+                  <button
+                    type="button"
+                    className="onboarding-view__secondary onboarding-view__extract-back"
+                    onClick={handleBackWithTracking}
+                    disabled={onboardingNavigationLocked}
+                  >
+                    {t('settings.onboardingBack')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`onboarding-view__mini-button${brandExtractActive ? ' is-loading' : ''}`}
+                    onClick={() => {
+                      void handleOnboardingBrandExtract();
+                    }}
+                    disabled={!brandUrl.trim() || brandExtractActive}
+                  >
+                    {brandExtractActive
+                      ? t('brand.extracting')
+                      : t('newBrand.extract')}
+                  </button>
+                </div>
                 {brandExtractActive ? (
                   <span
                     className="onboarding-view__action-status"
@@ -2957,23 +2965,10 @@ function renderOnboardingProviderModelsMessage(
   }
 }
 
-function OnboardingPanelHeader({
-  title,
-  body,
-  trailing,
-}: {
-  title: string;
-  body: string;
-  trailing?: ReactNode;
-}) {
+function OnboardingPanelHeader({ title, body }: { title: string; body: string }) {
   return (
     <div className="onboarding-view__panel-head">
-      <div className="onboarding-view__panel-head-row">
-        <h2>{title}</h2>
-        {trailing ? (
-          <div className="onboarding-view__panel-head-trailing">{trailing}</div>
-        ) : null}
-      </div>
+      <h2>{title}</h2>
       <p>{body}</p>
     </div>
   );

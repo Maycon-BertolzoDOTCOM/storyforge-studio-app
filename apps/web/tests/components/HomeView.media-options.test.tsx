@@ -67,24 +67,29 @@ describe('HomeView media composer options', () => {
     expect(document.body.contains(popover)).toBe(true);
   });
 
-  it('shows only the design-system pill for Image/Video and no pills for HyperFrames/Audio', async () => {
+  it('surfaces the persistent design-system picker and no footer pills for Image/Video or HyperFrames/Audio', async () => {
     stubFetch();
     renderHome();
 
-    // Image/Video keep only the design-system picker; ratio / duration / model /
-    // resolution are no longer pre-flight controls — the agent asks for those
-    // during the run (mirroring prototype/deck).
+    // The design-system picker is now the persistent row below the composer, so
+    // it is present for every kind and no longer a footer pill. Image/Video add
+    // no inline footer pills either; ratio / duration / model / resolution are
+    // asked for during the run (mirroring prototype/deck).
+    expect(screen.getByTestId('home-hero-design-system-trigger')).toBeTruthy();
+
     await clickHomeRailChip('image');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     expect(promptIsEmpty()).toBe(true);
+    expect(screen.queryByTestId('home-hero-footer-option-designSystem')).toBeNull();
     expect(screen.queryByTestId('home-hero-footer-option-model')).toBeNull();
     expect(screen.queryByTestId('home-hero-footer-option-ratio')).toBeNull();
     expect(screen.queryByTestId('home-hero-footer-option-resolution')).toBeNull();
     expect(screen.queryByTestId('home-hero-footer-option-duration')).toBeNull();
 
     await clickHomeRailChip('video');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     expect(promptIsEmpty()).toBe(true);
+    expect(screen.queryByTestId('home-hero-footer-option-designSystem')).toBeNull();
     expect(screen.queryByTestId('home-hero-footer-option-model')).toBeNull();
     expect(screen.queryByTestId('home-hero-footer-option-ratio')).toBeNull();
     expect(screen.queryByTestId('home-hero-footer-option-duration')).toBeNull();
@@ -159,12 +164,12 @@ describe('HomeView media composer options', () => {
     renderHome();
 
     await clickHomeRailChip('image');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     expect(screen.queryByRole('dialog', { name: /replace current prompt/i })).toBeNull();
 
     await setHomePrompt('Make this prompt personally tuned.');
     await clickHomeRailChip('video');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     expect(screen.queryByRole('dialog', { name: /replace current prompt/i })).toBeNull();
   });
 
@@ -188,13 +193,13 @@ describe('HomeView media composer options', () => {
     renderHome();
 
     await clickHomeRailChip('image');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     expect(screen.queryByRole('combobox', { name: 'Template' })).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Model' })).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Ratio' })).toBeNull();
 
     await clickHomeRailChip('video');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     expect(screen.queryByRole('combobox', { name: 'Duration' })).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Template' })).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Model' })).toBeNull();
@@ -247,7 +252,7 @@ describe('HomeView media composer options', () => {
     const view = render(<HomeView {...props} />);
 
     await clickHomeRailChip('image');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     await setHomePrompt('Create a campaign image.');
     await submitHome();
     await waitFor(() => {
@@ -283,7 +288,7 @@ describe('HomeView media composer options', () => {
     });
 
     await clickHomeRailChip('video');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     await chooseOption('designSystem', 'brand-alpha', 'Brand Alpha');
     setHomePrompt('Create a launch teaser.');
     await submitHome();
@@ -316,7 +321,7 @@ describe('HomeView media composer options', () => {
     renderHome({ onSubmit });
 
     await clickHomeRailChip('video');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     await setHomePrompt('Create a launch teaser.');
     await submitHome();
 
@@ -342,7 +347,7 @@ describe('HomeView media composer options', () => {
     renderHome({ onSubmit });
 
     await clickHomeRailChip('video');
-    await waitFor(() => expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('home-hero-active-type-chip')).toBeTruthy());
     await setHomePrompt('Create a launch teaser.');
     await submitHome();
 
@@ -466,16 +471,16 @@ function stubFetch(options: { elevenLabsVoices?: Array<{ voiceId: string; name: 
 }
 
 async function openOption(name: string) {
-  // The inline `{{slot}}` prompt-widget path (home-hero-prompt-slot-*) is gone;
-  // media options now always open from the footer options row.
-  fireEvent.click(await screen.findByTestId(`home-hero-footer-option-${name}`));
-  // The design-system field now renders the shared DesignSystemPicker, whose
-  // popover is portaled to document.body as `project-ds-picker-popover`. Other
-  // footer fields still use the inline FooterSelectOption `-menu`.
+  // The design-system picker moved out of the footer to the persistent row
+  // below the composer; it renders the shared DesignSystemPicker, whose popover
+  // is portaled to document.body as `project-ds-picker-popover`. Any other
+  // footer field still opens from the inline FooterSelectOption `-menu`.
   if (name === 'designSystem') {
+    fireEvent.click(await screen.findByTestId('home-hero-design-system-trigger'));
     await waitFor(() => expect(screen.getByTestId('project-ds-picker-popover')).toBeTruthy());
     return;
   }
+  fireEvent.click(await screen.findByTestId(`home-hero-footer-option-${name}`));
   await waitFor(() => expect(screen.getByTestId(`home-hero-footer-option-${name}-menu`)).toBeTruthy());
 }
 

@@ -41,6 +41,7 @@ import {
 } from '../runtime/design-system-package-audit';
 import { deriveFileOps } from '../runtime/file-ops';
 import { latestTodosFromEvents } from '../runtime/todos';
+import { useBrandExtract } from '../runtime/useBrandExtract';
 import {
   createFileSystemReadError,
   FILE_SYSTEM_READ_ERROR_MESSAGE,
@@ -68,6 +69,7 @@ import { takeDesignSystemAssetSeed } from '../state/libraryHandoff';
 import { decideAutoOpenAfterWrite } from './auto-open-file';
 import { ChatPane } from './ChatPane';
 import { DesignSystemAssetDropzone } from './DesignSystemAssetDropzone';
+import { BrandReferencePicker } from './BrandReferencePicker';
 import { DesignSystemCreateHero } from './DesignSystemCreateHero';
 import { LibraryPicker } from './LibraryPicker';
 import { notifyConnectorsChanged } from './connectors-events';
@@ -330,6 +332,14 @@ export function DesignSystemCreationFlow({
   const [generationStarting, setGenerationStarting] = useState(false);
   const [sourceProcessingCount, setSourceProcessingCount] = useState(0);
   const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);
+  // "Start from a brand" reference picker on the URL field + the Advanced
+  // disclosure that hides the lower-frequency source inputs.
+  const [brandPickerOpen, setBrandPickerOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  // Two-phase brand/design-system extraction kickoff (POST /api/brands):
+  // a fast programmatic pass registers a usable user:<id> design system
+  // synchronously, then the brand-extract skill enriches it in the project.
+  const brandExtract = useBrandExtract();
   const composioConfigured = isComposioConfigured(config?.composio);
   const [githubConnector, setGithubConnector] = useState<ConnectorDetail | null>(null);
   const [githubConnectorLoading, setGithubConnectorLoading] = useState(false);
@@ -580,6 +590,22 @@ export function DesignSystemCreationFlow({
     }));
   }
 
+  // "Start from a brand" — picking a brand from the reference gallery just
+  // fills the website field with its domain; the user then hits Generate to
+  // extract. (It is a reference entry, not an immediate extraction kickoff.)
+  function handlePickBrandReference(domain: string) {
+    const nextUrl = normalizeSourceUrl(`https://${domain}`);
+    if (!nextUrl) return;
+    setError(null);
+    setBrandPickerOpen(false);
+    emitCreateFormClick('source_url_add');
+    setState((curr) => ({
+      ...curr,
+      sourceUrl: '',
+      sourceUrls: Array.from(new Set([...curr.sourceUrls, nextUrl])),
+    }));
+  }
+
   function handleAddFigmaUrl() {
     const nextUrl = normalizeFigmaUrl(state.figmaUrl);
     if (!nextUrl) {
@@ -772,57 +798,35 @@ export function DesignSystemCreationFlow({
       });
     }
     try {
-      const title = inferDesignSystemTitle(state);
-      const created = await createDesignSystemDraft({
-        title,
-        summary: state.company,
-        category: 'Custom',
-        surface: 'web',
-        status: 'draft',
-        artifactMode: 'agent-managed',
-        sourceNotes: buildSourceNotes(state),
-        provenance: buildProvenance(state),
-      });
-      if (!created) {
-        setError('Could not generate this design system.');
+      // Two-phase extraction. The website link (a real site, not a GitHub repo)
+      // drives the kickoff. POST /api/brands runs a fast programmatic pass that
+      // registers a usable user:<id> design system synchronously, then stands up
+      // a backing project where the brand-extract skill enriches it live.
+      const extractUrl =
+        nonGithubSourceUrlsFromState(state)[0] ?? sourceUrlsFromState(state)[0] ?? '';
+      if (!extractUrl) {
+        setError('Add a website (or pick a brand) to extract a design system from.');
         setStep('setup');
-        emitCreateResult('failed', undefined, 'DS_DRAFT_CREATE_FAILED', undefined);
-        onGenerateSettled?.(snapshot, {
-          result: 'failed',
-          errorCode: 'DS_DRAFT_CREATE_FAILED',
-        });
+        emitCreateResult('failed', undefined, 'DS_EXTRACT_NO_URL', undefined);
+        onGenerateSettled?.(snapshot, { result: 'failed', errorCode: 'DS_EXTRACT_NO_URL' });
         return;
       }
-      const workspace = await ensureDesignSystemWorkspace(created.id);
-      if (!workspace) {
-        setError('Could not open the design system workspace.');
+      const result = await brandExtract.run(extractUrl);
+      if (!result) {
+        setError('Could not start the extraction. Check the link and try again.');
         setStep('setup');
-        emitCreateResult('failed', created.id, 'DS_WORKSPACE_OPEN_FAILED', undefined);
-        onGenerateSettled?.(snapshot, {
-          result: 'failed',
-          errorCode: 'DS_WORKSPACE_OPEN_FAILED',
-        });
+        emitCreateResult('failed', undefined, 'DS_EXTRACT_START_FAILED', undefined);
+        onGenerateSettled?.(snapshot, { result: 'failed', errorCode: 'DS_EXTRACT_START_FAILED' });
         return;
       }
-      const project = workspace.project;
-      const setupState = state;
-      const connector = githubConnector;
-      onCreated(project.id, project);
-      emitCreateResult('success', created.id, undefined, project.id);
+      // The backing project was just created daemon-side and is not in the local
+      // `projects` list yet — hydrate it so onCreated can prepend it before
+      // navigating into the live extraction.
+      const project = (await getProject(result.projectId).catch(() => undefined)) ?? undefined;
+      void onSystemsRefresh?.();
+      onCreated(result.projectId, project);
+      emitCreateResult('success', result.id, undefined, result.projectId);
       onGenerateSettled?.(snapshot, { result: 'success' });
-      scheduleAfterProjectHandoff(() => {
-        void prepareCreatedDesignSystemProject({
-          project,
-          state: setupState,
-          composioConfigured,
-          githubConnector: connector,
-          onProjectPrepared,
-          onSystemsRefresh,
-          analyticsTrack: analytics.track,
-          ingestEntryFrom,
-          designSystemId: created.id,
-        });
-      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not prepare the design system project.');
       setStep('setup');
@@ -840,8 +844,8 @@ export function DesignSystemCreationFlow({
     return (
       <div className="ds-setup-shell ds-setup-shell--center">
         <div className="ds-setup-center-card">
-          <h1>It will take about 5 minutes to generate your design system.</h1>
-          <p>You can step away. Keep the tab open in the background.</p>
+          <h1>Open Design will extract your design system.</h1>
+          <p>You'll land in a project that fills in live — logo, palette, typography, imagery — as it measures your brand. Keep the tab open.</p>
           <div className="ds-setup-actions">
             <Button variant="ghost" onClick={() => setStep('setup')}>
               <Icon name="arrow-left" />
@@ -853,7 +857,7 @@ export function DesignSystemCreationFlow({
               onClick={() => void generate()}
             >
               <Icon name="sparkles" />
-              {generationStarting ? 'Opening project...' : 'Generate'}
+              {generationStarting ? 'Starting extraction...' : 'Extract design system'}
             </Button>
           </div>
         </div>
@@ -893,11 +897,11 @@ export function DesignSystemCreationFlow({
           </span>
           <Button
             variant="primary"
-            disabled={!state.company.trim()}
+            disabled={sourceUrlsFromState(state).length === 0}
             onClick={() => {
               emitCreateFormClick('continue_to_generation');
-              if (!state.company.trim()) {
-                setError('Tell Open Design about the company or design system first.');
+              if (sourceUrlsFromState(state).length === 0) {
+                setError('Add a website (or pick a brand) to extract a design system from.');
                 return;
               }
               setStep('confirm');
@@ -933,17 +937,17 @@ export function DesignSystemCreationFlow({
         </label>
 
         <section className="ds-resource-section">
-          <h2>Add source material <span>(optional)</span></h2>
-          <p>Use anything that shows your current style.</p>
+          <h2>Extract from a website</h2>
+          <p>Paste a link (or pick a brand) and add any images that show your style. Open Design measures it into a complete design system.</p>
           <div className="ds-resource-card">
             <div className="ds-resource-row">
-              <strong>Website or repo</strong>
+              <strong>Website</strong>
               <div className="ds-resource-inline">
                 <input
                   value={state.sourceUrl}
                   onChange={(event) => setState((curr) => ({ ...curr, sourceUrl: event.target.value }))}
                   onKeyDown={handleSourceUrlKeyDown}
-                  placeholder="https://example.com or https://github.com/owner/repo"
+                  placeholder="https://example.com"
                 />
                 <button
                   type="button"
@@ -953,6 +957,25 @@ export function DesignSystemCreationFlow({
                 >
                   Add
                 </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  aria-expanded={brandPickerOpen}
+                  onClick={() => setBrandPickerOpen((open) => !open)}
+                >
+                  <Icon name="sparkles" />
+                  Start from a brand
+                </button>
+              </div>
+              <div className={`accordion-collapsible${brandPickerOpen ? ' open' : ''}`}>
+                <div className="accordion-collapsible-inner">
+                  <div className="ds-brand-reference-panel" style={{ maxHeight: 380, overflowY: 'auto' }}>
+                    <BrandReferencePicker
+                      variant="compact"
+                      onPick={(brand) => handlePickBrandReference(brand.domain)}
+                    />
+                  </div>
+                </div>
               </div>
               {state.sourceUrls.length > 0 ? (
                 <div className="ds-source-link-list" aria-label="Added source links">
@@ -989,112 +1012,9 @@ export function DesignSystemCreationFlow({
                   })}
                 </div>
               ) : null}
-              <GitHubRepositoryAccessPanel
-                composioConfigured={composioConfigured}
-                connector={githubConnector}
-                loading={githubConnectorLoading}
-                action={githubConnectorAction}
-                authorizationPending={githubAuthorizationPending}
-                authorizationUrl={githubAuthorizationUrl}
-                error={githubConnectorError}
-                onOpenConnectorsTab={onOpenConnectorsTab}
-                onToggleMethods={(expanded) => emitCreateFormClick('show_access_methods', expanded)}
-                onConnect={() => void handleConnectGithub()}
-                onOpenAuthorization={() => openConnectorAuthorizationUrl(githubAuthorizationUrl)}
-                onDisconnect={() => void handleDisconnectGithub()}
-              />
-            </div>
-            <DropZone
-              label="Link local code"
-              helper="Use a folder or selected files from this computer."
-              prompt="Drag a folder here or browse"
-              names={localCodeSourceLabels(state)}
-              directory
-              onZoneClick={() => emitCreateFormClick('browse_folder')}
-              onBrowseFolder={() => void handlePickCodeFolder()}
-              onRemoveName={handleRemoveCodeFolder}
-              onError={setError}
-              onProcessingStart={beginSourceProcessing}
-              onFiles={(_names, files) => {
-                const stagedFiles = selectLocalCodeFiles(files);
-                const stagedNames = stagedFiles.map((file) => localCodeRelativePath(file));
-                emitDsFileUpload('local_code', files, stagedFiles);
-                setState((curr) => ({
-                  ...curr,
-                  codeFiles: Array.from(new Set([...curr.codeFiles, ...stagedNames])),
-                  codeFileObjects: dedupeLocalCodeFiles([...curr.codeFileObjects, ...stagedFiles]),
-                }));
-              }}
-            />
-            <DropZone
-              label="Upload .fig"
-              helper="Decoded on your machine into real tokens, components & assets — no Figma account."
-              prompt="Drop .fig here or browse"
-              accept=".fig"
-              names={state.figFiles}
-              onZoneClick={() => emitCreateFormClick('upload_fig')}
-              onError={setError}
-              onProcessingStart={beginSourceProcessing}
-              onFiles={(_names, files) => {
-                const stagedFiles = selectFigmaFiles(files);
-                const stagedNames = stagedFiles.map((file) => resourceRelativePath(file));
-                emitDsFileUpload('fig', files, stagedFiles);
-                setState((curr) => ({
-                  ...curr,
-                  figFiles: Array.from(new Set([...curr.figFiles, ...stagedNames])),
-                  figFileObjects: dedupeResourceFiles([...curr.figFileObjects, ...stagedFiles]),
-                }));
-              }}
-            />
-            <div className="ds-resource-row">
-              <strong>Figma URL</strong>
-              <div className="ds-resource-inline">
-                <input
-                  value={state.figmaUrl}
-                  onChange={(event) => setState((curr) => ({ ...curr, figmaUrl: event.target.value }))}
-                  onKeyDown={handleFigmaUrlKeyDown}
-                  placeholder="https://figma.com/design/… or /file/…"
-                />
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={!state.figmaUrl.trim()}
-                  onClick={handleAddFigmaUrl}
-                >
-                  Add
-                </button>
-              </div>
-              {state.figmaUrls.length > 0 ? (
-                <div className="ds-source-link-list" aria-label="Added Figma URLs">
-                  {state.figmaUrls.map((url) => (
-                    <span className="ds-source-link-chip" key={url}>
-                      <a
-                        className="ds-source-link-preview"
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`Open ${figmaUrlLabel(url)}`}
-                        title={`Open ${figmaUrlLabel(url)}`}
-                      >
-                        <Icon name="import" />
-                      </a>
-                      {figmaUrlLabel(url)}
-                      <button
-                        type="button"
-                        className="ds-source-link-remove"
-                        aria-label={`Remove ${figmaUrlLabel(url)}`}
-                        onClick={() => handleRemoveFigmaUrl(url)}
-                      >
-                        x
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              <p>Saved as a Figma design source. The agent uses it as the canonical reference; export a .fig above for a full offline decode.</p>
             </div>
             <div className="ds-resource-row ds-resource-row--assets">
-              <strong>Add assets</strong>
+              <strong>Add images</strong>
               <DesignSystemAssetDropzone
                 files={state.assetFileObjects}
                 onAddFiles={handleAssetUpload}
@@ -1106,20 +1026,141 @@ export function DesignSystemCreationFlow({
                 }}
               />
             </div>
+            <div className="ds-resource-advanced">
+              <button
+                type="button"
+                className="ghost ds-resource-advanced-toggle"
+                aria-expanded={advancedOpen}
+                onClick={() => setAdvancedOpen((open) => !open)}
+              >
+                <Icon name={advancedOpen ? 'chevron-down' : 'chevron-right'} />
+                Advanced — repo, local code, Figma
+              </button>
+              <div className={`accordion-collapsible${advancedOpen ? ' open' : ''}`}>
+                <div className="accordion-collapsible-inner">
+                  <div className="ds-resource-row">
+                    <strong>GitHub repo</strong>
+                    <GitHubRepositoryAccessPanel
+                      composioConfigured={composioConfigured}
+                      connector={githubConnector}
+                      loading={githubConnectorLoading}
+                      action={githubConnectorAction}
+                      authorizationPending={githubAuthorizationPending}
+                      authorizationUrl={githubAuthorizationUrl}
+                      error={githubConnectorError}
+                      onOpenConnectorsTab={onOpenConnectorsTab}
+                      onToggleMethods={(expanded) => emitCreateFormClick('show_access_methods', expanded)}
+                      onConnect={() => void handleConnectGithub()}
+                      onOpenAuthorization={() => openConnectorAuthorizationUrl(githubAuthorizationUrl)}
+                      onDisconnect={() => void handleDisconnectGithub()}
+                    />
+                  </div>
+                  <DropZone
+                    label="Link local code"
+                    helper="Use a folder or selected files from this computer."
+                    prompt="Drag a folder here or browse"
+                    names={localCodeSourceLabels(state)}
+                    directory
+                    onZoneClick={() => emitCreateFormClick('browse_folder')}
+                    onBrowseFolder={() => void handlePickCodeFolder()}
+                    onRemoveName={handleRemoveCodeFolder}
+                    onError={setError}
+                    onProcessingStart={beginSourceProcessing}
+                    onFiles={(_names, files) => {
+                      const stagedFiles = selectLocalCodeFiles(files);
+                      const stagedNames = stagedFiles.map((file) => localCodeRelativePath(file));
+                      emitDsFileUpload('local_code', files, stagedFiles);
+                      setState((curr) => ({
+                        ...curr,
+                        codeFiles: Array.from(new Set([...curr.codeFiles, ...stagedNames])),
+                        codeFileObjects: dedupeLocalCodeFiles([...curr.codeFileObjects, ...stagedFiles]),
+                      }));
+                    }}
+                  />
+                  <DropZone
+                    label="Upload .fig"
+                    helper="Decoded on your machine into real tokens, components & assets — no Figma account."
+                    prompt="Drop .fig here or browse"
+                    accept=".fig"
+                    names={state.figFiles}
+                    onZoneClick={() => emitCreateFormClick('upload_fig')}
+                    onError={setError}
+                    onProcessingStart={beginSourceProcessing}
+                    onFiles={(_names, files) => {
+                      const stagedFiles = selectFigmaFiles(files);
+                      const stagedNames = stagedFiles.map((file) => resourceRelativePath(file));
+                      emitDsFileUpload('fig', files, stagedFiles);
+                      setState((curr) => ({
+                        ...curr,
+                        figFiles: Array.from(new Set([...curr.figFiles, ...stagedNames])),
+                        figFileObjects: dedupeResourceFiles([...curr.figFileObjects, ...stagedFiles]),
+                      }));
+                    }}
+                  />
+                  <div className="ds-resource-row">
+                    <strong>Figma URL</strong>
+                    <div className="ds-resource-inline">
+                      <input
+                        value={state.figmaUrl}
+                        onChange={(event) => setState((curr) => ({ ...curr, figmaUrl: event.target.value }))}
+                        onKeyDown={handleFigmaUrlKeyDown}
+                        placeholder="https://figma.com/design/… or /file/…"
+                      />
+                      <button
+                        type="button"
+                        className="ghost"
+                        disabled={!state.figmaUrl.trim()}
+                        onClick={handleAddFigmaUrl}
+                      >
+                        Add
+                      </button>
+                    </div>
+                    {state.figmaUrls.length > 0 ? (
+                      <div className="ds-source-link-list" aria-label="Added Figma URLs">
+                        {state.figmaUrls.map((url) => (
+                          <span className="ds-source-link-chip" key={url}>
+                            <a
+                              className="ds-source-link-preview"
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={`Open ${figmaUrlLabel(url)}`}
+                              title={`Open ${figmaUrlLabel(url)}`}
+                            >
+                              <Icon name="import" />
+                            </a>
+                            {figmaUrlLabel(url)}
+                            <button
+                              type="button"
+                              className="ds-source-link-remove"
+                              aria-label={`Remove ${figmaUrlLabel(url)}`}
+                              onClick={() => handleRemoveFigmaUrl(url)}
+                            >
+                              x
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    <p>Saved as a Figma design source. The agent uses it as the canonical reference; export a .fig above for a full offline decode.</p>
+                  </div>
+                  {embedded ? null : (
+                    <label className="ds-setup-field">
+                      <span>Notes</span>
+                      <Textarea
+                        rows={4}
+                        value={state.notes}
+                        onChange={(event) => setState((curr) => ({ ...curr, notes: event.target.value }))}
+                        placeholder="e.g. We use a warm, earthy color palette with rounded corners. Our brand voice is playful but professional..."
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        {embedded ? null : (
-          <label className="ds-setup-field">
-            <span>Notes</span>
-            <Textarea
-              rows={4}
-              value={state.notes}
-              onChange={(event) => setState((curr) => ({ ...curr, notes: event.target.value }))}
-              placeholder="e.g. We use a warm, earthy color palette with rounded corners. Our brand voice is playful but professional..."
-            />
-          </label>
-        )}
         {error ? <div className="ds-editor-error">{error}</div> : null}
         {embedded ? (
           <div className="ds-setup-actions ds-setup-actions--embedded">
@@ -1135,11 +1176,11 @@ export function DesignSystemCreationFlow({
             </Button>
             <Button
               variant="primary"
-              disabled={!state.company.trim()}
+              disabled={sourceUrlsFromState(state).length === 0}
               onClick={() => {
                 emitCreateFormClick('continue_to_generation');
-                if (!state.company.trim()) {
-                  setError('Tell Open Design about the company or design system first.');
+                if (sourceUrlsFromState(state).length === 0) {
+                  setError('Add a website (or pick a brand) to extract a design system from.');
                   return;
                 }
                 setStep('confirm');

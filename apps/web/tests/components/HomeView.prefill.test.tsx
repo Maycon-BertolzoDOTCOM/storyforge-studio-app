@@ -731,13 +731,18 @@ describe('HomeView prompt handoff', () => {
     expect(fetchMock.mock.calls.some(([url]) => (
       typeof url === 'string' && url.includes('/api/plugins/example-web-prototype/apply')
     ))).toBe(false);
+    // The design-system picker is now a persistent control in the row below the
+    // composer (next to the working-directory picker), available for every
+    // product kind rather than gated on the prototype/deck footer.
     expect(
-      screen.getByTestId('home-hero-footer-option-designSystem').textContent,
+      screen.getByTestId('home-hero-design-system-trigger').textContent,
     ).toContain('Refly Design System');
     // Fidelity is no longer a prototype footer control — the agent asks for it
-    // in discovery instead. Only the design-system picker stays in the footer.
+    // in discovery instead.
     expect(screen.queryByTestId('home-hero-footer-option-fidelity')).toBeNull();
-    expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy();
+    // The design-system footer pill is gone; the persistent picker replaces it.
+    expect(screen.queryByTestId('home-hero-footer-option-designSystem')).toBeNull();
+    expect(screen.getByTestId('home-hero-design-system-trigger')).toBeTruthy();
     expect(homeHeroPromptValue()).toBe('');
     expect(screen.getByTestId('home-hero-plugin-presets')).toBeTruthy();
     // Inline `{{slot}}` prompt widgets were removed in the Lexical migration;
@@ -747,8 +752,7 @@ describe('HomeView prompt handoff', () => {
     expect(screen.queryByTestId('home-hero-prompt-slot-designSystem')).toBeNull();
     expect(screen.queryByTestId('home-hero-prompt-slot-template')).toBeNull();
     // The inline plugin inputs form was removed from the Home composer, so the
-    // non-footer inputs (artifactKind / audience / template) no longer render;
-    // fidelity / designSystem still surface as footer options above.
+    // non-footer inputs (artifactKind / audience / template) no longer render.
     expect(screen.queryByTestId('plugin-inputs-form')).toBeNull();
 
     await setPromptAndSettle('Build a pricing-page prototype.');
@@ -827,7 +831,7 @@ describe('HomeView prompt handoff', () => {
       expect(screen.getByTestId('home-hero-active-type-chip').textContent).toContain('Prototype');
     });
     expect(
-      screen.getByTestId('home-hero-footer-option-designSystem').textContent,
+      screen.getByTestId('home-hero-design-system-trigger').textContent,
     ).toContain('No design system');
 
     await setPromptAndSettle('Build a pricing-page prototype.');
@@ -887,19 +891,19 @@ describe('HomeView prompt handoff', () => {
     // The personal default pre-selects, as before.
     await waitFor(() => {
       expect(
-        screen.getByTestId('home-hero-footer-option-designSystem').textContent,
+        screen.getByTestId('home-hero-design-system-trigger').textContent,
       ).toContain('Refly Design System');
     });
 
     // Open the shared design-system picker popover and pick the explicit
     // "No design system" row.
-    fireEvent.click(screen.getByTestId('home-hero-footer-option-designSystem'));
+    fireEvent.click(screen.getByTestId('home-hero-design-system-trigger'));
     const popover = await screen.findByTestId('project-ds-picker-popover');
     const noneOption = await within(popover).findByText('No design system');
     fireEvent.mouseDown(noneOption);
     await waitFor(() => {
       expect(
-        screen.getByTestId('home-hero-footer-option-designSystem').textContent,
+        screen.getByTestId('home-hero-design-system-trigger').textContent,
       ).toContain('No design system');
     });
 
@@ -958,11 +962,13 @@ describe('HomeView prompt handoff', () => {
       typeof url === 'string' && url.includes('/api/plugins/example-web-prototype/apply')
     ))).toBe(false);
     expect(screen.getByTestId('home-hero-active-type-chip').textContent).toContain('Prototype');
+    // The design-system picker is now the persistent control below the composer.
     expect(
-      screen.getByTestId('home-hero-footer-option-designSystem').textContent,
+      screen.getByTestId('home-hero-design-system-trigger').textContent,
     ).toContain('Refly Design System');
     // Fidelity is no longer a prototype footer control (asked in discovery).
     expect(screen.queryByTestId('home-hero-footer-option-fidelity')).toBeNull();
+    expect(screen.queryByTestId('home-hero-footer-option-designSystem')).toBeNull();
     // Inline `{{slot}}` prompt widgets were removed in the Lexical migration.
     expect(screen.queryByTestId('home-hero-prompt-slot-fidelity')).toBeNull();
     expect(screen.queryByTestId('home-hero-prompt-slot-artifactKind')).toBeNull();
@@ -970,8 +976,7 @@ describe('HomeView prompt handoff', () => {
     expect(screen.queryByTestId('home-hero-prompt-slot-template')).toBeNull();
     // The inline plugin inputs form was removed from the Home composer; the
     // preset card still seeds the prompt and keeps the chip's structured inputs
-    // in state (submitted below), but no inputs form renders. fidelity /
-    // designSystem stay in the footer options above.
+    // in state (submitted below), but no inputs form renders.
     expect(screen.queryByTestId('plugin-inputs-form')).toBeNull();
 
     fireEvent.click(screen.getByTestId('home-hero-submit'));
@@ -1195,7 +1200,9 @@ describe('HomeView prompt handoff', () => {
     });
     expect(screen.queryByTestId('home-hero-footer-option-speakerNotes')).toBeNull();
     expect(screen.queryByTestId('home-hero-footer-option-slideCount')).toBeNull();
-    expect(screen.getByTestId('home-hero-footer-option-designSystem')).toBeTruthy();
+    expect(screen.queryByTestId('home-hero-footer-option-designSystem')).toBeNull();
+    // The design-system picker is the persistent control below the composer.
+    expect(screen.getByTestId('home-hero-design-system-trigger')).toBeTruthy();
 
     await setPromptAndSettle('Create an investor deck for a local-first design tool.');
     fireEvent.click(screen.getByTestId('home-hero-submit'));

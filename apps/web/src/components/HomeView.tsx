@@ -71,7 +71,6 @@ import { missingRequiredInputs, pluginInputsAreValid } from '../utils/pluginRequ
 import { HomeHero, type ExamplePromptInfo, type HomeHeroHandle } from './HomeHero';
 import { findChip, HOME_HERO_CHIPS, type HomeHeroChip } from './home-hero/chips';
 import { consumePendingHomeChip, HOME_CHIP_INTENT_EVENT } from '../runtime/home-intent';
-import { requestNewBrandKit } from '../runtime/brand-intent';
 import { navigate } from '../router';
 import {
   buildHomeMediaComposer,
@@ -1456,11 +1455,10 @@ export function HomeView({
         return;
       }
       case 'create-brand-kit': {
-        // Reuse the Brand Kit tab's own extraction flow: route to the tab and
-        // ask it to open its New Brand Kit modal (the same modal its "New Brand
-        // Kit" button opens), rather than reimplementing the extraction here.
-        requestNewBrandKit();
-        navigate({ kind: 'home', view: 'brands' });
+        // Brands merged into Design systems: brand extraction now starts from
+        // the unified design-system create wizard (which carries the
+        // "start from a brand" picker), rather than a separate Brand Kit tab.
+        navigate({ kind: 'design-system-create' });
         return;
       }
       case 'open-template-picker': {
