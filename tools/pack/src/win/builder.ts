@@ -306,7 +306,13 @@ async function resolveCachedNsisBasePayloadInputHash(
   const cached = await readCachedNsisBasePayloadInputHash(entryPath);
   if (cached != null) return cached;
 
-  const hash = await hashWinNsisBasePayloadInputs(builtApp);
+  const hash = builtApp.cacheEntryPath == null
+    ? await hashWinNsisBasePayloadInputs(builtApp)
+    : hashJson({
+      cacheEntryPath: builtApp.cacheEntryPath,
+      excludedOverlayPaths: resolveWinNsisOverlayRequiredPaths(),
+      version: WIN_NSIS_BASE_PAYLOAD_INPUT_HASH_CACHE_VERSION,
+    });
   await writeFile(
     resolveCachedNsisBasePayloadInputHashPath(entryPath),
     `${JSON.stringify({

@@ -119,6 +119,27 @@ describe("materializeCachedUnpackedForInstaller", () => {
   });
 });
 
+describe("Windows pack artifact boundaries", () => {
+  it("does not build launcher payload artifacts for a pure dir target", async () => {
+    const source = await readFile(new URL("../src/win/build.ts", import.meta.url), "utf8");
+    expect(source).toContain("const hasLauncherPayloadTarget = hasNsisTarget || hasZipTarget");
+    expect(source).toContain("if (hasLauncherPayloadTarget)");
+    expect(source.indexOf("const hasLauncherPayloadTarget = hasNsisTarget || hasZipTarget")).toBeLessThan(
+      source.indexOf('runPhase("payload-artifact"'),
+    );
+  });
+
+  it("uses the electron-builder cache identity instead of hashing the unpacked tree when possible", async () => {
+    const source = await readFile(new URL("../src/win/builder.ts", import.meta.url), "utf8");
+    expect(source).toContain("builtApp.cacheEntryPath == null");
+    expect(source).toContain("hashWinNsisBasePayloadInputs(builtApp)");
+    expect(source).toContain("cacheEntryPath: builtApp.cacheEntryPath");
+    expect(source.indexOf("builtApp.cacheEntryPath == null")).toBeLessThan(
+      source.indexOf("cacheEntryPath: builtApp.cacheEntryPath"),
+    );
+  });
+});
+
 async function createVersionedExecutable(packagedVersion: string): Promise<Buffer> {
   const executable = NtExecutable.createEmpty(false, false);
   const resource = NtExecutableResource.from(executable);
