@@ -861,6 +861,35 @@ export function ProjectView({
   // Reviewer #2285 (mrcfps, 2026-05-20 04:08) flagged the previous
   // ChatComposer-level emit for skewing the funnel.
   const chatPanelPageViewFiredRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+  const trackedTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      for (const timer of trackedTimeoutsRef.current) clearTimeout(timer);
+      trackedTimeoutsRef.current.clear();
+    };
+  }, []);
+
+  const scheduleProjectTimeout = useCallback((callback: () => void, delayMs: number) => {
+    if (!mountedRef.current) return null;
+    const timer = setTimeout(() => {
+      trackedTimeoutsRef.current.delete(timer);
+      if (!mountedRef.current) return;
+      callback();
+    }, delayMs);
+    trackedTimeoutsRef.current.add(timer);
+    return timer;
+  }, []);
+
+  const clearProjectTimeout = useCallback((timer: ReturnType<typeof setTimeout> | null) => {
+    if (timer == null) return;
+    clearTimeout(timer);
+    trackedTimeoutsRef.current.delete(timer);
+  }, []);
+
   useEffect(() => {
     if (chatPanelPageViewFiredRef.current === project.id) return;
     chatPanelPageViewFiredRef.current = project.id;
@@ -2331,11 +2360,11 @@ export function ProjectView({
 
   const scheduleConversationMessageRefresh = useCallback(
     (conversationId: string) => {
-      window.setTimeout(() => {
+      scheduleProjectTimeout(() => {
         void refreshConversationMessagesFromServer(conversationId);
       }, 150);
     },
-    [refreshConversationMessagesFromServer],
+    [refreshConversationMessagesFromServer, scheduleProjectTimeout],
   );
 
   const markStreamingConversation = useCallback((conversationId: string) => {
@@ -2775,14 +2804,14 @@ export function ProjectView({
         let persistTimer: ReturnType<typeof setTimeout> | null = null;
         const persistSoon = () => {
           if (persistTimer) return;
-          persistTimer = setTimeout(() => {
+          persistTimer = scheduleProjectTimeout(() => {
             persistTimer = null;
             persistMessageById(message.id);
           }, 500);
         };
         const persistNow = (options?: SaveMessageOptions) => {
           if (persistTimer) {
-            clearTimeout(persistTimer);
+            clearProjectTimeout(persistTimer);
             persistTimer = null;
           }
           textBuffer.flush();
@@ -3105,7 +3134,7 @@ export function ProjectView({
             textBuffer.flush();
             textBuffer.cancel();
             unregisterTextBuffer();
-            if (persistTimer) clearTimeout(persistTimer);
+            if (persistTimer) clearProjectTimeout(persistTimer);
             reattachControllersRef.current.delete(runId);
             reattachCancelControllersRef.current.delete(runId);
             clearActiveRunRefs(reattachConversationId, controller, cancelController);
@@ -3131,11 +3160,13 @@ export function ProjectView({
     clearStreamingMarker,
     clearActiveRunRefs,
     clearCurrentRunStreamingMarker,
+    clearProjectTimeout,
     refreshProjectFiles,
     readProjectHtml,
     persistArtifact,
     requestOpenFile,
     onProjectsRefresh,
+    scheduleProjectTimeout,
     scheduleConversationMessageRefresh,
   ]);
 
@@ -3666,14 +3697,14 @@ export function ProjectView({
       let persistTimer: ReturnType<typeof setTimeout> | null = null;
       const persistAssistantSoon = () => {
         if (persistTimer) return;
-        persistTimer = setTimeout(() => {
+        persistTimer = scheduleProjectTimeout(() => {
           persistTimer = null;
           persistMessageById(assistantId);
         }, 500);
       };
       const persistAssistantNowKeepalive = () => {
         if (persistTimer) {
-          clearTimeout(persistTimer);
+          clearProjectTimeout(persistTimer);
           persistTimer = null;
         }
         persistMessageById(assistantId, { keepalive: true });
@@ -4276,7 +4307,9 @@ export function ProjectView({
       markStreamingConversation,
       clearStreamingMarker,
       clearCurrentRunStreamingMarker,
+      clearProjectTimeout,
       scheduleConversationMessageRefresh,
+      scheduleProjectTimeout,
       onProjectsRefresh,
       onProjectChange,
     ],
@@ -4416,7 +4449,7 @@ export function ProjectView({
         return;
       }
       removeQueuedChatSend(next.id);
-      window.setTimeout(() => {
+      scheduleProjectTimeout(() => {
         if (startingQueuedChatSendIdRef.current !== next.id) return;
         startingQueuedChatSendIdRef.current = null;
         setQueuedAutoStartTick((tick) => tick + 1);
@@ -4430,6 +4463,7 @@ export function ProjectView({
     queuedChatSends,
     handleSend,
     removeQueuedChatSend,
+    scheduleProjectTimeout,
   ]);
 
   const handleRetry = useCallback(
