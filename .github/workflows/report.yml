@@ -320,7 +320,7 @@ jobs:
           jq -n --rawfile body "$body_path" '{body: $body}' > "$payload_file"
           comment_id="$(
             gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments" \
-              --jq ".[] | select((.body // \"\") | contains(\"$MARKER\")) | .id" \
+              | jq -r --arg marker "$MARKER" '.[] | select((.body // "") | contains($marker)) | .id' \
               | tail -n 1 || true
           )"
           if [ -n "$comment_id" ]; then
