@@ -401,6 +401,9 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
   }
   function relativePoint(ev){ return { x: Math.round(ev.clientX), y: Math.round(ev.clientY) }; }
   function postStroke(type){ window.parent.postMessage({ type: type, points: stroke.slice() }, '*'); }
+  function postReady(){
+    window.parent.postMessage({ type: 'od:url-selection-bridge-ready', href: window.location.href }, '*');
+  }
   function schedulePostStroke(){
     if (strokeFrame !== null) return;
     strokeFrame = requestAnimationFrame(function(){
@@ -412,7 +415,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
     var data = ev && ev.data;
     if (!data || !data.type) return;
     if (data.type === 'od:url-selection-bridge-probe') {
-      window.parent.postMessage({ type: 'od:url-selection-bridge-ready' }, '*');
+      postReady();
       return;
     }
     if (data.type === 'od:comment-mode') {
@@ -538,7 +541,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
   var mo = new MutationObserver(schedulePostTargets);
   mo.observe(document.documentElement, { subtree: true, childList: true });
   ensureStyle();
-  window.parent.postMessage({ type: 'od:url-selection-bridge-ready' }, '*');
+  postReady();
 })();
 </script>`;
 

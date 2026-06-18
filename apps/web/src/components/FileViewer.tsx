@@ -5464,8 +5464,17 @@ function HtmlViewer({
       const frame = urlPreviewIframeRef.current;
       if (ev.source !== frame?.contentWindow) return;
       if (frame.getAttribute('src') === 'about:blank') return;
-      const data = ev.data as { type?: string } | null;
+      const data = ev.data as { type?: string; href?: string } | null;
       if (data?.type !== 'od:url-selection-bridge-ready') return;
+      if (data.href) {
+        try {
+          const expectedHref = new URL(frame.getAttribute('src') ?? '', window.location.href).href;
+          const readyHref = new URL(data.href, window.location.href).href;
+          if (readyHref !== expectedHref) return;
+        } catch {
+          return;
+        }
+      }
       setUrlSelectionBridgeReady(true);
     }
     window.addEventListener('message', onMessage);

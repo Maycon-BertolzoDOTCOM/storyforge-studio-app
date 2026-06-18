@@ -3327,6 +3327,54 @@ describe('FileViewer tweaks toolbar', () => {
     expect(srcDocFrame.srcdoc).toContain('data-od-selection-bridge');
   });
 
+  it('ignores stale URL selection bridge readiness after the output URL changes', async () => {
+    function Harness() {
+      const [mtime, setMtime] = useState(1710000000);
+      return (
+        <>
+          <button type="button" onClick={() => setMtime(1710000001)}>Refresh output</button>
+          <FileViewer
+            projectId="project-1"
+            projectKind="prototype"
+            file={htmlPreviewFile({ mtime })}
+            liveHtml='<html><body><main data-od-id="hero">Hero</main></body></html>'
+          />
+        </>
+      );
+    }
+
+    render(<Harness />);
+
+    const frame = screen.getByTestId('artifact-preview-frame') as HTMLIFrameElement;
+    const oldHref = new URL(frame.getAttribute('src') ?? '', window.location.href).href;
+    act(() => {
+      window.dispatchEvent(new MessageEvent('message', {
+        source: frame.contentWindow,
+        data: { type: 'od:url-selection-bridge-ready', href: oldHref },
+      }));
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh output' }));
+    await waitFor(() => {
+      expect(frame.getAttribute('src')).toContain('v=1710000001');
+    });
+    act(() => {
+      window.dispatchEvent(new MessageEvent('message', {
+        source: frame.contentWindow,
+        data: { type: 'od:url-selection-bridge-ready', href: oldHref },
+      }));
+    });
+
+    fireEvent.click(screen.getByTestId('comment-panel-toggle'));
+
+    const srcDocFrame = await waitFor(() => {
+      const activeFrame = screen.getByTestId('artifact-preview-frame') as HTMLIFrameElement;
+      expect(activeFrame.getAttribute('data-od-render-mode')).toBe('srcdoc');
+      return activeFrame;
+    });
+    expect(srcDocFrame.srcdoc).toContain('data-od-selection-bridge');
+  });
+
   it('lets Draw direct send emit a queued annotation while a task is running', async () => {
     const annotationSpy = vi.fn();
     installCanvasSnapshotMocks();
