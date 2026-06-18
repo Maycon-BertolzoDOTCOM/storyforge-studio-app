@@ -2523,6 +2523,41 @@ process.exit(1);
     );
   });
 
+  it('rejects Claude smoke tests when the result frame reports an error before a late exit 1', async () => {
+    await withFakeClaude(
+      `
+console.log(JSON.stringify({
+  type: 'assistant',
+  message: {
+    id: 'msg_1',
+    content: [{ type: 'text', text: 'ok' }],
+    stop_reason: 'end_turn',
+  },
+}));
+console.log(JSON.stringify({
+  type: 'result',
+  subtype: 'error_during_execution',
+  is_error: true,
+  result: 'tool failed',
+  terminal_reason: 'completed',
+  duration_ms: 17,
+}));
+process.exit(1);
+`,
+      async () => {
+        const result = await testAgentConnection({ agentId: 'claude' });
+
+        expect(result).toMatchObject({
+          ok: false,
+          kind: 'agent_spawn_failed',
+          agentName: 'Claude Code',
+        });
+        expect(result.diagnostics?.phase).toBe('spawn');
+        expect(result.diagnostics?.exitCode).toBe(1);
+      },
+    );
+  });
+
   it('preserves ANTHROPIC_API_KEY when Claude adapter launches the OpenClaude fallback', async () => {
     const envFile = path.join(os.tmpdir(), `od-openclaude-env-${Date.now()}-${Math.random()}.json`);
     const previousKey = process.env.ANTHROPIC_API_KEY;
