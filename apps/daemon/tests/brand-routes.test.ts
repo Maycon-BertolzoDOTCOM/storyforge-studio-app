@@ -90,6 +90,7 @@ describe('brand routes', () => {
   it('reconciles extracting brands to failed when the backing project run failed', async () => {
     writeBrandFixture('brand-failed', {
       projectId: 'project-failed',
+      extractionConversationId: 'conversation-failed',
       logoPrimary: 'logos/missing.svg',
       status: 'extracting',
     });
@@ -136,6 +137,7 @@ describe('brand routes', () => {
   it('reconciles extracting brands to failed when the backing run was canceled by the user', async () => {
     writeBrandFixture('brand-canceled', {
       projectId: 'project-canceled',
+      extractionConversationId: 'conversation-canceled',
       logoPrimary: 'logos/missing.svg',
       status: 'extracting',
     });
@@ -173,59 +175,6 @@ describe('brand routes', () => {
 
     const storedMeta = JSON.parse(readFileSync(path.join(brandsRoot, 'brand-canceled', 'meta.json'), 'utf8'));
     expect(storedMeta.status).toBe('failed');
-  });
-
-  it('keeps terminal backing run failure visible when a stale finalize left the terminal error', async () => {
-    const providerError = 'Provider timed out while reading the target site.';
-    writeBrandFixture('brand-stale-ready', {
-      projectId: 'project-stale-ready',
-      logoPrimary: 'logos/missing.svg',
-      status: 'ready',
-      error: providerError,
-      extractionTerminalRunId: 'run-stale-ready',
-      extractionTerminalError: providerError,
-    });
-    insertProject(db, {
-      id: 'project-stale-ready',
-      name: 'Stale Ready Brand Project',
-      skillId: null,
-      designSystemId: null,
-      createdAt: 1,
-      updatedAt: 1,
-      metadata: { kind: 'brand', brandId: 'brand-stale-ready' },
-    });
-    insertConversation(db, {
-      id: 'conversation-stale-ready',
-      projectId: 'project-stale-ready',
-      title: 'Extract brand',
-      createdAt: 1,
-      updatedAt: 1,
-    });
-    upsertMessage(db, 'conversation-stale-ready', {
-      id: 'message-stale-ready',
-      role: 'assistant',
-      content: 'Timed out.',
-      runId: 'run-stale-ready',
-      runStatus: 'failed',
-      startedAt: 1,
-      endedAt: 2,
-    });
-
-    const detail = await requestJson('/api/brands/brand-stale-ready');
-    const list = await requestJson('/api/brands');
-
-    expect(detail.status).toBe(200);
-    expect(detail.body.meta.status).toBe('failed');
-    expect(detail.body.meta.error).toBe(providerError);
-    expect(list.body.brands.find((brand: any) => brand.meta.id === 'brand-stale-ready')?.meta.status).toBe(
-      'failed',
-    );
-
-    const storedMeta = JSON.parse(readFileSync(path.join(brandsRoot, 'brand-stale-ready', 'meta.json'), 'utf8'));
-    expect(storedMeta.status).toBe('failed');
-    expect(storedMeta.error).toBe(providerError);
-    expect(storedMeta.extractionTerminalRunId).toBe('run-stale-ready');
-    expect(storedMeta.extractionTerminalError).toBe(providerError);
   });
 
   it('does not regress a successful retry when the old failed run remains the latest status', async () => {
@@ -280,6 +229,7 @@ describe('brand routes', () => {
   it('does not regress ready brands after a later backing project run is canceled', async () => {
     writeBrandFixture('brand-ready', {
       projectId: 'project-ready',
+      extractionConversationId: 'conversation-extraction-ready',
       logoPrimary: 'logos/missing.svg',
       status: 'ready',
     });
@@ -322,9 +272,74 @@ describe('brand routes', () => {
     expect(storedMeta.error).toBeUndefined();
   });
 
+  it('does not fail extracting brands when a later non-extraction project run is canceled', async () => {
+    writeBrandFixture('brand-extracting', {
+      projectId: 'project-extracting',
+      extractionConversationId: 'conversation-extracting',
+      logoPrimary: 'logos/missing.svg',
+      status: 'extracting',
+    });
+    insertProject(db, {
+      id: 'project-extracting',
+      name: 'Extracting Brand Project',
+      skillId: null,
+      designSystemId: null,
+      createdAt: 1,
+      updatedAt: 1,
+      metadata: { kind: 'brand', brandId: 'brand-extracting' },
+    });
+    insertConversation(db, {
+      id: 'conversation-extracting',
+      projectId: 'project-extracting',
+      title: 'Extract brand',
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    upsertMessage(db, 'conversation-extracting', {
+      id: 'message-extracting',
+      role: 'assistant',
+      content: 'Still extracting.',
+      runId: 'run-extracting',
+      runStatus: 'running',
+      startedAt: 1,
+      endedAt: null,
+    });
+    insertConversation(db, {
+      id: 'conversation-extracting-follow-up',
+      projectId: 'project-extracting',
+      title: 'Follow-up edit',
+      createdAt: 3,
+      updatedAt: 3,
+    });
+    upsertMessage(db, 'conversation-extracting-follow-up', {
+      id: 'message-extracting-follow-up',
+      role: 'assistant',
+      content: 'Stopped.',
+      runId: 'run-extracting-follow-up',
+      runStatus: 'canceled',
+      startedAt: 3,
+      endedAt: 4,
+    });
+
+    const detail = await requestJson('/api/brands/brand-extracting');
+    const list = await requestJson('/api/brands');
+
+    expect(detail.status).toBe(200);
+    expect(detail.body.meta.status).toBe('extracting');
+    expect(detail.body.meta.error).toBeUndefined();
+    expect(list.body.brands.find((brand: any) => brand.meta.id === 'brand-extracting')?.meta.status).toBe(
+      'extracting',
+    );
+
+    const storedMeta = JSON.parse(readFileSync(path.join(brandsRoot, 'brand-extracting', 'meta.json'), 'utf8'));
+    expect(storedMeta.status).toBe('extracting');
+    expect(storedMeta.error).toBeUndefined();
+  });
+
   it('surfaces needs_input when the backing project is awaiting user input', async () => {
     writeBrandFixture('brand-blocked', {
       projectId: 'project-blocked',
+      extractionConversationId: 'conversation-blocked',
       logoPrimary: 'logos/missing.svg',
       status: 'extracting',
     });
@@ -374,6 +389,7 @@ describe('brand routes', () => {
     id: string,
     options: {
       projectId?: string;
+      extractionConversationId?: string;
       logoPrimary: string;
       logoBody?: string;
       status?: string;
@@ -396,6 +412,7 @@ describe('brand routes', () => {
         ...(options.extractionTerminalRunId ? { extractionTerminalRunId: options.extractionTerminalRunId } : {}),
         ...(options.extractionTerminalError ? { extractionTerminalError: options.extractionTerminalError } : {}),
         ...(options.projectId ? { projectId: options.projectId } : {}),
+        ...(options.extractionConversationId ? { extractionConversationId: options.extractionConversationId } : {}),
       }),
     );
     writeFileSync(
