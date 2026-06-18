@@ -86,6 +86,14 @@ Status: proposed · Parent: #3408 · Related: #3380, #3535 · Spec format: `spec
 3. **Phase 3a — 稳定可缓存前缀(便宜、独立、无需 gate)**:把易失系统块(文件列表 / MCP 列表 / 个人记忆 / run context)从稳定 transcript **前面**挪到后面或冻结,让 append-only transcript 成为真正能命中的前缀;并确认 vela/opencode 网关透传 `cache_control`。这块不动 session 生命周期、收益立得到(降 cache-miss 率),应先做。
 4. **Phase 3b — ACP 原生多轮 session 复用(大、依赖 vela)**:daemon 改成「一对话一条长存活 ACP 连接、按轮 `session/prompt`」,agent 自己维护原生多轮数组 + 工作记忆 + 缓存,host 不再每轮重发拍平历史。前提是 vela 侧先支持 `session/load` + opencode session 持久化(现版 `loadSession:false` 接不住),需跨仓协调。对齐 #3380 / #3535。验收=续轮 cache 命中率上升、`session_init_ms` 趋零、TTFT p50 下降,且不丢编辑状态。
 
+### Phase 3a 的护栏:前缀稳定性不变量(结构化强制,随功能演进自守)
+
+3a 把易失块挪走是**一次性**的;不加护栏,下一个功能又会往前缀塞易失内容、cache 再次悄悄失效。复用现成的 prompt-stack 遥测做结构护栏——`apps/daemon/src/prompt-telemetry.ts` 已按 `kind` 给每个 section 出 `fingerprint` + 全局 `stackFingerprint`,并有 `SECTION_PRIORITY`(`:105`)决定顺序、`REDACTED_CONTENT_KINDS`(`:91`)这类按 kind 的集合:
+
+- **分类**:给每个 `PromptTelemetrySectionKind` 标 `STABLE`(可缓存,必须在前缀)或 `VOLATILE`(每轮可变,必须排在 stable 前缀之后)。当前易失项:当前文件列表、`connectedExternalMcp`、`memoryBody`、`runContextPrompt`、`buildPriorRunContextWarning`。
+- **不变量(可证伪)**:把所有 STABLE section(系统核心 + 工具 + append-only transcript)按序拼成「可缓存前缀」,其 fingerprint **在只有 VOLATILE 输入变化时必须逐字节不变**。红测:固定历史,连改文件列表 / MCP 集 / 记忆三次,断言可缓存前缀 fingerprint 不变,且所有 VOLATILE section 的 `ordinal` 都大于该前缀边界。
+- **随功能演进自守**:STABLE/VOLATILE 分类是一张 map(类比现有 `SECTION_PRIORITY`),是未来新增 prompt 段时**唯一的声明落点**;护栏额外断言「每个 `kind` 都必须有分类」——新功能加了未分类的 section kind 就让测试**红**,逼作者显式声明它进前缀还是进尾部。于是「前缀稳定」不是修一次,而是被结构强制、随功能演进持续守住。这条护栏也写进 `specs/current/architecture-boundaries.md` 的 prompt 组装约束里。
+
 ## Alternatives considered
 
 - **直接上 session 复用、不先加埋点**:否决——turn-ordinal 数据虽强,但"冷启动重付"和"context 增长"混淆,不拆段就可能修错地方(花在 session 复用上、结果大头其实是模型首 token)。Phase 1 是便宜的去混淆手段。
@@ -110,6 +118,17 @@ Status: proposed · Parent: #3408 · Related: #3380, #3535 · Spec format: `spec
 1. contracts 加 3 个可选 timing 字段 + Phase 1 埋点 + 求和测试(独立可上,纯观测)。
 2. Phase 2 实验脚本 + 结论(无代码改动 / 仅分析)。
 3. Phase 3 session resume(仅当 2 通过)+ 状态连续性 + TTFT 验收。
+
+## Reproduction · 实验数据复现(数字怎么来的)
+
+所有表里的数都可复现。PostHog project **OpenDesign = 420348**,需 personal API key(`phx_…`),`POST https://us.posthog.com/api/projects/420348/query/`,body `{"query":{"kind":"HogQLQuery","query":"<SQL>"}}`。HogQL 坑:数值字段用 `toFloat(properties.x)`(不是 `toFloat64OrNull`);null 过滤用 `isNull(...)`(`empty()` 对 JSON null 失效);P90 用 `quantile(0.9)(...)`;跨轮用 `row_number() OVER (PARTITION BY properties.conversation_id ORDER BY timestamp)`。窗口均 `result='success' AND timestamp >= now()-INTERVAL 7 DAY`。
+
+- **启动 timing 分段表**:`SELECT properties.agent_provider_id AS prov, round(quantile(0.5)(toFloat(properties.queue_duration_ms))) AS queue, ...(pre_spawn_duration_ms / process_spawn_duration_ms / spawn_to_first_token_ms / time_to_first_token_ms)..., round(quantile(0.9)(toFloat(properties.time_to_first_token_ms))) AS ttft_p90 FROM events WHERE event='run_finished' AND properties.result='success' AND properties.agent_provider_id IN ('amr','claude_code') AND timestamp >= now()-INTERVAL 7 DAY GROUP BY prov`
+- **跨轮 TTFT(session 复用佐证)**:`WITH o AS (SELECT toFloat(properties.time_to_first_token_ms) AS ttft, row_number() OVER (PARTITION BY properties.conversation_id ORDER BY timestamp) AS turn FROM events WHERE event='run_finished' AND properties.result='success' AND properties.agent_provider_id IN ('claude_code','amr') AND isNotNull(properties.conversation_id) AND toFloat(properties.time_to_first_token_ms)>0 AND timestamp >= now()-INTERVAL 7 DAY) SELECT if(turn=1,'turn_1','turn_2plus') AS bucket, round(quantile(0.5)(ttft)) FROM o GROUP BY bucket`
+- **cache 命中 vs TTFT**:同上 `run_finished` 过滤 + `if(toFloat(properties.cache_read_input_tokens)>0,'HIT','MISS') AS cache, round(quantile(0.5)(...)), round(quantile(0.9)(...)) GROUP BY cache`
+- **cache 命中率按轮次**:同跨轮窗口,`countIf(cr>0)/count()`(`cr = toFloat(properties.cache_read_input_tokens)`)
+- **Langfuse 挖单条错误**:host `https://us.cloud.langfuse.com`(US only),Basic auth `base64(pk-lf-…:sk-lf-…)`,`GET /api/public/traces/{run_id}`(**trace_id == run.id**),读 `observations[].level=='ERROR'` 的 `statusMessage`。
+- ⚠️ **不要用裸 `claude -p` 外推**:不经过 daemon(无 system prompt 拼装 / 无拍平 transcript / 无 daemon session 语义),不代表真实路径。真实子段必须由 Phase 1 埋点在 daemon 内测得,或用上述 PostHog 生产遥测。本机若要端到端复现:`pnpm tools-dev`(Node 24)起真实 daemon,经 `/api/chat` 跑同一 `conversationId` 的两轮,读两轮 `run_finished` 的 `cache_read_input_tokens` / `time_to_first_token_ms` 对比。
 
 ## Open questions
 
