@@ -176,11 +176,14 @@ describe('brand routes', () => {
   });
 
   it('keeps terminal backing run failure visible when a stale finalize left the terminal error', async () => {
+    const providerError = 'Provider timed out while reading the target site.';
     writeBrandFixture('brand-stale-ready', {
       projectId: 'project-stale-ready',
       logoPrimary: 'logos/missing.svg',
       status: 'ready',
-      error: 'Brand extraction was canceled.',
+      error: providerError,
+      extractionTerminalRunId: 'run-stale-ready',
+      extractionTerminalError: providerError,
     });
     insertProject(db, {
       id: 'project-stale-ready',
@@ -201,9 +204,9 @@ describe('brand routes', () => {
     upsertMessage(db, 'conversation-stale-ready', {
       id: 'message-stale-ready',
       role: 'assistant',
-      content: 'Stopped.',
+      content: 'Timed out.',
       runId: 'run-stale-ready',
-      runStatus: 'canceled',
+      runStatus: 'failed',
       startedAt: 1,
       endedAt: 2,
     });
@@ -213,14 +216,16 @@ describe('brand routes', () => {
 
     expect(detail.status).toBe(200);
     expect(detail.body.meta.status).toBe('failed');
-    expect(detail.body.meta.error).toBe('Brand extraction was canceled.');
+    expect(detail.body.meta.error).toBe(providerError);
     expect(list.body.brands.find((brand: any) => brand.meta.id === 'brand-stale-ready')?.meta.status).toBe(
       'failed',
     );
 
     const storedMeta = JSON.parse(readFileSync(path.join(brandsRoot, 'brand-stale-ready', 'meta.json'), 'utf8'));
     expect(storedMeta.status).toBe('failed');
-    expect(storedMeta.error).toBe('Brand extraction was canceled.');
+    expect(storedMeta.error).toBe(providerError);
+    expect(storedMeta.extractionTerminalRunId).toBe('run-stale-ready');
+    expect(storedMeta.extractionTerminalError).toBe(providerError);
   });
 
   it('does not regress ready brands after a later backing project run is canceled', async () => {
@@ -318,7 +323,15 @@ describe('brand routes', () => {
 
   function writeBrandFixture(
     id: string,
-    options: { projectId?: string; logoPrimary: string; logoBody?: string; status?: string; error?: string },
+    options: {
+      projectId?: string;
+      logoPrimary: string;
+      logoBody?: string;
+      status?: string;
+      error?: string;
+      extractionTerminalRunId?: string;
+      extractionTerminalError?: string;
+    },
   ) {
     const brandDir = path.join(brandsRoot, id);
     mkdirSync(brandDir, { recursive: true });
@@ -331,6 +344,8 @@ describe('brand routes', () => {
         updatedAt: 1,
         status: options.status ?? 'ready',
         ...(options.error ? { error: options.error } : {}),
+        ...(options.extractionTerminalRunId ? { extractionTerminalRunId: options.extractionTerminalRunId } : {}),
+        ...(options.extractionTerminalError ? { extractionTerminalError: options.extractionTerminalError } : {}),
         ...(options.projectId ? { projectId: options.projectId } : {}),
       }),
     );
