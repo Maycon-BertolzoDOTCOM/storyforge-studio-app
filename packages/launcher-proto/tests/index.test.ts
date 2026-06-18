@@ -12,7 +12,9 @@ import {
   resolveLauncherPaths,
   resolveLauncherVersionPaths,
   selectLauncherRuntimeTarget,
+  validateLauncherCleanupDescriptor,
   validateLauncherRuntimeDescriptor,
+  type LauncherCleanupDescriptor,
   type LauncherRuntimeDescriptor,
 } from "../src/index.js";
 
@@ -129,6 +131,41 @@ describe("launcher runtime descriptors", () => {
         lastSuccessful: null,
       },
     })).toEqual({ reason: "no-runtime-target", selected: false });
+  });
+});
+
+describe("launcher cleanup descriptors", () => {
+  const cleanup: LauncherCleanupDescriptor = {
+    channel: "beta",
+    currentVersion: "0.8.1-beta.3",
+    namespace: "release-beta",
+    updatedAt: "2026-06-18T00:00:00.000Z",
+    version: LAUNCHER_SCHEMA_VERSION,
+    versions: [
+      {
+        generation: 2,
+        reason: "older-than-bound-package",
+        state: "deprecated",
+        updatedAt: "2026-06-18T00:00:00.000Z",
+        version: "0.8.1-beta.2",
+      },
+      {
+        generation: 0,
+        reason: "current-bound-package",
+        state: "retained",
+        updatedAt: "2026-06-18T00:00:00.000Z",
+        version: "0.8.1-beta.3",
+      },
+    ],
+  };
+
+  it("validates channel, namespace, states, reasons, and version path segments", () => {
+    expect(validateLauncherCleanupDescriptor(cleanup, { channel: "beta", namespace: "release-beta" })).toEqual(cleanup);
+    expect(() => validateLauncherCleanupDescriptor(cleanup, { channel: "stable", namespace: "release-beta" })).toThrow(LauncherProtocolError);
+    expect(() => validateLauncherCleanupDescriptor({
+      ...cleanup,
+      versions: [{ ...cleanup.versions[0]!, version: "../0.8.1-beta.2" }],
+    }, { channel: "beta", namespace: "release-beta" })).toThrow(LauncherProtocolError);
   });
 });
 

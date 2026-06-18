@@ -30,8 +30,12 @@ import {
   buildLauncherAfterQuitArgs,
   compareLauncherVersions,
   hasCountedLauncherPrerelease,
+  resolveLauncherPaths,
   resolveLauncherVersionPaths,
+  validateLauncherCleanupDescriptor,
   validateLauncherRuntimeDescriptor,
+  type LauncherCleanupDescriptor,
+  type LauncherCleanupEntry,
   type LauncherRuntimeDescriptor,
 } from "@open-design/launcher-proto";
 import {
@@ -303,6 +307,14 @@ type ReleaseCleanupDescriptor = {
   trigger: DesktopUpdateCacheLifecycleTrigger;
   updatedAt: string;
   version: typeof RELEASE_CLEANUP_DESCRIPTOR_VERSION;
+};
+
+type LauncherCleanupLifecycleSummary = {
+  cleanupDeferred: number;
+  cleanupRemoved: number;
+  deprecated: number;
+  retained: number;
+  total: number;
 };
 
 export type DesktopUpdater = {
@@ -2020,6 +2032,137 @@ async function runUpdateReleaseLifecycle(input: {
   });
 }
 
+function launcherCleanupError(code: string, message: string): LauncherCleanupEntry["error"] {
+  return { code, message };
+}
+
+function summarizeLauncherCleanupDescriptor(descriptor: LauncherCleanupDescriptor): LauncherCleanupLifecycleSummary {
+  const summary: LauncherCleanupLifecycleSummary = {
+    cleanupDeferred: 0,
+    cleanupRemoved: 0,
+    deprecated: 0,
+    retained: 0,
+    total: descriptor.versions.length,
+  };
+  for (const version of descriptor.versions) {
+    if (version.state === "cleanup-deferred") summary.cleanupDeferred += 1;
+    if (version.state === "cleanup-removed") summary.cleanupRemoved += 1;
+    if (version.state === "deprecated") summary.deprecated += 1;
+    if (version.state === "retained") summary.retained += 1;
+  }
+  return summary;
+}
+
+async function runLauncherCleanupLifecycle(input: {
+  config: DesktopUpdaterConfig;
+  logger: DesktopUpdaterLogger;
+  now: () => Date;
+}): Promise<LauncherCleanupLifecycleSummary | null> {
+  const { config, logger, now } = input;
+  if (config.launcherRoot == null || config.launcherRuntimePath == null || config.namespace == null) return null;
+
+  const launcherPaths = resolveLauncherPaths({
+    channel: config.channel,
+    namespace: config.namespace,
+    root: config.launcherRoot,
+  });
+  const rawCleanup = await readJson<unknown>(launcherPaths.cleanupPath);
+  if (rawCleanup == null) return null;
+
+  let cleanup: LauncherCleanupDescriptor;
+  let runtime: LauncherRuntimeDescriptor;
+  try {
+    cleanup = validateLauncherCleanupDescriptor(rawCleanup as LauncherCleanupDescriptor, {
+      channel: config.channel,
+      namespace: config.namespace,
+    });
+    runtime = validateLauncherRuntimeDescriptor(
+      await readJsonStrict<LauncherRuntimeDescriptor>(config.launcherRuntimePath),
+      { channel: config.channel, namespace: config.namespace },
+    );
+  } catch (error) {
+    logger.warn("[open-design updater] failed to read launcher cleanup lifecycle inputs", {
+      error: error instanceof Error ? error.message : String(error),
+      cleanupPath: launcherPaths.cleanupPath,
+      runtimePath: config.launcherRuntimePath,
+    });
+    return null;
+  }
+
+  const nowIso = now().toISOString();
+  const retainedVersions = new Set<string>([
+    ...(runtime.active == null ? [] : [runtime.active.version]),
+    ...(runtime.lastSuccessful == null ? [] : [runtime.lastSuccessful.version]),
+    ...cleanup.versions.filter((entry) => entry.state === "retained").map((entry) => entry.version),
+  ]);
+  const nextVersions: LauncherCleanupEntry[] = [];
+
+  for (const entry of cleanup.versions) {
+    if (entry.state !== "deprecated" && entry.state !== "cleanup-deferred") {
+      nextVersions.push(entry);
+      continue;
+    }
+    if (retainedVersions.has(entry.version)) {
+      nextVersions.push({
+        ...entry,
+        error: launcherCleanupError("launcher-cleanup-retained", "deprecated launcher version is retained by runtime state"),
+        reason: "cleanup-failed",
+        state: "cleanup-deferred",
+        updatedAt: nowIso,
+      });
+      continue;
+    }
+
+    const versionPaths = resolveLauncherVersionPaths({
+      channel: config.channel,
+      namespace: config.namespace,
+      root: config.launcherRoot,
+      version: entry.version,
+    });
+    try {
+      const versionEntry = await lstat(versionPaths.versionRoot).catch(() => null);
+      if (versionEntry != null && (!versionEntry.isDirectory() || versionEntry.isSymbolicLink())) {
+        throw new Error(`launcher cleanup target is not a plain directory: ${versionPaths.versionRoot}`);
+      }
+      if (versionEntry?.isDirectory()) {
+        const realVersionRoot = await realpath(versionPaths.versionRoot);
+        if (!containsPath(versionPaths.versionsRoot, realVersionRoot)) {
+          throw new Error(`launcher cleanup target escaped versions root: ${realVersionRoot}`);
+        }
+      }
+      await rm(versionPaths.versionRoot, { force: true, recursive: true });
+      nextVersions.push({
+        ...entry,
+        error: undefined,
+        removedAt: entry.removedAt ?? nowIso,
+        state: "cleanup-removed",
+        updatedAt: nowIso,
+      });
+    } catch (error) {
+      logger.warn("[open-design updater] failed to clean deprecated launcher payload", {
+        error: error instanceof Error ? error.message : String(error),
+        path: versionPaths.versionRoot,
+        version: entry.version,
+      });
+      nextVersions.push({
+        ...entry,
+        error: launcherCleanupError("launcher-cleanup-failed", error instanceof Error ? error.message : String(error)),
+        reason: "cleanup-failed",
+        state: "cleanup-deferred",
+        updatedAt: nowIso,
+      });
+    }
+  }
+
+  const next: LauncherCleanupDescriptor = {
+    ...cleanup,
+    updatedAt: nowIso,
+    versions: nextVersions,
+  };
+  await writeJson(launcherPaths.cleanupPath, next);
+  return summarizeLauncherCleanupDescriptor(next);
+}
+
 async function readStoreMetadata(root: OwnedRoot & { ok: true }, logger: DesktopUpdaterLogger): Promise<
   | { metadata: UpdateStoreMetadata; ok: true }
   | { error: DesktopUpdateErrorSnapshot; ok: false }
@@ -2419,6 +2562,24 @@ export function createDesktopUpdater(
         retained: coldStartLifecycle.releases.retained,
         total: coldStartLifecycle.releases.total,
         trigger: coldStartLifecycle.lastTrigger,
+      });
+    }
+    const launcherLifecycle = await runLauncherCleanupLifecycle({
+      config,
+      logger,
+      now,
+    }).catch((lifecycleError: unknown) => {
+      logger.warn("[open-design updater] failed to run launcher cleanup lifecycle", lifecycleError);
+      return null;
+    });
+    if (launcherLifecycle != null) {
+      logUpdateEvent("launcher-lifecycle", {
+        deferred: launcherLifecycle.cleanupDeferred,
+        deprecated: launcherLifecycle.deprecated,
+        removed: launcherLifecycle.cleanupRemoved,
+        retained: launcherLifecycle.retained,
+        total: launcherLifecycle.total,
+        trigger: "cold-start",
       });
     }
     return setState(activeRelease == null ? DESKTOP_UPDATE_STATES.IDLE : DESKTOP_UPDATE_STATES.DOWNLOADED);

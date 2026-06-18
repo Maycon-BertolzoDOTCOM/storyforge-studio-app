@@ -79,6 +79,35 @@ export type LauncherAttemptDescriptor = {
   version: string;
 };
 
+export type LauncherCleanupState = "cleanup-deferred" | "cleanup-removed" | "deprecated" | "retained";
+
+export type LauncherCleanupReason =
+  | "cleanup-failed"
+  | "current-bound-package"
+  | "older-than-bound-package";
+
+export type LauncherCleanupEntry = {
+  error?: {
+    code: string;
+    message: string;
+  };
+  generation: number;
+  reason: LauncherCleanupReason;
+  removedAt?: string;
+  state: LauncherCleanupState;
+  updatedAt: string;
+  version: string;
+};
+
+export type LauncherCleanupDescriptor = {
+  channel: LauncherChannel;
+  currentVersion?: string;
+  namespace: string;
+  updatedAt: string;
+  version: typeof LAUNCHER_SCHEMA_VERSION;
+  versions: LauncherCleanupEntry[];
+};
+
 export type LauncherTargetSelection =
   | { pointer: LauncherVersionPointer; reason: "active"; selected: true }
   | { pointer: LauncherVersionPointer; reason: "last-successful"; selected: true }
@@ -301,6 +330,84 @@ function normalizePointer(value: LauncherVersionPointer | null): LauncherVersion
   return { generation: value.generation, version };
 }
 
+function normalizeOptionalIsoString(value: unknown, label: string): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value !== "string" || value.length === 0) {
+    throw new LauncherProtocolError(`${label} must be a non-empty string`);
+  }
+  return value;
+}
+
+function normalizeIsoString(value: unknown, label: string): string {
+  const normalized = normalizeOptionalIsoString(value, label);
+  if (normalized == null) throw new LauncherProtocolError(`${label} is required`);
+  return normalized;
+}
+
+function normalizeLauncherCleanupState(value: unknown): LauncherCleanupState {
+  if (
+    value === "cleanup-deferred" ||
+    value === "cleanup-removed" ||
+    value === "deprecated" ||
+    value === "retained"
+  ) {
+    return value;
+  }
+  throw new LauncherProtocolError(`unsupported launcher cleanup state: ${String(value)}`);
+}
+
+function normalizeLauncherCleanupReason(value: unknown): LauncherCleanupReason {
+  if (
+    value === "cleanup-failed" ||
+    value === "current-bound-package" ||
+    value === "older-than-bound-package"
+  ) {
+    return value;
+  }
+  throw new LauncherProtocolError(`unsupported launcher cleanup reason: ${String(value)}`);
+}
+
+function normalizeCleanupError(value: unknown): LauncherCleanupEntry["error"] {
+  if (value == null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new LauncherProtocolError("launcher cleanup error must be an object");
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.code !== "string" || record.code.length === 0) {
+    throw new LauncherProtocolError("launcher cleanup error code must be a non-empty string");
+  }
+  if (typeof record.message !== "string" || record.message.length === 0) {
+    throw new LauncherProtocolError("launcher cleanup error message must be a non-empty string");
+  }
+  return { code: record.code, message: record.message };
+}
+
+function normalizeCleanupEntry(value: unknown): LauncherCleanupEntry {
+  if (typeof value !== "object" || value == null || Array.isArray(value)) {
+    throw new LauncherProtocolError("launcher cleanup entry must be an object");
+  }
+  const record = value as Record<string, unknown>;
+  const rawGeneration = record.generation;
+  if (typeof rawGeneration !== "number" || !Number.isSafeInteger(rawGeneration) || rawGeneration < 0) {
+    throw new LauncherProtocolError(`launcher cleanup generation must be a non-negative safe integer: ${String(rawGeneration)}`);
+  }
+  const generation = rawGeneration;
+  const version = normalizeLauncherVersion(record.version);
+  const state = normalizeLauncherCleanupState(record.state);
+  const reason = normalizeLauncherCleanupReason(record.reason);
+  const error = normalizeCleanupError(record.error);
+  const removedAt = normalizeOptionalIsoString(record.removedAt, "launcher cleanup removedAt");
+  return {
+    ...(error == null ? {} : { error }),
+    generation,
+    reason,
+    ...(removedAt == null ? {} : { removedAt }),
+    state,
+    updatedAt: normalizeIsoString(record.updatedAt, "launcher cleanup updatedAt"),
+    version,
+  };
+}
+
 export function validateLauncherRuntimeDescriptor(
   runtime: LauncherRuntimeDescriptor,
   expected: { channel: string; namespace: string },
@@ -324,6 +431,36 @@ export function validateLauncherRuntimeDescriptor(
     channel,
     lastSuccessful: normalizePointer(runtime.lastSuccessful),
     namespace,
+  };
+}
+
+export function validateLauncherCleanupDescriptor(
+  cleanup: LauncherCleanupDescriptor,
+  expected: { channel: string; namespace: string },
+): LauncherCleanupDescriptor {
+  if (cleanup.version !== LAUNCHER_SCHEMA_VERSION) {
+    throw new LauncherProtocolError(`unsupported launcher cleanup version: ${String(cleanup.version)}`);
+  }
+  const channel = normalizeLauncherChannel(cleanup.channel);
+  const expectedChannel = normalizeLauncherChannel(expected.channel);
+  if (channel !== expectedChannel) {
+    throw new LauncherProtocolError(`launcher cleanup channel ${channel} does not match expected channel ${expectedChannel}`);
+  }
+  const namespace = normalizeLauncherNamespace(cleanup.namespace);
+  const expectedNamespace = normalizeLauncherNamespace(expected.namespace);
+  if (namespace !== expectedNamespace) {
+    throw new LauncherProtocolError(`launcher cleanup namespace ${namespace} does not match expected namespace ${expectedNamespace}`);
+  }
+  if (!Array.isArray(cleanup.versions)) {
+    throw new LauncherProtocolError("launcher cleanup versions must be an array");
+  }
+  return {
+    channel,
+    ...(cleanup.currentVersion == null ? {} : { currentVersion: normalizeLauncherVersion(cleanup.currentVersion) }),
+    namespace,
+    updatedAt: normalizeIsoString(cleanup.updatedAt, "launcher cleanup updatedAt"),
+    version: LAUNCHER_SCHEMA_VERSION,
+    versions: cleanup.versions.map(normalizeCleanupEntry),
   };
 }
 
