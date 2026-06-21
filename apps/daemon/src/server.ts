@@ -8782,7 +8782,6 @@ export async function startServer({
             }
             return;
           }
-          if (event === 'agent') noteFirstTokenFromAgentEvent(data);
           if (event === 'agent') {
             noteFirstTokenFromAgentEvent(data);
             emitAgentEvent(data);
