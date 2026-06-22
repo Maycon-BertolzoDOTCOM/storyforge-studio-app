@@ -537,6 +537,23 @@ async function isScrollBound(
 // what createFromBitmap wants) and the encode is native C++, so this is fast
 // even for long pages. createFromBitmap is a CPU bitmap, so it is NOT bound by
 // the GPU texture limit; height is bounded only by the caller's RAM cap.
+// Full-page stitch geometry derived from the REAL captured device width. The
+// capture's pixel ratio can be fractional (e.g. 1.25 on 125% display scaling),
+// so we must NOT round it to an integer — that corrupts the output width and
+// every row offset off macOS-retina (integer DPR) defaults. Exported for tests.
+export function scrollStitchGeometry(
+  deviceWidth: number,
+  totalLogical: number,
+  pageW: number,
+): { width: number; height: number; dpr: number } {
+  const dpr = deviceWidth > 0 && pageW > 0 ? deviceWidth / pageW : 1;
+  return { width: Math.max(1, deviceWidth), height: Math.max(1, Math.round(totalLogical * dpr)), dpr };
+}
+// Device-pixel row offset for a chunk captured at logical scroll `actualY`.
+export function scrollStitchRowOffset(actualY: number, dpr: number): number {
+  return Math.round(actualY * dpr);
+}
+
 async function scrollSegmentStitch(
   window: BrowserWindow,
   totalLogical: number,
@@ -547,11 +564,9 @@ async function scrollSegmentStitch(
   await nextFrames(window);
   const maxScroll = Math.max(0, totalLogical - PAGE_VIEW_H);
 
-  // Scale (DPR) is derived from the first captured chunk so placement is correct
-  // regardless of the display's pixel ratio.
-  let scale = 0;
   let W = 0;
   let H = 0;
+  let dpr = 1;
   let bgra: Buffer | null = null;
 
   for (let y = 0; ; y += PAGE_VIEW_H) {
@@ -564,22 +579,28 @@ async function scrollSegmentStitch(
     const bmp = image.toBitmap(); // BGRA
     const size = image.getSize();
     if (!bgra) {
-      scale = Math.max(1, Math.round(size.width / PAGE_W));
-      W = PAGE_W * scale;
-      H = totalLogical * scale;
+      // Use the real captured pixel width (and its true, possibly fractional,
+      // ratio) for the buffer + placement — never a rounded integer scale.
+      const geo = scrollStitchGeometry(size.width, totalLogical, PAGE_W);
+      W = geo.width;
+      H = geo.height;
+      dpr = geo.dpr;
       bgra = Buffer.alloc(W * H * 4);
     }
-    // Chunk width matches W (captured at PAGE_W), so each chunk's rows are
-    // contiguous and full-width — copy the whole block in one native memcpy.
-    if (size.width === W) {
-      const destStart = actualY * scale * W * 4;
-      const rows = Math.min(size.height, H - actualY * scale);
-      bmp.copy(bgra, destStart, 0, rows * W * 4);
-    } else {
-      // Defensive: width mismatch — copy row by row (still native per-row copy).
-      const rows = Math.min(size.height, H - actualY * scale);
-      for (let r = 0; r < rows; r++) {
-        bmp.copy(bgra, (actualY * scale + r) * W * 4, r * size.width * 4, r * size.width * 4 + Math.min(size.width, W) * 4);
+    const destRow = scrollStitchRowOffset(actualY, dpr);
+    if (destRow < H) {
+      const rows = Math.min(size.height, H - destRow);
+      if (rows > 0) {
+        if (size.width === W) {
+          // Chunk rows are full-width and contiguous — one native memcpy.
+          bmp.copy(bgra, destRow * W * 4, 0, rows * W * 4);
+        } else {
+          // Defensive width mismatch — copy the overlapping width row by row.
+          const rowWidth = Math.min(size.width, W) * 4;
+          for (let r = 0; r < rows; r++) {
+            bmp.copy(bgra, (destRow + r) * W * 4, r * size.width * 4, r * size.width * 4 + rowWidth);
+          }
+        }
       }
     }
     if (target >= maxScroll) break;
