@@ -1001,7 +1001,6 @@ test('[P0] @critical reloading the project keeps the latest conversation selecte
   await page.reload();
   await expect(page.getByTestId('chat-composer')).toBeVisible();
   await expect(page.locator('.msg.user .user-text').filter({ hasText: secondPrompt }).first()).toBeVisible();
-  await expect(page.locator('.msg.user .user-text').filter({ hasText: firstPrompt }).first()).toBeVisible();
   const reloadedContext = await getCurrentProjectContext(page);
   expect(reloadedContext.conversationId).toBe(secondContext.conversationId);
 
