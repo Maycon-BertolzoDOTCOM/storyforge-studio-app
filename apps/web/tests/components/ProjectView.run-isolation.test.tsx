@@ -714,6 +714,31 @@ describe('ProjectView conversation run isolation', () => {
     );
   });
 
+  it('does not seed a fresh conversation from an active run', async () => {
+    conversationAMessages = [
+      {
+        id: 'user-a',
+        role: 'user',
+        content: 'Keep the editorial grid and muted palette.',
+        createdAt: 1,
+      },
+      {
+        ...runningAssistant,
+        content: 'Partial assistant output',
+      },
+    ];
+
+    renderProjectView();
+
+    await waitFor(() => expect(screen.getByTestId('active-conversation').textContent).toBe('conv-a'));
+    await waitFor(() => expect(screen.getByTestId('streaming-state').textContent).toBe('streaming'));
+
+    fireEvent.click(screen.getByTestId('new-conversation'));
+
+    await waitFor(() => expect(createConversation).toHaveBeenCalledTimes(1));
+    expect(createConversation).toHaveBeenCalledWith('project-1', undefined, undefined);
+  });
+
   it('keeps the new conversation payload compact when the visible messages update', async () => {
     const userMessage: ChatMessage = {
       id: 'user-a',

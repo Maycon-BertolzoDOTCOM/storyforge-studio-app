@@ -5142,6 +5142,7 @@ export function ProjectView({
         typeof activeConversationId === 'string'
         && activeConversationId
         && messagesConversationIdRef.current === activeConversationId
+        && !currentConversationHasActiveRun
         && messages.length > 0
           ? activeConversationId
           : null;
@@ -5188,7 +5189,14 @@ export function ProjectView({
       creatingConversationRef.current = false;
       setCreatingConversation(false);
     }
-  }, [project.id, activeConversationId, messages, navigate, openTabsState.active]);
+  }, [
+    project.id,
+    activeConversationId,
+    currentConversationHasActiveRun,
+    messages,
+    navigate,
+    openTabsState.active,
+  ]);
 
   const handleSelectConversation = useCallback((id: string) => {
     if (id === activeConversationId && failedMessagesConversationId !== id) return;
