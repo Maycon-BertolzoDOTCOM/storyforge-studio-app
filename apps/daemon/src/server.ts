@@ -1,5 +1,10 @@
 // @ts-nocheck
-import type { DesktopExportPdfInput, DesktopExportPdfResult } from '@open-design/sidecar-proto';
+import type {
+  DesktopExportPdfInput,
+  DesktopExportPdfResult,
+  DesktopRenderSlidesInput,
+  DesktopRenderSlidesResult,
+} from '@open-design/sidecar-proto';
 import express from 'express';
 import multer from 'multer';
 import JSZip from 'jszip';
@@ -4056,6 +4061,7 @@ export function createSseResponse(
 }
 
 export type DesktopPdfExporter = (input: DesktopExportPdfInput) => Promise<DesktopExportPdfResult>;
+export type DesktopSlideRenderer = (input: DesktopRenderSlidesInput) => Promise<DesktopRenderSlidesResult>;
 
 // Loosely typed shape — we only access `namespace`, `base`, `mode`, and
 // `source` from the runtime context when building the diagnostics export.
@@ -4070,6 +4076,7 @@ export interface DaemonRuntimeContext {
 
 export interface StartServerOptions {
   desktopPdfExporter?: DesktopPdfExporter | null;
+  desktopSlideRenderer?: DesktopSlideRenderer | null;
   host?: string;
   port?: number;
   returnServer?: boolean;
@@ -4419,6 +4426,7 @@ export async function startServer({
   host = normalizeDaemonBindHost(process.env.OD_BIND_HOST),
   returnServer = false,
   desktopPdfExporter = null,
+  desktopSlideRenderer = null,
   runtime = null,
 }: StartServerOptions = {}) {
   host = normalizeDaemonBindHost(host);
@@ -5681,6 +5689,7 @@ export async function startServer({
     buildBatchArchive,
     buildDesktopPdfExportInput,
     desktopPdfExporter,
+    desktopSlideRenderer,
     daemonUrlRef,
     sanitizeArchiveFilename,
   };

@@ -1,4 +1,4 @@
-import type { Express } from 'express';
+import type { Express, Response } from 'express';
 import { PROJECT_EXPORT_MANIFEST_SCHEMA } from '@open-design/contracts';
 import nodePath from 'node:path';
 import type { RouteDeps } from './server-context.js';
@@ -8,6 +8,13 @@ import {
   inlineRelativeAssets,
   type InlineAssetReader,
 } from './inline-assets.js';
+import {
+  buildDeckRenderInput,
+  buildScreenshotPdf,
+  buildScreenshotPptx,
+  decodeSlideDataUrls,
+  type BuildDeckRenderInputOptions,
+} from './deck-export.js';
 import { authorizeReasoningEgress, sendReasoningEgressDenial } from './reasoning-egress.js';
 import { sandboxImportedProjectRootUnavailableReason } from './sandbox-mode.js';
 import { parseOrchestratorWorkspace } from './workspace-contract.js';
@@ -403,9 +410,83 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
     buildBatchArchive,
     buildDesktopPdfExportInput,
     desktopPdfExporter,
+    desktopSlideRenderer,
     daemonUrlRef,
     sanitizeArchiveFilename,
   } = ctx.exports;
+
+  // Shared screenshot-export flow: render the deck to one PNG per slide via the
+  // desktop's Electron Chromium, then assemble the requested binary. Both the
+  // .pptx and raster-.pdf routes funnel through here. Like the PDF route, it
+  // requires the desktop runtime — there is no headless renderer in a bare
+  // daemon yet, so a web-only deployment gets a clear 501.
+  async function handleScreenshotExport(
+    res: Response,
+    format: 'pptx' | 'pdf',
+    projectId: string,
+    body: any,
+  ) {
+    if (typeof desktopSlideRenderer !== 'function') {
+      return sendApiError(
+        res,
+        501,
+        'UPSTREAM_UNAVAILABLE',
+        'screenshot export is only available in the desktop runtime',
+      );
+    }
+    try {
+      const { fileName, title, scale } = body || {};
+      if (typeof fileName !== 'string' || fileName.length === 0) {
+        return sendApiError(res, 400, 'BAD_REQUEST', 'fileName required');
+      }
+      const renderOptions: BuildDeckRenderInputOptions = {
+        daemonUrl: daemonUrlRef.current,
+        fileName,
+        projectId,
+        projectsRoot: PROJECTS_DIR,
+      };
+      if (typeof title === 'string') renderOptions.title = title;
+      if (typeof scale === 'number' && Number.isFinite(scale)) renderOptions.scale = scale;
+      const { input, title: resolvedTitle, defaultFilename } =
+        await buildDeckRenderInput(renderOptions);
+      const rendered = await desktopSlideRenderer(input);
+      if (!rendered.ok || !Array.isArray(rendered.slides) || rendered.slides.length === 0) {
+        return sendApiError(
+          res,
+          502,
+          'UPSTREAM_UNAVAILABLE',
+          rendered.error || 'desktop renderer returned no slides',
+        );
+      }
+      const pngs = decodeSlideDataUrls(rendered.slides);
+      const buffer =
+        format === 'pdf'
+          ? await buildScreenshotPdf(pngs)
+          : await buildScreenshotPptx(pngs, { title: resolvedTitle });
+      const filename = `${defaultFilename}.${format}`;
+      const asciiFallback =
+        filename.replace(/[^\x20-\x7e]/g, '_').replace(/"/g, '_') || `deck.${format}`;
+      res.setHeader(
+        'Content-Type',
+        format === 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+      );
+      res.send(buffer);
+    } catch (err: any) {
+      const status = err && err.code === 'ENOENT' ? 404 : 400;
+      sendApiError(
+        res,
+        status,
+        status === 404 ? 'FILE_NOT_FOUND' : 'BAD_REQUEST',
+        String(err?.message || err),
+      );
+    }
+  }
   // Streams a ZIP of the project's on-disk tree so the "Download as .zip"
   // share menu can hand the user the actual files they uploaded — e.g. the
   // imported `ui-design/` folder — instead of a one-file snapshot of the
@@ -542,6 +623,20 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         String(err?.message || err),
       );
     }
+  });
+
+  // Programmatic screenshot-based PPTX: render each deck slide to a pixel-perfect
+  // PNG and assemble a one-image-per-slide .pptx. Replaces the old "send a prompt
+  // to the agent and hope it runs python-pptx" path with a deterministic export.
+  app.post('/api/projects/:id/export/pptx', async (req, res) => {
+    await handleScreenshotExport(res, 'pptx', req.params.id, req.body);
+  });
+
+  // Programmatic screenshot-based (raster) PDF: one pixel-perfect page per slide.
+  // The print-ready vector PDF stays on POST /export/pdf; this is the "exactly
+  // what you see" counterpart that shares the slide renderer with PPTX.
+  app.post('/api/projects/:id/export/pdf-image', async (req, res) => {
+    await handleScreenshotExport(res, 'pdf', req.params.id, req.body);
   });
 
   // Export endpoint: serves an HTML body with every same-project

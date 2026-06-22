@@ -12,6 +12,7 @@ import {
   exportAsPdf,
   exportProjectAsHtml,
   exportProjectAsPdf,
+  exportProjectAsPptx,
   openSandboxedPreviewInNewTab,
   prepareImageExportTarget,
   requestPreviewSnapshot,
@@ -321,6 +322,82 @@ describe('exportProjectAsHtml', () => {
 
     expect(capturedFilename).toBe('Fallback.html');
     expect(await capturedBlob!.text()).toContain('<main>fallback</main>');
+  });
+});
+
+describe('exportProjectAsPptx', () => {
+  let capturedBlob: Blob | undefined;
+  let capturedFilename: string | undefined;
+
+  beforeEach(() => {
+    capturedBlob = undefined;
+    capturedFilename = undefined;
+    vi.stubGlobal('URL', {
+      createObjectURL: (blob: Blob) => {
+        capturedBlob = blob;
+        return 'blob:test';
+      },
+      revokeObjectURL: () => {},
+    });
+    vi.stubGlobal('document', {
+      createElement: () => {
+        const anchor = { href: '', click: () => {} } as { href: string; download?: string; click: () => void };
+        Object.defineProperty(anchor, 'download', {
+          set(value: string) {
+            capturedFilename = value;
+          },
+          get() {
+            return capturedFilename ?? '';
+          },
+        });
+        return anchor;
+      },
+      body: { appendChild: () => {}, removeChild: () => {} },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('POSTs to the pptx export route and downloads the returned bytes', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('PK-fake-pptx', { status: 200 })),
+    );
+
+    const res = await exportProjectAsPptx({ projectId: 'proj 1', fileName: 'decks/pitch.html' });
+
+    expect(res.ok).toBe(true);
+    expect(fetch).toHaveBeenCalledWith('/api/projects/proj%201/export/pptx', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fileName: 'decks/pitch.html' }),
+    });
+    expect(capturedFilename).toBe('pitch.pptx');
+    expect(await capturedBlob!.text()).toBe('PK-fake-pptx');
+  });
+
+  it('routes pdf format to the raster pdf-image endpoint', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('%PDF-fake', { status: 200 })));
+
+    await exportProjectAsPptx({ projectId: 'p', fileName: 'deck.html', format: 'pdf' });
+
+    expect(fetch).toHaveBeenCalledWith('/api/projects/p/export/pdf-image', expect.anything());
+    expect(capturedFilename).toBe('deck.pdf');
+  });
+
+  it('returns the daemon error message when the export is unavailable', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ error: { message: 'desktop only' } }), { status: 501 })),
+    );
+
+    const res = await exportProjectAsPptx({ projectId: 'p', fileName: 'deck.html' });
+
+    expect(res.ok).toBe(false);
+    expect(res.error).toBe('desktop only');
   });
 });
 

@@ -42,6 +42,23 @@ function triggerHrefDownload(href: string, filename: string): void {
   document.body.removeChild(a);
 }
 
+// Pulls the attachment filename out of a Content-Disposition header,
+// preferring the RFC 5987 UTF-8 form. Returns null when absent so callers
+// can fall back to a locally derived name.
+function filenameFromContentDisposition(resp: Response): string | null {
+  const header = resp.headers.get('content-disposition') || '';
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (star && star[1]) {
+    try {
+      return decodeURIComponent(star[1]);
+    } catch {
+      // fall through
+    }
+  }
+  const plain = /filename="([^"]+)"/i.exec(header);
+  return plain && plain[1] ? plain[1] : null;
+}
+
 function triggerDownload(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   triggerHrefDownload(url, filename);
@@ -832,6 +849,52 @@ export async function exportProjectAsZip(opts: {
   } catch (err) {
     console.warn('[exportProjectAsZip] falling back to single-file ZIP:', err);
     exportAsZip(opts.fallbackHtml, opts.fallbackTitle);
+  }
+}
+
+export type ProjectScreenshotExportResult = { ok: boolean; error?: string };
+
+// Programmatic screenshot-based PPTX export. POSTs to the daemon, which renders
+// each deck slide to a pixel-perfect PNG (via the desktop's Electron Chromium)
+// and assembles a one-image-per-slide .pptx, then streams the bytes back for a
+// blob download. Replaces the old "send a prompt and let the agent run
+// python-pptx" path. `format: 'pdf'` produces the raster (screenshot) PDF.
+export async function exportProjectAsPptx(opts: {
+  projectId: string;
+  fileName: string;
+  title?: string;
+  format?: 'pptx' | 'pdf';
+}): Promise<ProjectScreenshotExportResult> {
+  const format = opts.format ?? 'pptx';
+  const path = format === 'pdf' ? 'export/pdf-image' : 'export/pptx';
+  const url = `/api/projects/${encodeURIComponent(opts.projectId)}/${path}`;
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        fileName: opts.fileName,
+        ...(opts.title ? { title: opts.title } : {}),
+      }),
+    });
+    if (!resp.ok) {
+      let message = `export request failed (${resp.status})`;
+      try {
+        const err = await resp.json();
+        if (err?.error?.message) message = String(err.error.message);
+      } catch {
+        // non-JSON error body; keep the status-based message
+      }
+      return { ok: false, error: message };
+    }
+    const blob = await resp.blob();
+    const base = opts.fileName.replace(/^.*\//, '').replace(/\.html?$/i, '');
+    const slug = safeFilename(opts.title || base, 'deck');
+    const fromHeader = filenameFromContentDisposition(resp);
+    triggerDownload(blob, fromHeader || `${slug}.${format}`);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
 

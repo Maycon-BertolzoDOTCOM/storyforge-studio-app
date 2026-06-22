@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // @ts-nocheck
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { runDaemonCliStartup, startDaemonRuntime } from './daemon-startup.js';
 import { runLiveArtifactsMcpServer } from './mcp-live-artifacts-server.js';
@@ -186,6 +186,11 @@ const PROJECT_STRING_FLAGS = new Set([
   'title', 'against', 'seed-from', 'fork-after', 'mode',
 ]);
 const PROJECT_BOOLEAN_FLAGS = new Set(['help', 'h', 'json', 'follow']);
+// `od export pptx|pdf` mirrors the web Export panel's programmatic screenshot
+// export against the same /api/projects/:id/export/* endpoints. Dual-track
+// closure for the PPTX/PDF export capability.
+const EXPORT_STRING_FLAGS = new Set(['daemon-url', 'project', 'file', 'output', 'title']);
+const EXPORT_BOOLEAN_FLAGS = new Set(['help', 'h', 'json']);
 // `od templates …` mirrors NewProjectPanel / ExamplesTab. Same surface,
 // same /api/templates store. The CLI form is the embeddability contract:
 // external agents (hermes-agent, openclaw, ...) can snapshot, list, or
@@ -277,6 +282,7 @@ const SUBCOMMAND_MAP = {
   'design-systems': runDesignSystems,
   craft: runCraft,
   diagnostics: runDiagnostics,
+  export: runExport,
   status: runStatus,
   version: runVersion,
   doctor: runDoctor,
@@ -5413,6 +5419,73 @@ async function attachTerminal(base, projectId, terminalId) {
     }
   } finally {
     restore();
+  }
+}
+
+async function runExport(args) {
+  if (args.length === 0 || args[0] === 'help' || args.includes('--help') || args.includes('-h')) {
+    console.log(`Usage:
+  od export pptx --project <id> --file <relpath> [--output <path>] [--title <t>] [--json]
+  od export pdf  --project <id> --file <relpath> [--output <path>] [--title <t>] [--json]
+
+Programmatic screenshot-based export: each deck slide is rendered to a
+pixel-perfect PNG and assembled into a .pptx (one image per slide) or a raster
+.pdf (one page per slide). Requires the desktop runtime to render slides.
+
+Options:
+  --project <id>      Project id (or set OD_PROJECT_ID).
+  --file <relpath>    Deck HTML file within the project.
+  --output <path>     Output path. Defaults to <file>.<ext> in the current dir.
+  --title <t>         Override the deck title.
+  --daemon-url <url>  Open Design daemon HTTP base.
+  --json              Emit a machine-readable result.`);
+    process.exit(args.length === 0 ? 2 : 0);
+  }
+  const format = args[0];
+  if (format !== 'pptx' && format !== 'pdf') {
+    console.error(`unknown export format: ${format} (expected 'pptx' or 'pdf')`);
+    process.exit(2);
+  }
+  const rest = args.slice(1);
+  let flags;
+  try {
+    flags = parseFlags(rest, { string: EXPORT_STRING_FLAGS, boolean: EXPORT_BOOLEAN_FLAGS });
+  } catch (err) {
+    console.error(err.message);
+    process.exit(2);
+  }
+  const projectId = flags.project || process.env.OD_PROJECT_ID;
+  const fileName = flags.file;
+  if (!projectId) {
+    console.error('project id required. Pass --project <id> or set OD_PROJECT_ID.');
+    process.exit(2);
+  }
+  if (typeof fileName !== 'string' || fileName.length === 0) {
+    console.error('--file <relpath> required (the deck HTML to export)');
+    process.exit(2);
+  }
+  const base = (await projectDaemonUrl(flags)).replace(/\/$/, '');
+  const route = format === 'pdf' ? 'export/pdf-image' : 'export/pptx';
+  let resp;
+  try {
+    resp = await fetch(`${base}/api/projects/${encodeURIComponent(projectId)}/${route}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fileName, ...(flags.title ? { title: flags.title } : {}) }),
+    });
+  } catch (err) {
+    surfaceFetchError(err, base);
+    process.exit(3);
+  }
+  if (!resp.ok) return structuredHttpFailure(resp, 'export-failed');
+  const buf = Buffer.from(await resp.arrayBuffer());
+  const fallbackName = `${basename(fileName).replace(/\.html?$/i, '') || 'deck'}.${format}`;
+  const outPath = typeof flags.output === 'string' && flags.output.length > 0 ? flags.output : fallbackName;
+  writeFileSync(outPath, buf);
+  if (flags.json) {
+    process.stdout.write(JSON.stringify({ ok: true, path: outPath, bytes: buf.length, format }) + '\n');
+  } else {
+    console.error(`wrote ${outPath} (${buf.length} bytes)`);
   }
 }
 

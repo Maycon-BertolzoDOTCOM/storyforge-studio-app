@@ -85,6 +85,7 @@ export const SIDECAR_MESSAGES = Object.freeze({
   EXPORT_PDF: "export-pdf",
   MINT_IMPORT_TOKEN: "mint-import-token",
   REGISTER_DESKTOP_AUTH: "register-desktop-auth",
+  RENDER_SLIDES: "render-slides",
   SCREENSHOT: "screenshot",
   SHUTDOWN: "shutdown",
   SHOW: "show",
@@ -241,6 +242,25 @@ export type DesktopExportPdfResult = {
   path?: string;
 };
 
+// Renders an HTML deck (every `<section class="slide">`) to one pixel-perfect
+// PNG per slide using the desktop's Electron Chromium, so screenshot-based
+// PPTX/PDF export reuses the already-bundled browser instead of shipping a
+// second headless engine. `slides` are `data:image/png;base64,...` URLs in
+// slide order; `width`/`height` are the captured pixel dimensions.
+export type DesktopRenderSlidesInput = {
+  baseHref?: string;
+  html: string;
+  scale?: number;
+};
+
+export type DesktopRenderSlidesResult = {
+  error?: string;
+  height?: number;
+  ok: boolean;
+  slides?: string[];
+  width?: number;
+};
+
 export type DesktopUpdateCapabilitySet = {
   canApplyInPlace: boolean;
   canDownload: boolean;
@@ -381,6 +401,7 @@ export type DesktopConsoleMessage = { type: typeof SIDECAR_MESSAGES.CONSOLE };
 export type DesktopShowMessage = { type: typeof SIDECAR_MESSAGES.SHOW };
 export type DesktopClickMessage = { input: DesktopClickInput; type: typeof SIDECAR_MESSAGES.CLICK };
 export type DesktopExportPdfMessage = { input: DesktopExportPdfInput; type: typeof SIDECAR_MESSAGES.EXPORT_PDF };
+export type DesktopRenderSlidesMessage = { input: DesktopRenderSlidesInput; type: typeof SIDECAR_MESSAGES.RENDER_SLIDES };
 export type DesktopUpdateMessage = { input: DesktopUpdateInput; type: typeof SIDECAR_MESSAGES.UPDATE };
 
 // Sent by the desktop main process to the daemon over its sidecar IPC at
@@ -434,6 +455,7 @@ export type DesktopSidecarMessage =
   | DesktopShowMessage
   | DesktopClickMessage
   | DesktopExportPdfMessage
+  | DesktopRenderSlidesMessage
   | DesktopUpdateMessage;
 
 export type ShutdownResult = {
@@ -639,6 +661,19 @@ function normalizeDesktopExportPdfInput(input: unknown): DesktopExportPdfInput {
   };
 }
 
+function normalizeDesktopRenderSlidesInput(input: unknown): DesktopRenderSlidesInput {
+  const value = assertObject(input, "desktop render slides input");
+  assertKnownKeys(value, ["baseHref", "html", "scale"], "desktop render slides input");
+  if (value.scale != null && (typeof value.scale !== "number" || !Number.isFinite(value.scale) || value.scale <= 0)) {
+    throw new Error("desktop render slides scale must be a positive number");
+  }
+  return {
+    ...(value.baseHref == null ? {} : { baseHref: normalizeNonEmptyString(value.baseHref, "desktop render slides baseHref") }),
+    html: normalizeNonEmptyString(value.html, "desktop render slides html"),
+    ...(value.scale == null ? {} : { scale: value.scale }),
+  };
+}
+
 function isDesktopUpdateAction(value: unknown): value is DesktopUpdateAction {
   return Object.values(DESKTOP_UPDATE_ACTIONS).includes(value as DesktopUpdateAction);
 }
@@ -709,6 +744,9 @@ export function normalizeDesktopSidecarMessage(input: unknown): DesktopSidecarMe
     case SIDECAR_MESSAGES.EXPORT_PDF:
       assertKnownKeys(value, ["input", "type"], "desktop sidecar message");
       return { input: normalizeDesktopExportPdfInput(value.input), type };
+    case SIDECAR_MESSAGES.RENDER_SLIDES:
+      assertKnownKeys(value, ["input", "type"], "desktop sidecar message");
+      return { input: normalizeDesktopRenderSlidesInput(value.input), type };
     case SIDECAR_MESSAGES.UPDATE:
       assertKnownKeys(value, ["input", "type"], "desktop sidecar message");
       return { input: normalizeDesktopUpdateInput(value.input), type };

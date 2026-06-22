@@ -169,7 +169,7 @@ import {
   removeAttachedComment,
 } from '../comments';
 import { filterImplicitProducedFiles } from '../produced-files';
-import { buildPptxExportPrompt } from '../lib/build-pptx-export-prompt';
+import { exportProjectAsPptx } from '../runtime/exports';
 import { AvatarMenu } from './AvatarMenu';
 import { EntrySettingsMenu } from './EntrySettingsMenu';
 import { HandoffButton } from './HandoffButton';
@@ -5106,16 +5106,16 @@ export function ProjectView({
 
   const handleExportAsPptx = useCallback(
     (fileName: string) => {
-      if (currentConversationActionDisabled) return;
-      const prompt = buildPptxExportPrompt(fileName);
-      const attachment: ChatAttachment = {
-        path: fileName,
-        name: fileName,
-        kind: 'file',
-      };
-      void handleSend(prompt, [attachment], []);
+      // Programmatic, deterministic export: the daemon renders each deck slide
+      // to a pixel-perfect PNG and assembles a screenshot-based .pptx. Replaces
+      // the old path that sent a prompt asking the agent to run python-pptx.
+      void exportProjectAsPptx({ projectId: project.id, fileName }).then((res) => {
+        if (!res.ok) {
+          setError(res.error || 'PPTX export failed');
+        }
+      });
     },
-    [currentConversationActionDisabled, handleSend],
+    [project.id],
   );
 
   const handleNewConversation = useCallback(async () => {
