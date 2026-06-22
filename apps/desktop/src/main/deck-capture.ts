@@ -150,18 +150,20 @@ export async function renderDeckSlides(
     // Pin the stage to the measured slide size.
     await window.webContents.executeJavaScript(`(${pinDeckStage.toString()})(${stage.w}, ${stage.h})`, true);
 
+    // Deck slides always encode as PNG (crisp text, no JPEG artifacts) — JPEG is
+    // a full-document `page`-mode optimization only, per the render-slides
+    // contract. So `pageImageFormat` is intentionally ignored in the deck branch.
+    const jpeg = false;
+
     // Image export of a deck wants every slide stitched top-to-bottom into one
     // tall image (the "whole deck as one picture").
     if (input.stitch) {
-      return finish(
-        await stitchDeckSlides(window, count, stage, input.pageImageFormat === "jpeg", input.outputDir),
-      );
+      return finish(await stitchDeckSlides(window, count, stage, jpeg, input.outputDir));
     }
 
     // Otherwise render every slide (or just the one requested by image export).
     const indices =
       input.index != null && input.index >= 0 && input.index < count ? [input.index] : range(count);
-    const jpeg = input.pageImageFormat === "jpeg";
     const images: Array<{ buffer: Buffer; jpeg: boolean }> = [];
     let width = stage.w;
     let height = stage.h;

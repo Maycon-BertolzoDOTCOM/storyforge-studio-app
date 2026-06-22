@@ -443,7 +443,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
     // the finally below. Derived from RUNTIME_DATA_DIR per the data-dir contract.
     const renderOutputDir = path.join(RUNTIME_DATA_DIR_CANONICAL, 'export-render', randomId());
     try {
-      const { fileName, title, scale, index } = body || {};
+      const { fileName, title, index } = body || {};
       if (typeof fileName !== 'string' || fileName.length === 0) {
         return sendApiError(res, 400, 'BAD_REQUEST', 'fileName required');
       }
@@ -455,7 +455,6 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         projectsRoot: PROJECTS_DIR,
       };
       if (typeof title === 'string') renderOptions.title = title;
-      if (typeof scale === 'number' && Number.isFinite(scale)) renderOptions.scale = scale;
       // Image export = "the whole artifact as one picture": a deck becomes all
       // slides stitched into one tall image; an ordinary page is its full-page
       // capture. (A specific slide index is still honored if explicitly given.)

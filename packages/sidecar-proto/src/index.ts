@@ -256,7 +256,6 @@ export type DesktopRenderSlidesInput = {
   // Encoding for the full-document `page` mode: `jpeg` (small, for PDF) or `png`
   // (lossless source, for image export). Deck slides are always PNG. Default png.
   pageImageFormat?: "png" | "jpeg";
-  scale?: number;
   // Deck only: render every slide and stitch them top-to-bottom into a single
   // tall image (used by image export of a deck). Ignored for ordinary pages.
   stitch?: boolean;
@@ -687,10 +686,7 @@ function normalizeDesktopExportPdfInput(input: unknown): DesktopExportPdfInput {
 
 function normalizeDesktopRenderSlidesInput(input: unknown): DesktopRenderSlidesInput {
   const value = assertObject(input, "desktop render slides input");
-  assertKnownKeys(value, ["baseHref", "html", "index", "outputDir", "pageImageFormat", "scale", "stitch"], "desktop render slides input");
-  if (value.scale != null && (typeof value.scale !== "number" || !Number.isFinite(value.scale) || value.scale <= 0)) {
-    throw new Error("desktop render slides scale must be a positive number");
-  }
+  assertKnownKeys(value, ["baseHref", "html", "index", "outputDir", "pageImageFormat", "stitch"], "desktop render slides input");
   if (value.index != null && (typeof value.index !== "number" || !Number.isInteger(value.index) || value.index < 0)) {
     throw new Error("desktop render slides index must be a non-negative integer");
   }
@@ -706,7 +702,6 @@ function normalizeDesktopRenderSlidesInput(input: unknown): DesktopRenderSlidesI
     ...(value.index == null ? {} : { index: value.index }),
     ...(value.outputDir == null ? {} : { outputDir: normalizeNonEmptyString(value.outputDir, "desktop render slides outputDir") }),
     ...(value.pageImageFormat == null ? {} : { pageImageFormat: value.pageImageFormat }),
-    ...(value.scale == null ? {} : { scale: value.scale }),
     ...(value.stitch == null ? {} : { stitch: value.stitch }),
   };
 }
