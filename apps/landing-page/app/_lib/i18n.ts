@@ -457,8 +457,24 @@ export function alternateLinks(pathname: string) {
  * locale stays at the unprefixed canonical to avoid duplicate
  * content between `/skills/` and `/en/skills/`.
  */
+// Locales retired 2026-06 (mirror of app/i18n.ts:RETIRED_LOCALE_CODES, in this
+// module's locale-code spelling). The catch-all catalog routes consume
+// PREFIXED_LOCALES, so excluding them here stops those pages from being built;
+// incoming URLs are 301'd in public/_redirects (zh-CN/fa/hu/th also stay covered
+// by the existing LEGACY_LOCALE_PREFIXES handling).
+const RETIRED_PREFIX_LOCALES = new Set<Locale>([
+  'id',
+  'zh-TW',
+  'fa',
+  'ar',
+  'pl',
+  'hu',
+  'uk',
+  'th',
+]);
+
 export const PREFIXED_LOCALES: Locale[] = LOCALES.filter(
-  (locale) => locale !== DEFAULT_LOCALE,
+  (locale) => locale !== DEFAULT_LOCALE && !RETIRED_PREFIX_LOCALES.has(locale),
 );
 
 export function localizedDate(date: Date, locale: Locale): string {
