@@ -20,7 +20,9 @@ permissions:
 
 jobs:
   followup:
-    if: ${{ github.repository == 'nexu-io/open-design' && startsWith(github.event.workflow_run.head_branch, 'backport-') }}
+    # Only react to CI that ran for a *pull request* on a backport-* branch — never a push or
+    # manual dispatch — so a non-PR run can't reach the App-token / Feishu steps below.
+    if: ${{ github.repository == 'nexu-io/open-design' && github.event.workflow_run.event == 'pull_request' && startsWith(github.event.workflow_run.head_branch, 'backport-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v2
@@ -82,7 +84,9 @@ jobs:
           gh pr merge "$NUM" --repo "$REPO" --squash --delete-branch --match-head-commit "$HEAD_SHA"
 
       - name: Notify Feishu on failed backport CI
-        if: ${{ steps.pr.outputs.found == 'true' && github.event.workflow_run.conclusion == 'failure' }}
+        # Same identity gates as the merge step: only ping for a genuine bot backport from the
+        # same repo, so a fork / non-bot PR named backport-* can't spam the release group.
+        if: ${{ steps.pr.outputs.found == 'true' && steps.pr.outputs.author == 'open-design-release-bot[bot]' && steps.pr.outputs.cross == 'false' && github.event.workflow_run.conclusion == 'failure' }}
         env:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_RELEASE_WEBHOOK }}
           FEISHU_SIGN_SECRET: ${{ secrets.FEISHU_RELEASE_SIGN_SECRET }}
