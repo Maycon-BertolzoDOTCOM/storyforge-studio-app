@@ -243,8 +243,13 @@ test('[P0] empty daemon output fails cleanly, persists after reload, and does no
 
   await sendPrompt(page, 'Return an empty daemon smoke response');
 
+  // The empty-output failure is classified as `empty_output`, so the card now
+  // leads with the human-readable reason and keeps the raw daemon string in the
+  // collapsible source (PR: failure card from failureCategory). Assert the card
+  // surfaces and still carries the raw error — `toContainText` reads the
+  // collapsed source text too, so this holds under both the old and new copy.
   const expectedError = 'Agent completed without producing any output.';
-  await expect(page.getByText(expectedError, { exact: false }).first()).toBeVisible({ timeout: 15_000 });
+  await expect(runErrorCard(page)).toBeVisible({ timeout: 15_000 });
   await expect(runErrorCard(page)).toContainText(expectedError);
 
   const { projectId, conversationId } = await currentProjectContext(page);
@@ -256,7 +261,7 @@ test('[P0] empty daemon output fails cleanly, persists after reload, and does no
 
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expectWorkspaceReady(page);
-  await expect(page.getByText(expectedError, { exact: false }).first()).toBeVisible();
+  await expect(runErrorCard(page)).toBeVisible();
   await expect(runErrorCard(page)).toContainText(expectedError);
   expect(await listProjectFiles(page, projectId)).toEqual([]);
 });
