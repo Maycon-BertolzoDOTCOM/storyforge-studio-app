@@ -217,9 +217,15 @@ github.repository`** (same-repo branches have secrets; forks do not):
   path-eligible** → another bake run, and a loop if any non-semantic manifest
   field changes again (caught in review — thanks @PerishCode; an earlier draft
   wrongly called this "free"). Require a real guard, at least one of:
-  - **skip when the triggering (head) commit is authored by the bake bot**
-    (`if: github.event.pull_request.head.user.login != '<bot>'` / check head
-    commit author), and
+  - **skip when the actual head *commit* was authored by the bake bot.** Note
+    `github.event.pull_request.head.user.login` is the head **repository owner**,
+    not the latest commit author — on a same-repo branch it stays the contributor
+    even after the bot pushes the manifest commit, so it is the **wrong** field
+    (caught in review — thanks @PerishCode, @mrcfps). Check the triggering head
+    commit instead, e.g. after checkout `test "$(git log -1 --format='%ae'
+    ${{ github.event.pull_request.head.sha }})" != "$BAKE_BOT_EMAIL"` (the bake
+    push already sets `git config user.email "bot@open-design.ai"`), or compare
+    `github.actor` only if the bake push token carries a stable bot identity.
   - **compute the manifest diff and only commit when a `previews` entry actually
     changed** (no-op-diff guard — same helper as the `generatedAt` fix), so a
     re-run that produces an identical manifest is a no-op and commits nothing.
@@ -408,9 +414,11 @@ comfortably).
 - **Pre-merge does not loop:** after CI commits the manifest to the PR head, the
   resulting `pull_request.synchronize` run **commits nothing further** — the
   bot-author skip and the no-op `previews`-diff guard both hold, so the run is a
-  single no-op and stops (no second manifest commit, no run storm). Encode by
-  simulating a synchronize event whose head commit is the bake bot and whose
-  manifest diff is empty → `shouldCommit === false`.
+  single no-op and stops (no second manifest commit, no run storm). Assert the
+  guard reads the **head commit author** (`git log -1 --format='%ae'` of
+  `head.sha`), not `pull_request.head.user.login`: a synchronize whose head
+  commit author is `bot@open-design.ai` → `shouldCommit === false`, while one
+  authored by a human contributor with a real `previews` delta → `true`.
 - **No noise:** a nightly run where no plugin content changed opens **no** PR
   (red test today: #4261 was a timestamp-only PR). Encode as a unit test over
   the diff-guard helper: timestamp-only delta → `shouldOpenPr === false`;
