@@ -2582,19 +2582,39 @@ function OnboardingView({
                   }}
                 />
               </label>
-              <div className="onboarding-view__email-field">
-                <button
-                  type="button"
-                  className={`onboarding-view__mini-button${brandExtractActive ? ' is-loading' : ''}`}
-                  onClick={() => {
-                    void handleOnboardingBrandExtract();
-                  }}
-                  disabled={!brandUrl.trim() || brandExtractActive}
-                >
-                  {brandExtractActive
-                    ? t('brand.extracting')
-                    : t('newBrand.extract')}
-                </button>
+              <div
+                style={{
+                  marginTop: 22,
+                  paddingTop: 18,
+                  borderTop: '1px solid var(--border)',
+                }}
+              >
+                <BrandReferencePicker
+                  variant="compact"
+                  busy={brandExtractActive}
+                  error={
+                    brandExtractFailed
+                      ? brandExtractState.error || t('brand.failed')
+                      : null
+                  }
+                  onPick={handleOnboardingPickReference}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <div
+            className={`onboarding-view__actions${
+              step === 3 ? ' onboarding-view__actions--brand' : ''
+            }`}
+          >
+            {step === 0 && amrLoginError ? (
+              <span className="onboarding-view__action-status is-error" role="alert">
+                {amrLoginError}
+              </span>
+            ) : null}
+            {step === 3 ? (
+              <div className="onboarding-view__brand-action-statuses">
                 {brandExtractActive ? (
                   <span
                     className="onboarding-view__action-status"
@@ -2617,32 +2637,6 @@ function OnboardingView({
                   </span>
                 ) : null}
               </div>
-              <div
-                style={{
-                  marginTop: 22,
-                  paddingTop: 18,
-                  borderTop: '1px solid var(--border)',
-                }}
-              >
-                <BrandReferencePicker
-                  variant="compact"
-                  busy={brandExtractActive}
-                  error={
-                    brandExtractFailed
-                      ? brandExtractState.error || t('brand.failed')
-                      : null
-                  }
-                  onPick={handleOnboardingPickReference}
-                />
-              </div>
-            </div>
-          ) : null}
-
-          <div className="onboarding-view__actions">
-            {step === 0 && amrLoginError ? (
-              <span className="onboarding-view__action-status is-error" role="alert">
-                {amrLoginError}
-              </span>
             ) : null}
             {step === 0 && amrLoginPending ? (
               <button
@@ -2653,6 +2647,30 @@ function OnboardingView({
               >
                 {t('settings.amrCancelSignIn')}
               </button>
+            ) : null}
+            {step === 3 ? (
+              <div className="onboarding-view__brand-action-group">
+                <button
+                  type="button"
+                  className="onboarding-view__secondary"
+                  onClick={handlePrimaryAction}
+                  disabled={newsletterSubmitting}
+                >
+                  {t('onboarding.brandSkip')}
+                </button>
+                <button
+                  type="button"
+                  className={`onboarding-view__secondary${brandExtractActive ? ' is-loading' : ''}`}
+                  onClick={() => {
+                    void handleOnboardingBrandExtract();
+                  }}
+                  disabled={!brandUrl.trim() || brandExtractActive}
+                >
+                  {brandExtractActive
+                    ? t('brand.extracting')
+                    : t('newBrand.extract')}
+                </button>
+              </div>
             ) : null}
             <button
               type="button"
