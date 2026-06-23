@@ -10,7 +10,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import net from 'node:net';
-import { PLUGIN_SHARE_ACTION_PLUGIN_IDS } from '@open-design/contracts';
+import { executionProfileFromStreamFormat, PLUGIN_SHARE_ACTION_PLUGIN_IDS } from '@open-design/contracts';
 import {
   composeSystemPrompt,
   resolveExclusiveSurface,
@@ -1540,6 +1540,68 @@ export function __forTestScanRunEventsForRetrySideEffects(events) {
   return scanRunEventsForRetrySideEffects(events);
 }
 
+function fileNameFromToolInputPath(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const normalized = trimmed.replace(/\\/g, '/');
+  return normalized.split('/').filter(Boolean).at(-1) ?? trimmed;
+}
+
+function filesystemWriteFileNamesFromRunEvents(events) {
+  const names = [];
+  const seen = new Set();
+  for (const rec of Array.isArray(events) ? events : []) {
+    const data = rec?.data;
+    if (!data || typeof data !== 'object') continue;
+    if (data.type !== 'tool_use' && data.type !== 'artifact') continue;
+
+    const toolName = typeof data.name === 'string' ? data.name : '';
+    const isFileTool =
+      data.type === 'artifact' ||
+      /^(Write|Edit|MultiEdit|write_file|edit_file|replace_file)$/i.test(toolName);
+    if (!isFileTool) continue;
+
+    const input = data.input && typeof data.input === 'object' ? data.input : {};
+    const candidate =
+      fileNameFromToolInputPath(input.file_path) ||
+      fileNameFromToolInputPath(input.filePath) ||
+      fileNameFromToolInputPath(input.path) ||
+      fileNameFromToolInputPath(input.filename) ||
+      fileNameFromToolInputPath(data.path) ||
+      fileNameFromToolInputPath(data.filePath) ||
+      fileNameFromToolInputPath(data.name);
+    if (!candidate || seen.has(candidate)) continue;
+    seen.add(candidate);
+    names.push(candidate);
+  }
+  return names;
+}
+
+export function __forTestFilesystemWriteFileNamesFromRunEvents(events) {
+  return filesystemWriteFileNamesFromRunEvents(events);
+}
+
+function filesystemEmptyAnswerFallbackText(fileNames) {
+  if (!Array.isArray(fileNames) || fileNames.length === 0) {
+    return 'Wrote project files.';
+  }
+  const shown = fileNames.slice(0, 3);
+  if (fileNames.length === 1) {
+    return `Wrote ${shown[0]}.`;
+  }
+  if (fileNames.length <= 3) {
+    const last = shown.at(-1);
+    const first = shown.slice(0, -1).join(', ');
+    return `Wrote ${first} and ${last}.`;
+  }
+  return `Wrote ${shown.join(', ')}, and ${fileNames.length} files total.`;
+}
+
+export function __forTestFilesystemEmptyAnswerFallbackText(fileNames) {
+  return filesystemEmptyAnswerFallbackText(fileNames);
+}
+
 function retryFinalResultForRunStatus(status, retryAttemptCount) {
   const result = runResultFromStatus(status);
   if ((retryAttemptCount ?? 0) <= 0) {
@@ -1982,6 +2044,26 @@ export function daemonAgentPayloadToPersistedAgentEvent(data) {
       outputTokens: usage.output_tokens,
       ...(typeof data.costUsd === 'number' ? { costUsd: data.costUsd } : {}),
       ...(typeof data.durationMs === 'number' ? { durationMs: data.durationMs } : {}),
+    };
+  }
+  if (type === 'diagnostic' && typeof data.name === 'string') {
+    return {
+      kind: 'diagnostic',
+      name: data.name,
+      ...(typeof data.source === 'string' ? { source: data.source } : {}),
+      ...(typeof data.elapsedMs === 'number' ? { elapsedMs: data.elapsedMs } : {}),
+      ...(typeof data.reason === 'string' ? { reason: data.reason } : {}),
+      ...(typeof data.suppressedChars === 'number' ? { suppressedChars: data.suppressedChars } : {}),
+      ...(typeof data.suppressedChunks === 'number' ? { suppressedChunks: data.suppressedChunks } : {}),
+      ...(typeof data.openedBlocks === 'number' ? { openedBlocks: data.openedBlocks } : {}),
+      ...(typeof data.closedBlocks === 'number' ? { closedBlocks: data.closedBlocks } : {}),
+      ...(typeof data.fileCount === 'number' ? { fileCount: data.fileCount } : {}),
+      ...(Array.isArray(data.files) ? { files: data.files.filter((file) => typeof file === 'string').slice(0, 8) } : {}),
+      ...(typeof data.pendingCandidateChars === 'number'
+        ? { pendingCandidateChars: data.pendingCandidateChars }
+        : {}),
+      ...(typeof data.suppressing === 'boolean' ? { suppressing: data.suppressing } : {}),
+      ...(data.shape && typeof data.shape === 'object' ? { shape: data.shape } : {}),
     };
   }
   if (type === 'fabricated_role_marker' && typeof data.marker === 'string') {
@@ -2845,7 +2927,7 @@ function rewriteKnownAgentStreamError(agentId, message, failureText = '') {
   if (
     /bufio\.scanner:\s*token too long/i.test(combined) &&
     /opencode/i.test(combined) &&
-    (agentId === 'opencode' || agentId === 'amr' || /json-rpc id \d+/i.test(combined))
+    (agentId === 'opencode' || agentId === 'mimo' || agentId === 'amr' || /json-rpc id \d+/i.test(combined))
   ) {
     return 'The run failed due to an unknown upstream streaming error. Please retry.';
   }
@@ -3766,6 +3848,7 @@ export async function startServer({
     PROJECTS_DIR,
     ARTIFACTS_DIR,
     LIBRARY_DIR,
+    BRANDS_DIR,
     RUNTIME_DATA_DIR,
     RUNTIME_DATA_DIR_CANONICAL,
     DESIGN_SYSTEMS_DIR,
@@ -4146,6 +4229,16 @@ export async function startServer({
     },
     generationJobs: designSystemGenerationJobs,
   });
+  registerBrandRoutes(app, {
+    brandsRoot: BRANDS_DIR,
+    userDesignSystemsRoot: USER_DESIGN_SYSTEMS_DIR,
+    projectsRoot: PROJECTS_DIR,
+    skillsRoot: SKILLS_DIR,
+    dataDir: RUNTIME_DATA_DIR,
+    db,
+    runs: design.runs,
+    randomId,
+  });
   registerProjectArtifactRoutes(app, {
     http: httpDeps,
     uploads: uploadDeps,
@@ -4243,17 +4336,6 @@ export async function startServer({
     appConfig: { readAppConfig },
     http: { getPublicBaseUrl },
     env: process.env,
-  });
-
-  registerBrandRoutes(app, {
-    brandsRoot: BRANDS_DIR,
-    userDesignSystemsRoot: USER_DESIGN_SYSTEMS_DIR,
-    projectsRoot: PROJECTS_DIR,
-    skillsRoot: SKILLS_DIR,
-    dataDir: RUNTIME_DATA_DIR,
-    db,
-    runs: design.runs,
-    randomId,
   });
 
   const pluginRouteHelpers = {
@@ -5066,6 +5148,7 @@ export async function startServer({
       sessionMode: normalizeConversationSessionMode(sessionMode),
       mediaExecution,
       streamFormat,
+      executionProfile: executionProfileFromStreamFormat(streamFormat),
       connectedExternalMcp: Array.isArray(connectedExternalMcp)
         ? connectedExternalMcp
         : undefined,
@@ -5833,6 +5916,7 @@ export async function startServer({
         ? (def.reasoningOptions.find((r) => r.id === reasoning)?.id ?? null)
         : null;
     const agentOptions = { model: safeModel, reasoning: safeReasoning };
+    const executionProfile = executionProfileFromStreamFormat(def.streamFormat);
     // Accumulates the agent's visible text this run so the close handler can
     // tell whether the turn ended on a clarifying question form. The
     // `od-plugin-authoring` plugin's turn-1 flow is to emit a
@@ -5848,6 +5932,7 @@ export async function startServer({
     // `emittedRenderableQuestionForm`).
     const CLARIFYING_QUESTION_BUFFER_CAP = 256 * 1024;
     let clarifyingQuestionText = '';
+    let visibleAssistantText = '';
     const send = (event, data) => {
       if (
         event === 'agent' &&
@@ -5860,6 +5945,14 @@ export async function startServer({
           0,
           CLARIFYING_QUESTION_BUFFER_CAP,
         );
+      }
+      if (
+        event === 'agent' &&
+        data &&
+        data.type === 'text_delta' &&
+        typeof data.delta === 'string'
+      ) {
+        visibleAssistantText += data.delta;
       }
       persistRunEventToAssistantMessage(db, run, event, data);
       design.runs.emit(run, event, data);
@@ -6132,6 +6225,22 @@ export async function startServer({
         ...(typeof code === 'number' ? { exit_code: code } : {}),
         ...(signal ? { signal } : {}),
       });
+      if (executionProfile === 'filesystem' && result === 'success' && visibleAssistantText.trim().length === 0) {
+        const fileNames = filesystemWriteFileNamesFromRunEvents(run.events);
+        if (fileNames.length > 0) {
+          send('agent', {
+            type: 'diagnostic',
+            name: 'filesystem_empty_answer_autofilled',
+            source: 'daemon-run-finalize',
+            fileCount: fileNames.length,
+            files: fileNames.slice(0, 8),
+          });
+          send('agent', {
+            type: 'text_delta',
+            delta: filesystemEmptyAnswerFallbackText(fileNames),
+          });
+        }
+      }
       pendingRpcCloseReason = null;
       design.runs.finish(run, status, code, signal);
       return false;
@@ -6237,7 +6346,9 @@ export async function startServer({
     // mcp section for this single invocation, which is exactly the kind
     // of surprise the previous silent-failure UX taught us to avoid.
     let opencodeConfigContent: string | null = null;
-    if (def.externalMcpInjection === 'opencode-env-content') {
+    const isOpenCodeContent = def.externalMcpInjection === 'opencode-env-content';
+    const isMiMoContent = def.externalMcpInjection === 'mimo-env-content';
+    if (isOpenCodeContent || isMiMoContent) {
       try {
         opencodeConfigContent = buildOpenCodeMcpConfigContent(
           enabledExternalMcp,
@@ -6933,7 +7044,7 @@ export async function startServer({
         // user's saved `~/.config/opencode/opencode.json` continues
         // to apply as-is.
         ...(opencodeConfigContent
-          ? { OPENCODE_CONFIG_CONTENT: opencodeConfigContent }
+          ? { [isMiMoContent ? 'MIMOCODE_CONFIG_CONTENT' : 'OPENCODE_CONFIG_CONTENT']: opencodeConfigContent }
           : {}),
       }, agentLaunch);
       spawnedAgentEnv = env;
@@ -7783,6 +7894,7 @@ export async function startServer({
         imagePaths: def.supportsImagePaths ? amrStagedImages : [],
         mcpServers,
         envFormat: def.acpMcpEnvFormat ?? 'array',
+        executionProfile,
         ...(def.id === 'amr' ? { modelUnavailableErrorCode: 'AMR_MODEL_UNAVAILABLE' } : {}),
         onCliReady: () => noteCliReadyAt(),
         onSessionInit: () => noteSessionInitDoneAt(),

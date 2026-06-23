@@ -5815,6 +5815,7 @@ export function ProjectView({
     const pendingPrompt = project.pendingPrompt;
     if (!pendingPrompt) return;
     if (autoSendFirstMessageRef.current) {
+      autoSendSeedRef.current = pendingPrompt;
       onClearPendingPrompt();
       return;
     }
@@ -6015,8 +6016,6 @@ export function ProjectView({
     ).trim();
     const attachments = autoSendAttachmentsRef.current ?? [];
     if (!seed && attachments.length === 0) {
-      autoSentRef.current = true;
-      clearAutoSendSession(project.id);
       return;
     }
     autoSentRef.current = true;
