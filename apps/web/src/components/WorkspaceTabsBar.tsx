@@ -154,6 +154,7 @@ function reviveTab(value: unknown): WorkspaceChromeTab | null {
       || view === 'projects'
       || view === 'tasks'
       || view === 'plugins'
+      || view === 'community'
       || view === 'design-systems'
       || view === 'integrations'
     ) {
@@ -1015,21 +1016,7 @@ export function WorkspaceTabsBar({ route, projects, onboardingCompleted = false 
         </button>
       </div>
       <div className="workspace-tabs-actions" ref={menuRef}>
-        {onboardingActive ? null : (
-        <button
-          type="button"
-          className={`workspace-tabs-icon-btn od-tooltip${tabsMenuOpen ? ' is-active' : ''}`}
-          onClick={() => setTabsMenuOpen((open) => !open)}
-          title="Search tabs"
-          data-tooltip="Search tabs"
-          data-tooltip-placement="bottom"
-          aria-label="Search tabs"
-          aria-haspopup="dialog"
-          aria-expanded={tabsMenuOpen}
-        >
-          <Icon name="search" size={15} />
-        </button>
-        )}
+        {/* Tab search removed for the demo. */}
         {tabsMenuOpen && !onboardingActive && typeof document !== 'undefined'
           ? createPortal(
               <div
@@ -1194,6 +1181,9 @@ function displayTabFor(
     projects: t('entry.navProjects'),
     tasks: t('entry.navTasks'),
     plugins: t('entry.navPlugins'),
+    community: t('pluginsHome.title'),
+    drafts: '草稿',
+    'all-projects': '全部项目',
     'design-systems': t('entry.navDesignSystems'),
     library: 'Library',
     brands: t('entry.navBrands'),
@@ -1205,6 +1195,9 @@ function displayTabFor(
     projects: 'folder',
     tasks: 'kanban',
     plugins: 'grid',
+    community: 'globe',
+    drafts: 'file',
+    'all-projects': 'grid',
     'design-systems': 'blocks',
     library: 'image',
     brands: 'blocks',

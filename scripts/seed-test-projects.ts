@@ -192,6 +192,29 @@ const DEFAULT_PLUGINS: SeedFixture[] = [
     pendingPrompt:
       'Run the bundled social carousel plugin for a three-card product launch announcement.',
   },
+  // --- demo filler (throwaway): populate the Home grid so the "show all
+  // projects" change is visible. Pulled from bundled official examples that
+  // all ship an example.html. Remove before any real PR.
+  ...([
+    ['aerocore', 'prototype', 'AeroCore — 航天发动机落地页'],
+    ['article-magazine', 'prototype', '杂志文章排版'],
+    ['blog-post', 'prototype', '博客文章'],
+    ['cinematic-landing-page', 'prototype', '电影感落地页'],
+    ['clinical-case-report', 'prototype', '临床病例报告'],
+    ['data-report', 'prototype', '数据可视化报告'],
+    ['dating-web', 'prototype', '社交约会落地页'],
+    ['deck-swiss-international', 'deck', '瑞士国际主义幻灯片'],
+    ['dreamcore-landing', 'prototype', '梦核落地页'],
+    ['email-marketing', 'prototype', '营销邮件'],
+    ['finance-report', 'prototype', '财务报告'],
+  ] as const).map(([slug, kind, name]) => ({
+    skillId: slug,
+    sourceKind: 'default-plugin' as const,
+    pluginId: `example-${slug}`,
+    kind,
+    name,
+    pendingPrompt: `Seeded demo artifact from the ${slug} example.`,
+  })),
 ];
 
 const COMMUNITY_PLUGINS: SeedFixture[] = [

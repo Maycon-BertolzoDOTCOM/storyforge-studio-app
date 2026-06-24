@@ -8,7 +8,7 @@
 // Language switching and other account-scoped controls live behind the
 // floating settings cog in the top-right corner of the main content.
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { EntryHelpMenu } from './EntryHelpMenu';
 import { Icon } from './Icon';
 import { useT } from '../i18n';
@@ -20,6 +20,9 @@ export type EntryView =
   | 'projects'
   | 'tasks'
   | 'plugins'
+  | 'community'
+  | 'drafts'
+  | 'all-projects'
   | 'design-systems'
   | 'library'
   | 'brands'
@@ -52,10 +55,10 @@ function NavButton({ active, ariaLabel, tooltip, onClick, testId, children }: Na
       onClick={onClick}
       aria-label={ariaLabel}
       aria-current={active ? 'page' : undefined}
-      data-tooltip={tooltip}
       {...(testId ? { 'data-testid': testId } : {})}
     >
-      {children}
+      <span className="entry-nav-rail__btn-icon" aria-hidden>{children}</span>
+      <span className="entry-nav-rail__btn-label">{tooltip}</span>
     </button>
   );
 }
@@ -65,6 +68,8 @@ export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose }
   const brandLabel = t('app.brand');
   const homeLabel = t('entry.navHome');
   const isHome = view === 'home';
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
 
   // Once opened the rail stays docked (Manus-style); navigating between
   // destinations no longer collapses it.
@@ -97,58 +102,115 @@ export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose }
       aria-hidden={open ? undefined : true}
     >
       <div className="entry-nav-rail__group">
-        <div className="entry-nav-rail__brand">
+        <div className="entry-nav-rail__account">
           <button
             type="button"
-            className="entry-nav-rail__logo"
-            onClick={() => selectView('home')}
-            aria-label={brandLabel}
-            data-testid="entry-nav-logo"
+            className="entry-nav-rail__account-trigger"
+            onClick={() => setAccountOpen((v) => !v)}
+            aria-expanded={accountOpen}
           >
-            <img
-              src="/app-icon.svg"
-              alt=""
-              className="entry-nav-rail__logo-img"
-              draggable={false}
-            />
+            <span className="entry-nav-rail__account-avatar" aria-hidden>琼</span>
+            <span className="entry-nav-rail__account-name">琼羽</span>
+            <Icon name="chevron-down" size={14} />
           </button>
-          <button
-            type="button"
-            className="entry-nav-rail__collapse"
-            onClick={onClose}
-            aria-label={t('entry.navCollapse')}
-            title={t('entry.navCollapse')}
-            data-testid="entry-nav-collapse"
-          >
-            <Icon name="panel-left" size={20} />
-          </button>
+          {accountOpen ? (
+            <>
+              <div className="entry-nav-rail__menu-backdrop" onClick={() => setAccountOpen(false)} />
+              <div className="entry-nav-rail__account-menu" role="menu">
+                <div className="entry-nav-rail__account-head">
+                  <span className="entry-nav-rail__account-head-avatar" aria-hidden>琼</span>
+                  <span className="entry-nav-rail__account-head-name">琼羽</span>
+                  <span className="entry-nav-rail__account-head-email">qiongyu1999@gmail.com</span>
+                </div>
+                <button type="button" className="entry-nav-rail__menu-item is-primary" role="menuitem">
+                  <Icon name="layout" size={15} /> 切换主题 <span className="entry-nav-rail__menu-chevron"><Icon name="chevron-right" size={13} /></span>
+                </button>
+                <button type="button" className="entry-nav-rail__menu-item" role="menuitem">
+                  <Icon name="settings" size={15} /> 设置
+                </button>
+                <div className="entry-nav-rail__menu-divider" />
+                <button type="button" className="entry-nav-rail__menu-item" role="menuitem">
+                  <Icon name="plus" size={15} /> 添加账号
+                </button>
+                <button type="button" className="entry-nav-rail__menu-item" role="menuitem">
+                  <Icon name="log-out" size={15} /> 退出登录
+                </button>
+              </div>
+            </>
+          ) : null}
         </div>
-        <div className="entry-nav-rail__logo-divider" role="separator" aria-hidden="true" />
-        <NavButton
-          ariaLabel={t('entry.navNewProject')}
-          tooltip={t('entry.navNewProject')}
-          onClick={onNewProject}
-          testId="entry-nav-new-project"
-        >
-          <Icon name="plus" size={18} />
-        </NavButton>
+        <div className="entry-nav-rail__search" aria-hidden>
+          <Icon name="search" size={14} />
+          <input type="text" placeholder={t('common.search')} readOnly tabIndex={-1} />
+        </div>
         <NavButton
           active={isHome}
-          ariaLabel={homeLabel}
-          tooltip={homeLabel}
+          ariaLabel="Recents"
+          tooltip="最近"
           onClick={() => selectView('home')}
           testId="entry-nav-home"
         >
-          <Icon name="home" size={18} />
+          <Icon name="history" size={18} />
         </NavButton>
         <NavButton
-          active={view === 'projects'}
-          ariaLabel={t('entry.navProjects')}
-          tooltip={t('entry.navProjects')}
-          onClick={() => selectView('projects')}
-          testId="entry-nav-projects"
+          active={view === 'community'}
+          ariaLabel={t('pluginsHome.title')}
+          tooltip="Community"
+          onClick={() => selectView('community')}
+          testId="entry-nav-community"
         >
-          <Icon name="folder" size={18} />
+          <Icon name="globe" size={18} />
+        </NavButton>
+
+        <div className="entry-nav-rail__team-wrap">
+          <button
+            type="button"
+            className="entry-nav-rail__team"
+            onClick={() => setTeamOpen((v) => !v)}
+            aria-expanded={teamOpen}
+          >
+            <span className="entry-nav-rail__team-avatar" aria-hidden>N</span>
+            <span className="entry-nav-rail__team-name">Nexu 团队</span>
+            <Icon name="chevron-down" size={14} />
+          </button>
+          {teamOpen ? (
+            <>
+              <div className="entry-nav-rail__menu-backdrop" onClick={() => setTeamOpen(false)} />
+              <div className="entry-nav-rail__team-menu" role="menu">
+                <button type="button" className="entry-nav-rail__menu-item" role="menuitem">
+                  <span className="entry-nav-rail__team-avatar entry-nav-rail__team-avatar--alt" aria-hidden>R</span>
+                  Refly
+                </button>
+                <button type="button" className="entry-nav-rail__menu-item is-current" role="menuitem">
+                  <span className="entry-nav-rail__team-avatar" aria-hidden>N</span>
+                  Nexu 团队
+                  <Icon name="check" size={14} />
+                </button>
+                <div className="entry-nav-rail__menu-divider" />
+                <button type="button" className="entry-nav-rail__menu-item" role="menuitem">
+                  <Icon name="plus" size={15} /> 新建团队
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
+        <NavButton
+          active={view === 'drafts'}
+          ariaLabel="Drafts"
+          tooltip="草稿"
+          onClick={() => selectView('drafts')}
+          testId="entry-nav-drafts"
+        >
+          <Icon name="file" size={18} />
+        </NavButton>
+        <NavButton
+          active={view === 'all-projects'}
+          ariaLabel="All projects"
+          tooltip="全部项目"
+          onClick={() => selectView('all-projects')}
+          testId="entry-nav-all-projects"
+        >
+          <Icon name="grid" size={18} />
         </NavButton>
         <NavButton
           active={view === 'design-systems'}
@@ -159,26 +221,8 @@ export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose }
         >
           <Icon name="palette" size={18} />
         </NavButton>
-        {LIBRARY_UI_VISIBLE ? (
-          <NavButton
-            active={view === 'library'}
-            ariaLabel="Library"
-            tooltip="Library"
-            onClick={() => selectView('library')}
-            testId="entry-nav-library"
-          >
-            <Icon name="layers-filled" size={18} />
-          </NavButton>
-        ) : null}
-        <NavButton
-          active={view === 'tasks'}
-          ariaLabel={t('entry.navTasks')}
-          tooltip={t('entry.navTasks')}
-          onClick={() => selectView('tasks')}
-          testId="entry-nav-tasks"
-        >
-          <Icon name="kanban" size={18} />
-        </NavButton>
+
+        <div className="entry-nav-rail__section">更多</div>
         <NavButton
           active={view === 'plugins'}
           ariaLabel={t('entry.navPlugins')}

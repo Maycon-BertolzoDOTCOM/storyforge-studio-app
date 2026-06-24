@@ -4,7 +4,7 @@
 .home-view {
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 12px;
 }
 /* The hero block self-constrains to a readable column even though
    its parent now stretches to ~1440px so the plugin gallery can
@@ -21,8 +21,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 32px 0 8px;
+  gap: 6px;
+  padding: 2px 0 4px;
 }
 .home-hero__brand {
   position: relative;
@@ -65,7 +65,7 @@
   margin: 0;
   font-family: var(--serif);
   font-weight: 600;
-  font-size: 40px;
+  font-size: 23px;
   letter-spacing: -0.02em;
   color: var(--text-strong);
   text-align: center;
@@ -2967,4 +2967,38 @@
   .home-hero__template-card .home-hero__scenario-art-svg {
     transition: none;
   }
+}
+
+/* Collapsible "Start from a template  or  blank project" single row. */
+.home-hero__template-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.home-hero__template-toggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+}
+.home-hero__template-toggle:hover { color: var(--text); }
+.home-hero__template-toggle svg {
+  transition: transform 160ms var(--ease-out);
+}
+.home-hero__template-toggle.is-open svg {
+  transform: rotate(180deg);
+}
+.home-hero__template-or {
+  color: var(--text-faint);
+  font-size: 12px;
 }

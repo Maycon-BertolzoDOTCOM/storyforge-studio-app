@@ -118,6 +118,8 @@ import {
 } from './EntrySettingsMenu';
 import { NewProjectModal } from './NewProjectModal';
 import { PluginsView } from './PluginsView';
+import { CommunityView } from './CommunityView';
+import { RecentProjectsStrip } from './RecentProjectsStrip';
 import type { CreateInput, CreateTab, ImportClaudeDesignOutcome } from './NewProjectPanel';
 import type { PluginLoopSubmit } from './PluginLoopHome';
 import {
@@ -892,6 +894,41 @@ export function EntryShell({
                 onUsePlugin={usePluginFromLibrary}
                 onCreatePluginShareProject={onCreatePluginShareProject}
               />
+            </div>
+            <div data-testid="entry-view-community" data-active={view === 'community' ? 'true' : 'false'} {...inactiveViewProps(view === 'community')}>
+              <CommunityView />
+            </div>
+            <div data-testid="entry-view-drafts" data-active={view === 'drafts' ? 'true' : 'false'} {...inactiveViewProps(view === 'drafts')}>
+              {projectsLoading ? (
+                <CenteredLoader label={t('common.loading')} />
+              ) : (
+                <RecentProjectsStrip
+                  projects={projects}
+                  designSystems={designSystems}
+                  limit={1000}
+                  heading="草稿"
+                  space="drafts"
+                  onOpen={onOpenProject}
+                  onDelete={onDeleteProject}
+                  onRename={onRenameProject}
+                />
+              )}
+            </div>
+            <div data-testid="entry-view-all-projects" data-active={view === 'all-projects' ? 'true' : 'false'} {...inactiveViewProps(view === 'all-projects')}>
+              {projectsLoading ? (
+                <CenteredLoader label={t('common.loading')} />
+              ) : (
+                <RecentProjectsStrip
+                  projects={projects}
+                  designSystems={designSystems}
+                  limit={1000}
+                  heading="全部项目"
+                  space="team"
+                  onOpen={onOpenProject}
+                  onDelete={onDeleteProject}
+                  onRename={onRenameProject}
+                />
+              )}
             </div>
             <div data-testid="entry-view-design-systems" data-active={view === 'design-systems' ? 'true' : 'false'} {...inactiveViewProps(view === 'design-systems')}>
               {designSystemsLoading ? (

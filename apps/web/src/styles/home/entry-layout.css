@@ -10,7 +10,7 @@
    actions, so the entry view does not render `AppChromeHeader`. */
 .entry-shell--no-header {
   grid-template-rows: 1fr;
-  --entry-rail-width: 56px;
+  --entry-rail-width: 240px;
 }
 
 .entry-shell--onboarding {
@@ -200,9 +200,10 @@
 .entry-nav-rail__group {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 5px;
+  align-items: stretch;
+  gap: 2px;
   width: 100%;
+  padding: 0 8px;
 }
 .entry-nav-rail__footer {
   display: flex;
@@ -630,22 +631,110 @@
 }
 .entry-nav-rail__btn {
   appearance: none;
-  width: 38px;
-  height: 38px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background-color 120ms var(--ease-out), color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+}
+.entry-nav-rail__btn-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: background-color 120ms var(--ease-out), color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+  flex: 0 0 18px;
+  color: var(--text-soft);
 }
-.entry-nav-rail__btn > svg {
+.entry-nav-rail__btn-icon > svg {
   width: 18px;
   height: 18px;
-  flex: 0 0 18px;
+}
+.entry-nav-rail__btn-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entry-nav-rail__btn.is-active .entry-nav-rail__btn-icon {
+  color: var(--accent);
+}
+
+/* Search box */
+.entry-nav-rail__search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  margin: 2px 0 8px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text-soft);
+}
+.entry-nav-rail__search input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  width: 100%;
+  cursor: default;
+}
+.entry-nav-rail__search input::placeholder { color: var(--text-faint); }
+
+/* Team switcher row */
+.entry-nav-rail__team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  margin: 12px 0 2px;
+  padding: 0 10px;
+  color: var(--text-strong);
+}
+.entry-nav-rail__team-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: #1a1917;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex: 0 0 20px;
+}
+.entry-nav-rail__team-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entry-nav-rail__team svg { color: var(--text-soft); }
+
+/* Section label (e.g. 更多) */
+.entry-nav-rail__section {
+  margin: 12px 0 2px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 .entry-nav-rail__btn:not(.is-active):hover {
   background: color-mix(in srgb, var(--accent) 12%, var(--bg-panel));
@@ -716,7 +805,7 @@
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 40px 32px 64px;
+  padding: 16px 32px 64px;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -4326,3 +4415,181 @@
     flex: 1 1 180px;
   }
 }
+
+/* ---- Account switcher (top of rail) ---- */
+.entry-nav-rail__account {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 10px;
+}
+.entry-nav-rail__account-trigger {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  font: inherit;
+  color: var(--text-strong);
+}
+.entry-nav-rail__account-trigger:hover { background: var(--bg-subtle); }
+.entry-nav-rail__account-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #c96442, #8a3f28);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex: 0 0 24px;
+}
+.entry-nav-rail__account-name {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entry-nav-rail__account-trigger svg { color: var(--text-soft); }
+.entry-nav-rail__account-bell {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  flex: 0 0 28px;
+}
+.entry-nav-rail__account-bell:hover { background: var(--bg-subtle); color: var(--text); }
+
+/* ---- Dropdown menus (account + team) ---- */
+.entry-nav-rail__menu-backdrop { position: fixed; inset: 0; z-index: 40; }
+.entry-nav-rail__account-menu,
+.entry-nav-rail__team-menu {
+  position: absolute;
+  z-index: 41;
+  left: 0;
+  top: calc(100% + 4px);
+  padding: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.entry-nav-rail__account-menu { min-width: 236px; }
+.entry-nav-rail__team-menu { min-width: 220px; }
+.entry-nav-rail__account-head {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 12px 8px 10px;
+}
+.entry-nav-rail__account-head-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #c96442, #8a3f28);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.entry-nav-rail__account-head-name { font-size: 13.5px; font-weight: 600; color: var(--text-strong); }
+.entry-nav-rail__account-head-email { font-size: 12px; color: var(--text-muted); }
+.entry-nav-rail__menu-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  height: 34px;
+  padding: 0 9px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  text-align: left;
+}
+.entry-nav-rail__menu-item:hover { background: var(--bg-subtle); }
+.entry-nav-rail__menu-item svg { color: var(--text-soft); flex: 0 0 auto; }
+.entry-nav-rail__menu-item.is-primary { background: var(--selected); color: #fff; }
+.entry-nav-rail__menu-item.is-primary svg { color: #fff; }
+.entry-nav-rail__menu-chevron { margin-left: auto; display: inline-flex; }
+.entry-nav-rail__menu-section {
+  padding: 8px 9px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  letter-spacing: 0.03em;
+}
+.entry-nav-rail__menu-divider { height: 1px; background: var(--border-soft); margin: 5px 4px; }
+
+/* ---- Team switcher button + menu ---- */
+.entry-nav-rail__team-wrap { position: relative; }
+.entry-nav-rail__team {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.entry-nav-rail__team:hover { background: var(--bg-subtle); border-radius: var(--radius); }
+.entry-nav-rail__team-avatar--alt { background: #6c3aa6; }
+.entry-nav-rail__team-plan {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.entry-nav-rail__menu-item.is-current { font-weight: 600; }
+.entry-nav-rail__menu-item.is-current svg { color: var(--accent); }
+
+.entry-nav-rail__menu-item.is-current svg { margin-left: auto; }
+
+/* Design-systems scope tabs lifted into the title area (你的 / 团队 / 官方). */
+.ds-top-scopes {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 18px;
+}
+.ds-top-scope-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms var(--ease-out), color 120ms var(--ease-out);
+}
+.ds-top-scope-chip:hover { color: var(--text); background: var(--bg-subtle); }
+.ds-top-scope-chip.is-active { background: var(--accent-tint); color: var(--accent); }
+.ds-top-scope-count { font-size: 12px; color: var(--text-faint); font-weight: 600; }
+.ds-top-scope-chip.is-active .ds-top-scope-count { color: var(--accent); }

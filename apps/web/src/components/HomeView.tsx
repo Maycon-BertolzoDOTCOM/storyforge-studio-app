@@ -1856,6 +1856,8 @@ export function HomeView({
       <RecentProjectsStrip
         projects={projects}
         designSystems={designSystems}
+        promptTemplates={promptTemplates}
+        limit={1000}
         {...(projectsLoading !== undefined ? { loading: projectsLoading } : {})}
         onOpen={(id) => {
           // P0 ui_click area=recent_projects element=project_card — emit
@@ -1884,21 +1886,9 @@ export function HomeView({
         {...(onRenameProject ? { onRename: onRenameProject } : {})}
       />
 
-      <HomeTemplatesReveal
-        enabled={!projectsLoading && projects.length === 0}
-      >
-        <PluginsHomeSection
-          plugins={plugins}
-          loading={pluginsLoading}
-          activePluginId={active?.record.id ?? null}
-          pendingApplyId={pendingApplyId}
-          onUse={(record, action) => void routePluginUse(record, action)}
-          onOpenDetails={handleCommunityOpenDetails}
-          onBrowseRegistry={onBrowseRegistry}
-          preferDefaultFacet={false}
-          cardLayout="gallery"
-        />
-      </HomeTemplatesReveal>
+      {/* Community gallery now lives in the left-sidebar "Community" entry
+          (PluginsView → PluginsHomeSection), so it is no longer embedded on
+          Home. */}
 
       <AnimatePresence>
         {detailsRecord ? (

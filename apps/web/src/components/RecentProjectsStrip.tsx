@@ -11,7 +11,13 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogDescription, DialogFooter, DialogTitle } from '@open-design/components';
 import { useT } from '../i18n';
 import { fetchProjectFiles, fetchProjectFileText, projectFileUrl } from '../providers/registry';
-import type { DesignSystemSummary, Project, ProjectDisplayStatus, ProjectFile } from '../types';
+import type {
+  DesignSystemSummary,
+  Project,
+  ProjectDisplayStatus,
+  ProjectFile,
+  PromptTemplateSummary,
+} from '../types';
 import { Icon } from './Icon';
 import { STATUS_LABEL_KEYS } from './DesignsTab';
 import { isDesignSystemProject, isPublishedDesignSystemProject } from './design-system-project';
@@ -21,17 +27,61 @@ interface Props {
   /** Used only to show a "Published" status for design-system projects whose
    *  backing system is published (independent of the project's run status). */
   designSystems?: DesignSystemSummary[];
+  /** Drives the "Templates" tab on the Home browser. */
+  promptTemplates?: PromptTemplateSummary[];
   /** Retained for call-site compatibility; the strip skips rendering
    *  while the list is loading so we never need a loading state. */
   loading?: boolean;
+  /** Section heading (defaults to the Canva-style "最近使用"). */
+  heading?: string;
   onOpen: (id: string) => void;
-  onViewAll: () => void;
+  onViewAll?: () => void;
   onDelete?: (id: string) => Promise<boolean | void> | boolean | void;
   onRename?: (id: string, name: string) => void;
   limit?: number;
+  /** 'recent' = mixed private/shared (home); 'drafts' = all private (mine);
+   *  'team' = all shared, varied team-member creators. */
+  space?: SpaceKind;
 }
 
+type BrowseTab = 'projects' | 'design-systems' | 'templates';
+
 const EMPTY_DESIGN_SYSTEMS: DesignSystemSummary[] = [];
+
+// Demo-only mocked metadata so the grid shows a believable mix of owners,
+// visibility, and recency instead of the seeded "我创建 · just now" uniformity.
+const MOCK_MEMBERS = [
+  { name: '我', initial: '我', img: 'https://i.pravatar.cc/80?img=12' },
+  { name: '张伟', initial: '张', img: 'https://i.pravatar.cc/80?img=33' },
+  { name: '李娜', initial: '李', img: 'https://i.pravatar.cc/80?img=45' },
+  { name: '王芳', initial: '王', img: 'https://i.pravatar.cc/80?img=24' },
+  { name: '陈明', initial: '陈', img: 'https://i.pravatar.cc/80?img=51' },
+  { name: '刘洋', initial: '刘', img: 'https://i.pravatar.cc/80?img=60' },
+];
+const MOCK_TIMES = ['刚刚', '12 分钟前', '1 小时前', '3 小时前', '昨天', '2 天前', '上周', '3 周前'];
+
+const ME = { name: '我', initial: '我', img: 'https://i.pravatar.cc/80?img=12' };
+type SpaceKind = 'recent' | 'drafts' | 'team';
+function mockCardMeta(index: number, space: SpaceKind) {
+  const time = MOCK_TIMES[index % MOCK_TIMES.length] ?? '刚刚';
+  if (space === 'team') {
+    // All projects: everything is shared, owned by varied team members.
+    const m = MOCK_MEMBERS[(index * 3 + 1) % MOCK_MEMBERS.length] ?? ME;
+    return { ownerName: m.name, ownerInitial: m.initial, ownerImg: m.img, badge: 'shared' as 'private' | 'shared', time };
+  }
+  if (space === 'drafts') {
+    // Drafts: everything is private, owned by me.
+    return { ownerName: '我', ownerInitial: '我', ownerImg: ME.img, badge: 'private' as 'private' | 'shared', time };
+  }
+  // Recent (home): a believable mix — private items are mine, shared ones were
+  // created by varied teammates (so the avatars read as a real team).
+  const badge: 'private' | 'shared' = index % 3 === 0 ? 'shared' : 'private';
+  if (badge === 'shared') {
+    const m = MOCK_MEMBERS[(index * 3 + 2) % MOCK_MEMBERS.length] ?? ME;
+    return { ownerName: m.name, ownerInitial: m.initial, ownerImg: m.img, badge, time };
+  }
+  return { ownerName: '我', ownerInitial: '我', ownerImg: ME.img, badge, time };
+}
 
 const DECK_PREVIEW_WIDTH = 1280;
 const DECK_PREVIEW_HEIGHT = 720;
@@ -41,19 +91,25 @@ const deckCoverInflight = new Map<string, Promise<string>>();
 export function RecentProjectsStrip({
   projects,
   designSystems = EMPTY_DESIGN_SYSTEMS,
+  heading = '最近使用',
+  space = 'recent',
   onOpen,
-  onViewAll,
   onDelete,
   onRename,
   limit = 6,
 }: Props) {
   const t = useT();
-  const recent = useMemo(
-    () => [...projects]
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      .slice(0, limit),
-    [projects, limit],
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [moveTarget, setMoveTarget] = useState<Project | null>(null);
+  const [moveDontRemind, setMoveDontRemind] = useState(false);
+  const moveTitleId = useId();
+
+  const sorted = useMemo(
+    () => [...projects].sort((a, b) => b.updatedAt - a.updatedAt),
+    [projects],
   );
+  // Canva-style "Recently used": all recent items, capped by `limit`.
+  const visibleProjects = useMemo(() => sorted.slice(0, limit), [sorted, limit]);
   const [coverByProject, setCoverByProject] = useState<
     Record<string, { kind: 'html' | 'image' | 'video' | 'logo'; name: string } | null>
   >({});
@@ -79,13 +135,13 @@ export function RecentProjectsStrip({
 
   useEffect(() => {
     let cancelled = false;
-    if (recent.length === 0) {
+    if (visibleProjects.length === 0) {
       setCoverByProject({});
       return;
     }
 
     void Promise.all(
-      recent.map(async (project) => {
+      visibleProjects.map(async (project) => {
         const designSystemProject = isDesignSystemProject(project);
         if (project.metadata?.entryFile && !designSystemProject) return [project.id, null] as const;
         let files: Awaited<ReturnType<typeof fetchProjectFiles>>;
@@ -143,14 +199,14 @@ export function RecentProjectsStrip({
     return () => {
       cancelled = true;
     };
-  }, [recent]);
+  }, [visibleProjects]);
 
   // First-run home shouldn't reserve space for an empty "Recent
   // projects" rail — the dashed empty box just adds visual noise
   // above the plugin gallery. We also skip rendering during the
   // load window so the section doesn't pop in and then collapse;
   // the prompt hero is enough chrome on its own.
-  if (recent.length === 0) {
+  if (sorted.length === 0) {
     return null;
   }
 
@@ -189,23 +245,51 @@ export function RecentProjectsStrip({
   return (
     <section className="recent-projects" data-testid="recent-projects-strip">
       <header className="recent-projects__head">
-        <h2 className="recent-projects__title">{t('recentProjects.title')}</h2>
-        <button
-          type="button"
-          className="recent-projects__view-all"
-          onClick={onViewAll}
-          data-testid="recent-projects-view-all"
-        >
-          <span>{t('recentProjects.viewAll')}</span>
-          <Icon name="chevron-right" size={12} />
-        </button>
+        <h2 className="recent-projects__heading">{heading}</h2>
+        <div className="recent-projects__controls">
+          <button type="button" className="recent-projects__filter" aria-hidden>
+            所有者
+            <Icon name="chevron-down" size={13} />
+          </button>
+          <button type="button" className="recent-projects__filter" aria-hidden>
+            任何类型
+            <Icon name="chevron-down" size={13} />
+          </button>
+          <button type="button" className="recent-projects__view-btn" aria-label="排序">
+            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7h6M3 12h10M3 17h14M17 4v8m0 0 3-3m-3 3-3-3" />
+            </svg>
+          </button>
+          <div className="recent-projects__view" role="group" aria-label={t('designs.viewToggleAria')}>
+            <button
+              type="button"
+              className={`recent-projects__view-btn${view === 'grid' ? ' is-active' : ''}`}
+              aria-pressed={view === 'grid'}
+              aria-label={t('designs.viewGrid')}
+              onClick={() => setView('grid')}
+            >
+              <Icon name="grid" size={15} />
+            </button>
+            <button
+              type="button"
+              className={`recent-projects__view-btn${view === 'list' ? ' is-active' : ''}`}
+              aria-pressed={view === 'list'}
+              onClick={() => setView('list')}
+            >
+              <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </header>
       <div
-        className={`recent-projects__row${menuOpenId ? ' recent-projects__row--menu-open' : ''}`}
+        className={`recent-projects__row recent-projects__row--${view}${menuOpenId ? ' recent-projects__row--menu-open' : ''}`}
         role="list"
       >
-        {recent.map((project) => {
+        {visibleProjects.map((project, index) => {
           const cover = projectCover(project, coverByProject[project.id] ?? null);
+          const meta = mockCardMeta(index, space);
           const designSystemProject = isDesignSystemProject(project);
           const status: ProjectDisplayStatus = project.status?.value ?? 'not_started';
           const publishedDesignSystem = isPublishedDesignSystemProject(project, designSystems);
@@ -253,6 +337,23 @@ export function RecentProjectsStrip({
                   ) : (
                     <span className="recent-projects__card-glyph">{cover.initial}</span>
                   )}
+                  {meta.badge === 'private' ? (
+                    <span className="recent-projects__card-badge">
+                      <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="5" y="11" width="14" height="9" rx="2" />
+                        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                      </svg>
+                      私人
+                    </span>
+                  ) : meta.badge === 'shared' ? (
+                    <span className="recent-projects__card-badge recent-projects__card-badge--shared">
+                      <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="9" cy="8" r="3" />
+                        <path d="M3 20a6 6 0 0 1 12 0M16 11a3 3 0 1 0-1-5.8M21 20a6 6 0 0 0-5-5.9" />
+                      </svg>
+                      共享
+                    </span>
+                  ) : null}
                 </div>
                 <div className="recent-projects__card-meta">
                   <div className="design-card-tag-row">
@@ -264,16 +365,12 @@ export function RecentProjectsStrip({
                   </div>
                   <div className="recent-projects__card-name">{project.name}</div>
                   <div className="recent-projects__card-time">
-                    <span
-                      className={`recent-projects__card-status recent-projects__card-status-${publishedDesignSystem ? 'published' : status}`}
-                    >
-                      {isActive ? (
-                        <span className="recent-projects__card-status-dot" aria-hidden />
-                      ) : null}
-                      {publishedDesignSystem ? t('designs.status.published') : statusLabel(status, t)}
+                    <span className="recent-projects__card-owner" aria-hidden>
+                      {meta.ownerImg ? <img src={meta.ownerImg} alt="" loading="lazy" /> : meta.ownerInitial}
                     </span>
+                    <span>{meta.ownerName}创建</span>
                     <span className="recent-projects__card-sep" aria-hidden>·</span>
-                    {relativeTime(project.updatedAt, t)}
+                    {meta.time}
                   </div>
                 </div>
               </button>
@@ -301,6 +398,17 @@ export function RecentProjectsStrip({
                       role="menu"
                       onClick={(event) => event.stopPropagation()}
                     >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuOpenId(null);
+                          setMoveTarget(project);
+                        }}
+                      >
+                        <Icon name="import" size={12} />
+                        <span>转入团队空间</span>
+                      </button>
                       {onRename ? (
                         <button type="button" role="menuitem" onClick={() => startRename(project)}>
                           <Icon name="pencil" size={12} />
@@ -379,6 +487,35 @@ export function RecentProjectsStrip({
             </button>
             <button type="button" className="primary danger" onClick={() => void commitDelete()}>
               {t('designs.menuDelete')}
+            </button>
+          </DialogFooter>
+        </Dialog>
+      ) : null}
+      {moveTarget ? (
+        <Dialog
+          className="modal-confirm"
+          role="alertdialog"
+          onClose={() => setMoveTarget(null)}
+          ariaLabelledBy={moveTitleId}
+        >
+          <DialogTitle id={moveTitleId}>转入团队空间</DialogTitle>
+          <DialogDescription>
+            「{moveTarget.name}」转入团队空间后，<strong>团队全体成员都可以查看和编辑</strong>。该操作可在「全部项目」中找到。
+          </DialogDescription>
+          <label className="recent-projects__move-remind">
+            <input
+              type="checkbox"
+              checked={moveDontRemind}
+              onChange={(event) => setMoveDontRemind(event.target.checked)}
+            />
+            不再提示
+          </label>
+          <DialogFooter className="row">
+            <button type="button" onClick={() => setMoveTarget(null)}>
+              {t('designs.renameCancel')}
+            </button>
+            <button type="button" className="primary" onClick={() => setMoveTarget(null)}>
+              确认转入
             </button>
           </DialogFooter>
         </Dialog>

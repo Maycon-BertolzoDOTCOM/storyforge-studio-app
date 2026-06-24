@@ -334,6 +334,8 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
   const [dragActive, setDragActive] = useState(false);
   const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  // Templates row is collapsed by default; the "从模板开始" toggle reveals it.
+  const [templatesExpanded, setTemplatesExpanded] = useState(false);
   // Two-flash attention pulse on the send button; armed via the
   // imperative `pulseSend()` handle, cleared when the animation ends.
   const [sendAttention, setSendAttention] = useState(false);
@@ -1069,16 +1071,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
 
   return (
     <section className="home-hero" data-testid="home-hero">
-      <div className="home-hero__brand" aria-hidden>
-        <span className="home-hero__brand-mark">
-          <img src="/app-icon.svg" alt="" draggable={false} />
-        </span>
-        <span className="home-hero__brand-name">Open Design</span>
-      </div>
       <h1 className="home-hero__title">{t('homeHero.title')}</h1>
-      <p className="home-hero__subtitle">
-        {t('homeHero.subtitlePrefix')}
-      </p>
 
       <div
         className={`home-hero__input-card${
@@ -1694,44 +1687,55 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
 
       {activeCreateChip ? null : (
         <div className="home-hero__template-section" data-testid="home-hero-template-section">
-          <div className="home-hero__template-heading">
-            {t('homeHero.startWithTemplate')}
+          <div className="home-hero__template-bar">
+            <button
+              type="button"
+              className={`home-hero__template-toggle${templatesExpanded ? ' is-open' : ''}`}
+              aria-expanded={templatesExpanded}
+              onClick={() => setTemplatesExpanded((v) => !v)}
+            >
+              {t('homeHero.startWithTemplate')}
+              <Icon name="chevron-down" size={13} aria-hidden />
+            </button>
+            <span className="home-hero__template-or">or</span>
+            {onStartBlankProject ? (
+              <button
+                type="button"
+                className="home-hero__blank-project"
+                data-testid="home-hero-blank-project"
+                onClick={onStartBlankProject}
+              >
+                创建一个空白项目
+                <Icon name="chevron-right" size={13} aria-hidden />
+              </button>
+            ) : null}
           </div>
-          <RailGroup
-            group="create"
-            activeChipId={activeChipId}
-            pendingChipId={pendingChipId}
-            pendingPluginId={pendingPluginId}
-            pluginsLoading={pluginsLoading}
-            onPickChip={handlePickTaskChip}
-            variant="tabs"
-            pulseChipId={guidePulseChipId}
-            onHoverChip={setPreviewTemplateId}
-          >
-            <ShortcutsMenu
+          {templatesExpanded ? (
+            <RailGroup
+              group="create"
               activeChipId={activeChipId}
               pendingChipId={pendingChipId}
               pendingPluginId={pendingPluginId}
               pluginsLoading={pluginsLoading}
-              open={shortcutsOpen}
-              refNode={shortcutsMenuRef}
-              onOpenChange={setShortcutsOpen}
-              onPickChip={(chip) => {
-                setShortcutsOpen(false);
-                handlePickTaskChip(chip);
-              }}
-            />
-          </RailGroup>
-          {onStartBlankProject ? (
-            <button
-              type="button"
-              className="home-hero__blank-project"
-              data-testid="home-hero-blank-project"
-              onClick={onStartBlankProject}
+              onPickChip={handlePickTaskChip}
+              variant="tabs"
+              pulseChipId={guidePulseChipId}
+              onHoverChip={setPreviewTemplateId}
             >
-              {t('homeHero.startBlankProject')}
-              <Icon name="chevron-right" size={13} aria-hidden />
-            </button>
+              <ShortcutsMenu
+                activeChipId={activeChipId}
+                pendingChipId={pendingChipId}
+                pendingPluginId={pendingPluginId}
+                pluginsLoading={pluginsLoading}
+                open={shortcutsOpen}
+                refNode={shortcutsMenuRef}
+                onOpenChange={setShortcutsOpen}
+                onPickChip={(chip) => {
+                  setShortcutsOpen(false);
+                  handlePickTaskChip(chip);
+                }}
+              />
+            </RailGroup>
           ) : null}
         </div>
       )}

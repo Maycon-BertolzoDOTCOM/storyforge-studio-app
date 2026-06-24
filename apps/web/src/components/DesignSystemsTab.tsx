@@ -62,7 +62,7 @@ const CATEGORY_ORDER = [
 ];
 
 type SurfaceFilter = 'all' | Surface;
-type DesignSystemCollection = 'mine' | 'official' | 'enterprise';
+type DesignSystemCollection = 'mine' | 'team' | 'official' | 'enterprise';
 type DesignSystemActionKind = 'edit' | 'publish' | 'default' | 'delete';
 
 const SURFACE_PILLS: { value: SurfaceFilter; labelKey: 'examples.modeAll' | 'ds.surfaceWeb' | 'ds.surfaceImage' | 'ds.surfaceVideo' | 'ds.surfaceAudio' }[] = [
@@ -602,9 +602,9 @@ export function DesignSystemsTab({
   }
 
   const scopeTabs = [
-    { value: 'mine' as const, label: t('dsManager.yourSystems'), count: userSearched.length },
-    { value: 'official' as const, label: t('dsManager.officialPresets'), count: queryScoped.length },
-    { value: 'enterprise' as const, label: t('dsManager.enterprise'), comingSoon: true },
+    { value: 'mine' as const, label: '你的', count: userSearched.length },
+    { value: 'team' as const, label: '团队', count: 0 },
+    { value: 'official' as const, label: '官方', count: queryScoped.length },
   ];
 
   const showPresetFilters = designSystemCollection === 'official';
@@ -685,8 +685,23 @@ export function DesignSystemsTab({
           onDismiss={() => setActionToast(null)}
         />
       ) : null}
+      <div className="ds-top-scopes" role="tablist" aria-label={t('dsManager.sourceAria')}>
+        {scopeTabs.map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            role="tab"
+            aria-selected={designSystemCollection === tab.value}
+            className={`ds-top-scope-chip${designSystemCollection === tab.value ? ' is-active' : ''}`}
+            onClick={() => setDesignSystemCollection(tab.value)}
+          >
+            <span>{tab.label}</span>
+            <span className="ds-top-scope-count" aria-hidden>{tab.count}</span>
+          </button>
+        ))}
+      </div>
       <div className={styles.root} data-testid="design-systems-tab">
-      <aside className={styles.sidebar}>
+        <aside className={styles.sidebar}>
         {onCreate ? (
           <Button
             variant="primary"
@@ -718,31 +733,6 @@ export function DesignSystemsTab({
             }}
             onChange={(e) => setFilter(e.target.value)}
           />
-        </div>
-
-        <div
-          className={styles.scopes}
-          role="tablist"
-          aria-label={t('dsManager.sourceAria')}
-        >
-          {scopeTabs.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              role="tab"
-              aria-selected={designSystemCollection === tab.value}
-              className={`${styles.scopeChip} ${designSystemCollection === tab.value ? styles.scopeChipActive : ''}`}
-              onClick={() => setDesignSystemCollection(tab.value)}
-            >
-              <span>{tab.label}</span>
-              {'count' in tab ? (
-                <span className={styles.scopeCount} aria-hidden>{tab.count}</span>
-              ) : null}
-              {tab.comingSoon ? (
-                <span className={styles.scopeComingSoon} aria-hidden>{t('dsManager.comingSoonBadge')}</span>
-              ) : null}
-            </button>
-          ))}
         </div>
 
         {showPresetFilters ? (
