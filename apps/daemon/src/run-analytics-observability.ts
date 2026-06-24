@@ -171,6 +171,69 @@ function durationBetween(
   return Math.round(end - start);
 }
 
+interface UsageCacheFields {
+  inputTokens: number | undefined;
+  outputTokens: number | undefined;
+  totalTokens: number | undefined;
+  cacheReadInputTokens: number | undefined;
+  cacheCreationInputTokens: number | undefined;
+  cacheTokenSource: 'anthropic' | 'openai' | undefined;
+}
+
+// Single source of truth for the provider/runtime cache-token alias matrix.
+// Both the last-call (reverse) scan and the first-call (forward) scan extract
+// usage through this so their effective-input denominators — and therefore
+// `cache_hit_ratio` vs `first_call_cache_hit_ratio` — can never drift apart as
+// new aliases are added.
+function extractUsageCacheFields(usage: Record<string, unknown>): UsageCacheFields {
+  const inputTokens = firstNumber(usage, ['input_tokens', 'prompt_tokens']);
+  const outputTokens = firstNumber(usage, ['output_tokens', 'completion_tokens']);
+  const totalTokens = firstNumber(usage, ['total_tokens', 'totalTokens']);
+  const anthropicCacheReadInputTokens = firstNumber(usage, ['cache_read_input_tokens']);
+  const normalizedCachedReadInputTokens = firstNumber(usage, [
+    'cached_input_tokens',
+    'cache_read_tokens',
+    'cached_read_tokens',
+  ]);
+  const openAiCachedInputTokens = readNestedNumber(usage, [
+    'prompt_tokens_details',
+    'cached_tokens',
+  ]);
+  const cacheReadInputTokens =
+    anthropicCacheReadInputTokens ??
+    normalizedCachedReadInputTokens ??
+    openAiCachedInputTokens;
+  const anthropicCacheCreationInputTokens = firstNumber(
+    usage,
+    ['cache_creation_input_tokens', 'cache_write_input_tokens', 'cache_creation_tokens'],
+    [['cache_creation', 'input_tokens']],
+  );
+  const normalizedCachedWriteInputTokens = firstNumber(usage, ['cached_write_tokens']);
+  const cacheCreationInputTokens =
+    anthropicCacheCreationInputTokens ?? normalizedCachedWriteInputTokens;
+  let cacheTokenSource: 'anthropic' | 'openai' | undefined;
+  if (
+    anthropicCacheReadInputTokens !== undefined ||
+    anthropicCacheCreationInputTokens !== undefined
+  ) {
+    cacheTokenSource = 'anthropic';
+  } else if (
+    normalizedCachedReadInputTokens !== undefined ||
+    normalizedCachedWriteInputTokens !== undefined ||
+    openAiCachedInputTokens !== undefined
+  ) {
+    cacheTokenSource = 'openai';
+  }
+  return {
+    inputTokens,
+    outputTokens,
+    totalTokens,
+    cacheReadInputTokens,
+    cacheCreationInputTokens,
+    cacheTokenSource,
+  };
+}
+
 export function scanRunEventsForUsageAnalytics(
   events: RunEventForAnalyticsObservability[],
   reqBodyModel: unknown,
@@ -206,52 +269,13 @@ export function scanRunEventsForUsageAnalytics(
           ? data.modelUsage
           : null;
       if (usage) {
-        inputTokens = firstNumber(usage, ['input_tokens', 'prompt_tokens']);
-        outputTokens = firstNumber(usage, ['output_tokens', 'completion_tokens']);
-        providerTotalTokens = firstNumber(usage, ['total_tokens', 'totalTokens']);
-        const anthropicCacheReadInputTokens = firstNumber(
-          usage,
-          ['cache_read_input_tokens'],
-        );
-        const normalizedCachedReadInputTokens = firstNumber(
-          usage,
-          ['cached_input_tokens', 'cache_read_tokens', 'cached_read_tokens'],
-        );
-        const openAiCachedInputTokens = readNestedNumber(
-          usage,
-          ['prompt_tokens_details', 'cached_tokens'],
-        );
-        cacheReadInputTokens =
-          anthropicCacheReadInputTokens ??
-          normalizedCachedReadInputTokens ??
-          openAiCachedInputTokens;
-        const anthropicCacheCreationInputTokens = firstNumber(
-          usage,
-          [
-            'cache_creation_input_tokens',
-            'cache_write_input_tokens',
-            'cache_creation_tokens',
-          ],
-          [['cache_creation', 'input_tokens']],
-        );
-        const normalizedCachedWriteInputTokens = firstNumber(
-          usage,
-          ['cached_write_tokens'],
-        );
-        cacheCreationInputTokens =
-          anthropicCacheCreationInputTokens ?? normalizedCachedWriteInputTokens;
-        if (
-          anthropicCacheReadInputTokens !== undefined ||
-          anthropicCacheCreationInputTokens !== undefined
-        ) {
-          cacheTokenSource = 'anthropic';
-        } else if (
-          normalizedCachedReadInputTokens !== undefined ||
-          normalizedCachedWriteInputTokens !== undefined ||
-          openAiCachedInputTokens !== undefined
-        ) {
-          cacheTokenSource = 'openai';
-        }
+        const fields = extractUsageCacheFields(usage);
+        inputTokens = fields.inputTokens;
+        outputTokens = fields.outputTokens;
+        providerTotalTokens = fields.totalTokens;
+        cacheReadInputTokens = fields.cacheReadInputTokens;
+        cacheCreationInputTokens = fields.cacheCreationInputTokens;
+        if (fields.cacheTokenSource) cacheTokenSource = fields.cacheTokenSource;
         haveUsageTokens = inputTokens !== undefined || outputTokens !== undefined;
       }
     }
@@ -296,19 +320,13 @@ export function scanRunEventsForUsageAnalytics(
         ? data.modelUsage
         : null;
     if (!usage) continue;
-    firstCallInputTokens = firstNumber(usage, ['input_tokens', 'prompt_tokens']);
-    const anthRead = firstNumber(usage, ['cache_read_input_tokens']);
-    const normRead = firstNumber(usage, ['cached_input_tokens', 'cache_read_tokens', 'cached_read_tokens']);
-    const oaiRead = readNestedNumber(usage, ['prompt_tokens_details', 'cached_tokens']);
-    firstCallCacheReadInputTokens = anthRead ?? normRead ?? oaiRead;
-    firstCallCacheCreationInputTokens =
-      firstNumber(usage, ['cache_creation_input_tokens']) ??
-      firstNumber(usage, ['cached_write_tokens']);
-    firstCallCacheTokenSource = anthRead !== undefined
-      ? 'anthropic'
-      : (normRead ?? oaiRead) !== undefined
-        ? 'openai'
-        : undefined;
+    // Same extraction as the last-call scan above, so the two denominators
+    // stay locked across the full provider alias matrix.
+    const fields = extractUsageCacheFields(usage);
+    firstCallInputTokens = fields.inputTokens;
+    firstCallCacheReadInputTokens = fields.cacheReadInputTokens;
+    firstCallCacheCreationInputTokens = fields.cacheCreationInputTokens;
+    firstCallCacheTokenSource = fields.cacheTokenSource;
     break;
   }
   // Anthropic reports input_tokens as the UNCACHED portion (cache_read and

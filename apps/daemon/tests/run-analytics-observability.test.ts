@@ -506,6 +506,36 @@ describe('scanRunEventsForUsageAnalytics', () => {
     expect(result.first_call_cache_hit_ratio).toBeCloseTo(result.cache_hit_ratio ?? 0);
   });
 
+  it('honors the full cache-creation alias matrix on the first call (nested cache_creation)', () => {
+    // A provider that emits cache creation only via the nested
+    // `cache_creation.input_tokens` alias (not the flat key) must still land in
+    // the first-call denominator — otherwise it overstates the cache hit. This
+    // locks the first-call extraction to the same alias matrix the last-call
+    // path already supports.
+    const result = scanRunEventsForUsageAnalytics(
+      [
+        {
+          event: 'agent',
+          data: {
+            type: 'usage',
+            usage: {
+              input_tokens: 1_000,
+              output_tokens: 20,
+              cache_read_input_tokens: 500,
+              cache_creation: { input_tokens: 8_500 },
+            },
+          },
+        },
+      ],
+      '',
+      0,
+    );
+
+    expect(result.first_call_cache_hit_ratio).toBeCloseTo(500 / 10_000);
+    // Locked to the last-call definition, which also reads the nested alias.
+    expect(result.first_call_cache_hit_ratio).toBeCloseTo(result.cache_hit_ratio ?? 0);
+  });
+
   it('mirrors first-call onto last-call for a single-call turn', () => {
     const result = scanRunEventsForUsageAnalytics(
       [
