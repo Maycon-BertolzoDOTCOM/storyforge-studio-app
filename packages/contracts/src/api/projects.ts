@@ -2,6 +2,7 @@ import type {
   ChatAttachment,
   ChatCommentAttachment,
   ChatMessage,
+  PersistedAgentEvent,
   ChatRole,
   ChatRunStatus,
   ChatSessionMode,
@@ -20,6 +21,7 @@ export type ProjectKind =
   | 'deck'
   | 'template'
   | 'other'
+  | 'brand'
   | 'image'
   | 'video'
   | 'audio';
@@ -183,6 +185,11 @@ export interface ProjectMetadata {
   // Stored on design-system projects so the review overview can remember
   // which generated sections were accepted or sent back for another pass.
   designSystemReview?: Record<string, DesignSystemReviewEntry>;
+  // Stored on brand extraction projects so the Brands library, project list,
+  // and design-system picker can all point back to the same source kit.
+  brandId?: string;
+  brandSourceUrl?: string;
+  brandDesignSystemId?: string;
 }
 
 export interface Project {
