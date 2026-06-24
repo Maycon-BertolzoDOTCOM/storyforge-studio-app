@@ -961,8 +961,8 @@ export function amrWalletValueLabel(input: {
   snapshot: AmrWalletSnapshot | null;
   unavailableLabel: string;
 }): string {
-  if (!input.ready) return input.loadingLabel;
   if (input.balance) return input.balance;
+  if (!input.ready) return input.loadingLabel;
   const code = input.snapshot?.error?.code;
   if (code === 'missing_control_key' || code === 'unauthorized') {
     const message = input.snapshot?.error?.message?.trim();
