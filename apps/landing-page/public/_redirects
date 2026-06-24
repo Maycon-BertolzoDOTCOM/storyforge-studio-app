@@ -176,17 +176,23 @@
 /th   /      301
 
 # ---------------------------------------------------------------------------
-# Kept-locale catalog redirects, consolidated with a :loc placeholder. The
-# per-locale expansion (11 locales x ~5 paths) pushed the file past Cloudflare
-# Pages' total-rule cap, silently dropping the tail -- retired catch-alls and
-# later kept rules 404'd instead of redirecting. One placeholder rule per path
-# keeps the whole file well under the cap. Retired locales are handled above
-# (first match wins); real localized hub pages are static and win over these.
-# previews before plugins (specific first); skills/systems/templates preserve
-# the locale, plugins fold to canonical English.
+# Kept-locale legacy catalog redirects, consolidated with a :loc placeholder.
+# The per-locale expansion (11 locales x several paths) pushed the file past
+# Cloudflare Pages' total-rule cap, silently dropping the tail -- the retired
+# catch-alls above 404'd instead of redirecting. One placeholder rule per path
+# keeps the file well under the cap. Retired locales are handled above (first
+# match wins), so these only ever match a kept locale.
+#
+# IMPORTANT: do NOT add a generic `/:loc/plugins/*` fold here. On this project
+# `_redirects` takes precedence over static assets, and the localized plugin
+# hub pages (`/<loc>/plugins/`, `/<loc>/plugins/{skills,systems,templates}/`)
+# are real static files that must keep serving 200. A `/:loc/plugins/*` rule
+# would shadow them and 301 the hubs to English. Localized plugin DETAIL pages
+# are not generated and 404 (unchanged from production); retired-locale plugin
+# paths still fold to English via the `/<retired>/* -> /:splat` rules above.
+# The /skills /systems /templates legacy listings below are NOT static (their
+# generators were removed), so folding them is safe.
 # ---------------------------------------------------------------------------
 /:loc/skills/*     /:loc/plugins/skills/     301
 /:loc/systems/*    /:loc/plugins/systems/    301
 /:loc/templates/*  /:loc/plugins/templates/  301
-/:loc/plugins/previews/*  /plugins/previews/:splat  301
-/:loc/plugins/*  /plugins/:splat  301
