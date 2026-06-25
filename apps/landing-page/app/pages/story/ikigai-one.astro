@@ -33,17 +33,18 @@ import {
 import '../../globals.css';
 import '../../sub-pages.css';
 import '../../_partials/ikigai-one.css';
-import storyMain from '../../_partials/ikigai-one-main.html?raw';
+import { STORY_BODY, STORY_META } from '../../_partials/ikigai-one-i18n';
 
 const locale = localeFromPath(Astro.url.pathname);
 const localeDef = getLocaleDefinition(locale);
 const counts = await getCatalogCounts();
 const github = await getGithubRepoMeta();
 
-const title =
-  '"Open Design is our unfair advantage" — how Ikigai One runs its client work on Open Design';
-const description =
-  'Ikigai One, a US cybersecurity & IT firm, runs its client work on Open Design — brand systems, client deliverables, even a live client portal, all ~25× cheaper than before.';
+// Per-locale article body + page meta come from the generated i18n module.
+const storyMain = STORY_BODY[locale] ?? STORY_BODY.en!;
+const copy = STORY_META[locale] ?? STORY_META.en!;
+const title = copy.title;
+const description = copy.description;
 const category = 'Customer stories';
 // Publish date for the Article schema. Adjust to the actual go-live date.
 const datePublished = new Date('2026-06-25');
@@ -70,7 +71,7 @@ const headerHtml = renderToStaticMarkup(
     counts,
     github,
     brandHref: '/',
-    active: 'blog',
+    active: 'stories',
     locale,
     localeSwitcher: getHeaderLocaleSwitcher(locale, Astro.url.pathname),
   }),

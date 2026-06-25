@@ -234,6 +234,7 @@ export interface HeaderProductMenuCopy {
   resources: string;
   resourceItems: {
     blog: string;
+    stories: string;
     tutorials: string;
     compare: string;
     newsletter: string;
@@ -287,6 +288,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Resources',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Stories',
       tutorials: 'Tutorials',
       compare: 'Compare',
       newsletter: 'Weekly Newsletter',
@@ -325,6 +327,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: '资源',
     resourceItems: {
       blog: '博客',
+      stories: '客户故事',
       tutorials: '教程',
       compare: '比较',
       newsletter: '每周通讯',
@@ -363,6 +366,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: '資源',
     resourceItems: {
       blog: '部落格',
+      stories: '客戶故事',
       tutorials: '教程',
       compare: '比較',
       newsletter: '每週通訊',
@@ -401,6 +405,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'リソース',
     resourceItems: {
       blog: 'ブログ',
+      stories: '導入事例',
       tutorials: 'チュートリアル',
       compare: '比較',
       newsletter: '週刊ニュースレター',
@@ -439,6 +444,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: '리소스',
     resourceItems: {
       blog: '블로그',
+      stories: '고객 사례',
       tutorials: '튜토리얼',
       compare: '비교',
       newsletter: '주간 뉴스레터',
@@ -477,6 +483,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Ressourcen',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Kundenstories',
       tutorials: 'Tutorials',
       compare: 'Vergleich',
       newsletter: 'Wöchentlicher Newsletter',
@@ -515,6 +522,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Ressources',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Témoignages',
       tutorials: 'Tutoriels',
       compare: 'Comparaison',
       newsletter: 'Newsletter hebdomadaire',
@@ -553,6 +561,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Ресурсы',
     resourceItems: {
       blog: 'Блог',
+      stories: 'Истории клиентов',
       tutorials: 'Уроки',
       compare: 'Сравнение',
       newsletter: 'Еженедельная рассылка',
@@ -591,6 +600,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Recursos',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Casos de éxito',
       tutorials: 'Tutoriales',
       compare: 'Comparar',
       newsletter: 'Newsletter semanal',
@@ -629,6 +639,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Recursos',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Casos de sucesso',
       tutorials: 'Tutoriais',
       compare: 'Comparar',
       newsletter: 'Newsletter semanal',
@@ -667,6 +678,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Risorse',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Storie dei clienti',
       tutorials: 'Tutorial',
       compare: 'Confronta',
       newsletter: 'Newsletter settimanale',
@@ -705,6 +717,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Tài nguyên',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Câu chuyện khách hàng',
       tutorials: 'Hướng dẫn',
       compare: 'So sánh',
       newsletter: 'Bản tin hằng tuần',
@@ -743,6 +756,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Zasoby',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Historie klientów',
       tutorials: 'Samouczki',
       compare: 'Porównanie',
       newsletter: 'Cotygodniowy newsletter',
@@ -781,6 +795,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Sumber Daya',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Kisah Pelanggan',
       tutorials: 'Tutorial',
       compare: 'Bandingkan',
       newsletter: 'Buletin mingguan',
@@ -819,6 +834,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Bronnen',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Klantverhalen',
       tutorials: 'Tutorials',
       compare: 'Vergelijken',
       newsletter: 'Wekelijkse nieuwsbrief',
@@ -857,6 +873,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'الموارد',
     resourceItems: {
       blog: 'المدونة',
+      stories: 'قصص العملاء',
       tutorials: 'الدروس',
       compare: 'مقارنة',
       newsletter: 'نشرة أسبوعية',
@@ -895,6 +912,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Kaynaklar',
     resourceItems: {
       blog: 'Blog',
+      stories: 'Müşteri Hikayeleri',
       tutorials: 'Eğitimler',
       compare: 'Karşılaştır',
       newsletter: 'Haftalık bülten',
@@ -933,6 +951,7 @@ const HEADER_PRODUCT_MENU_COPY: Record<LandingLocaleCode, HeaderProductMenuCopy>
     resources: 'Ресурси',
     resourceItems: {
       blog: 'Блог',
+      stories: 'Історії клієнтів',
       tutorials: 'Туторіали',
       compare: 'Порівняння',
       newsletter: 'Щотижнева розсилка',
