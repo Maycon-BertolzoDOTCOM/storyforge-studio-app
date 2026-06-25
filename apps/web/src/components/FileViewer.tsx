@@ -5309,15 +5309,12 @@ function HtmlViewer({
   }, [source]);
   const effectiveDeck = isDeck || looksLikeDeck;
   const showDeckNavigation = effectiveDeck && (slideState === null || slideState.count > 0);
-  // Deck signal for EXPORT only — broader than `effectiveDeck`. Runtime-managed
-  // decks (`<deck-stage>` + slotted `<section data-screen-label>`) render every
-  // slide but carry no literal `class="slide"`, so `effectiveDeck` misses them
-  // and export would force a single page-mode capture (slide 1 only) for both
-  // image and PDF. Detecting their deck markup here makes Export as image/PDF
-  // capture every slide. Kept OUT of `effectiveDeck` on purpose: the host's
-  // prev/next nav drives slides through a bridge that these decks don't speak, so
-  // surfacing it would only add a dead "— / —" control over the deck's own UI.
-  const deckExportSignal = isDeck || sourceLooksLikeExportableDeck(source);
+  // Deck signal for EXPORT only — broader than `effectiveDeck`, but narrower
+  // than "any `.slide` class". Runtime-managed decks (`<deck-stage>` /
+  // `data-screen-label`) need deck capture even when the viewer's nav bridge
+  // cannot drive them. Ordinary pages can also contain `.slide` carousels or
+  // scroll/parallax sections, so they must stay on full-page capture.
+  const structuredDeckExportSignal = sourceLooksLikeExportableDeck(source);
   const livePreviewSource = inlinedSource ?? source;
   // Annotation modes that should hold the preview still while open. Manual
   // Edit is handled by its own freeze just below; these are the non-edit
@@ -7741,7 +7738,13 @@ function HtmlViewer({
   const exportTitle = file.name.replace(/\.html?$/i, '') || file.name;
   const artifactKind = file.artifactManifest?.kind ?? file.artifactKind ?? null;
   const rendererId = file.artifactManifest?.renderer ?? null;
-  const isDeckArtifact = isDeck || artifactKind === 'deck' || rendererId === 'deck-html' || file.kind === 'presentation';
+  const isDeckArtifact =
+    isDeck ||
+    projectKind === 'slide_deck' ||
+    artifactKind === 'deck' ||
+    rendererId === 'deck-html' ||
+    file.kind === 'presentation';
+  const deckExportSignal = isDeckArtifact || structuredDeckExportSignal;
   const isMarkdownArtifact =
     artifactKind === 'markdown-document' ||
     rendererId === 'markdown' ||
@@ -7753,12 +7756,11 @@ function HtmlViewer({
     rendererId === 'html';
   const canShare = source !== null && isShareableArtifact;
   const canDownload = source !== null && (isShareableArtifact || isMarkdownArtifact);
-  // PPTX export is slide-based, so show it for explicit deck artifacts and for
-  // HTML that the export engine itself can prove is deck-shaped. Generated
-  // decks do not always carry deck metadata after the #4691 viewer rewrite; the
-  // visible 1/N deck navigation should still offer the PPTX route.
+  // PPTX export is slide-based, so show it only for explicit decks plus
+  // structured deck runtimes. Do not key this off plain `.slide`: ordinary
+  // parallax/long pages may use that class but must remain page-mode exports.
   const hostExportAvailable = isOpenDesignHostAvailable();
-  const showPptxExport = canShare && (isDeckArtifact || deckExportSignal);
+  const showPptxExport = canShare && deckExportSignal;
   const canPptx = showPptxExport && !streaming && hostExportAvailable;
   const showMarkdownExport = source !== null && isMarkdownArtifact;
   const showImageExport = canShare;

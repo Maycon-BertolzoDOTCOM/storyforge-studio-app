@@ -931,23 +931,17 @@ export async function exportProjectAsPptx(opts: {
   }
 }
 
-// Whether an HTML artifact is a slide deck for EXPORT purposes — broader than
-// the viewer's `.slide`-class navigation heuristic. Runtime-managed decks render
-// every slide through a custom element (e.g. `<deck-stage>` with slotted
-// `<section data-screen-label="…">` children toggled via `data-deck-active`) and
-// carry NO literal `class="slide"`, so a `.slide`-only check misses them. When it
-// does, the host has no deck signal and captures a single page-mode screenshot of
-// whatever slide happens to be visible (slide 1) instead of every slide — the
-// QA-reported "horizontal deck only exports the first slide" for both image and
-// PDF. This mirrors the desktop capture's slide-surface family
-// (`.slide` / `[data-screen-label]` / `.deck-slide` / `.ppt-slide`) plus the
-// `<deck-stage>` element, so the viewer's export decision and the host's
-// offscreen capture agree on what counts as a deck. Deliberately NOT used for the
-// host's prev/next nav (`effectiveDeck`), which is incompatible with the
-// deck-stage runtime and would surface a dead "— / —" control.
+// Whether an HTML artifact carries a structured deck runtime for EXPORT
+// purposes, beyond explicit project/file metadata. Runtime-managed decks render
+// slides through a custom element (e.g. `<deck-stage>` with slotted
+// `<section data-screen-label="...">` children toggled via `data-deck-active`)
+// and can carry no literal `class="slide"`, so metadata-only checks can miss
+// them. Deliberately DO NOT treat a plain `.slide` class as proof of a deck:
+// ordinary pages often use that token for carousels/testimonials and still need
+// full-page/scroll-stitch capture.
 export function sourceLooksLikeExportableDeck(source: string | null | undefined): boolean {
   if (!source) return false;
-  return /<deck-stage[\s/>]|\bdata-screen-label\s*=|class\s*=\s*['"](?:[^'"]*\s)?(?:slide|deck-slide|ppt-slide)(?:\s|['"])/i.test(
+  return /<deck-stage[\s/>]|\bdata-screen-label\s*=|class\s*=\s*['"](?:[^'"]*\s)?(?:deck-slide|ppt-slide)(?:\s|['"])/i.test(
     source,
   );
 }
