@@ -336,11 +336,22 @@ describe('EntryShell settings menu', () => {
 });
 
 describe('EntryShell new project rail', () => {
-  it('opens the new project modal from the rail plus', async () => {
+  it('creates a blank project directly from the rail plus', async () => {
     window.localStorage.setItem('od.entry.railOpen', 'false');
     const fetchMock = vi.fn(
-      async (input: Parameters<typeof fetch>[0], _init?: Parameters<typeof fetch>[1]) => {
+      async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
         const url = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+        if (url.endsWith('/api/projects') && init?.method === 'POST') {
+          return jsonResponse({
+            project: {
+              id: 'blank-project-1',
+              name: 'Untitled',
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            },
+            conversationId: 'conversation-1',
+          });
+        }
         if (url.endsWith('/api/community/discord')) {
           return jsonResponse({
             inviteCode: 'mHAjSMV6gz',
@@ -368,16 +379,28 @@ describe('EntryShell new project rail', () => {
     fireEvent.click(screen.getByTestId('entry-nav-new-project'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('new-project-modal')).toBeTruthy();
+      expect(props.onOpenProject).toHaveBeenCalledWith('blank-project-1');
     });
-    expect(screen.getByTestId('new-project-panel')).toBeTruthy();
+    expect(screen.queryByTestId('new-project-modal')).toBeNull();
     expect(props.onCreateProject).not.toHaveBeenCalled();
-    expect(props.onOpenProject).not.toHaveBeenCalled();
-    expect(
-      fetchMock.mock.calls.find(
-        ([input, init]) => input === '/api/projects' && init?.method === 'POST',
-      ),
-    ).toBeUndefined();
+    const createCall = fetchMock.mock.calls.find(
+      ([input, init]) => input === '/api/projects' && init?.method === 'POST',
+    );
+    expect(createCall).toBeTruthy();
+    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
+      name: 'Untitled',
+      skillId: null,
+      designSystemId: null,
+    });
+    expect(analyticsMocks.track).toHaveBeenCalledWith(
+      'ui_click',
+      expect.objectContaining({
+        page_name: 'home',
+        area: 'nav',
+        element: 'new_project_plus',
+      }),
+      undefined,
+    );
   });
 });
 

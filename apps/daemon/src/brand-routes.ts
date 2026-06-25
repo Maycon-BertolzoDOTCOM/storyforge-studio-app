@@ -26,6 +26,7 @@ import {
   finalizeBrand,
   listBrandSummaries,
   readBrandDetail,
+  reconcileProgrammaticExtractionTranscript,
   removeBrand,
   renderBrandPreviewIntoProject,
   resolveBrandLogoPath,
@@ -155,7 +156,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
   // programmatic-first pass. This mirrors chat Stop for the synthetic transcript
   // row: the web marks the message canceled locally, while the daemon aborts
   // pending harvest/finalize work and moves the brand out of extracting.
-  app.post('/api/brands/:id/cancel-extraction', (req: Request, res: Response) => {
+  app.post('/api/brands/:id/cancel-extraction', async (req: Request, res: Response) => {
     const id = String(req.params.id);
     try {
       const detail = readBrandDetail(brandsRoot, id);
@@ -176,6 +177,19 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
           blockedReason: undefined,
           extractionTerminalRunId: undefined,
           extractionTerminalError: PROGRAMMATIC_CANCEL_ERROR,
+        });
+        // Retire the synthetic "Working" row so Stop visibly terminates the
+        // fake conversation immediately, even if an in-flight fetch is still
+        // tearing down. No-ops when the brand already finalized (the row is
+        // `succeeded` and must not be downgraded). Best-effort.
+        await reconcileProgrammaticExtractionTranscript({
+          db,
+          brandsRoot,
+          projectsRoot,
+          brandId: id,
+          outcome: 'stopped',
+        }).catch((err) => {
+          console.warn(`[brand] failed to reconcile stopped transcript for ${id}`, err);
         });
       }
       const next = readBrandDetail(brandsRoot, id)?.meta ?? detail.meta;

@@ -1059,80 +1059,78 @@ function DesignKitViewInner({
             </section>
           ) : null}
 
-          {!compact ? (
-            <section
-              ref={logoSectionRef}
-              className={[
-                styles.section,
-                editFocusModule === 'logo' ? styles.sectionEditFocus : '',
-              ].filter(Boolean).join(' ')}
-              data-testid="design-kit-logo-section"
-              tabIndex={editFocusModule === 'logo' ? -1 : undefined}
-              aria-label={t('brandDetail.logo')}
-              onDragOver={handleModuleDragOver}
-              onDrop={(event) => handleModuleDrop('logo', event)}
-            >
-              <div className={styles.dsHead}>
-                <h3 className={styles.sectionTitle}>{t('brandDetail.logo')}</h3>
-                {editFocusModule === 'logo' ? (
-                  <span className={styles.editFocusHint}>
-                    {t('ds.manualEditModuleHint', { module: t('brandDetail.logo') })}
-                  </span>
-                ) : null}
-                {moduleActions(
-                  <>
-                    {uploadAction('logo')}
-                    {canUpload ? moduleActionButton(t('ds.pasteImage'), 'copy', () => void pasteImage('logo'), Boolean(uploading || anyActionBusy)) : null}
-                    {activeLogoSrc && onDeleteLogo
-                      ? moduleActionButton(
-                          t('ds.deleteLogo'),
-                          'trash',
-                          () => void onDeleteLogo(activeLogo),
-                          Boolean(uploading || anyActionBusy),
-                          actionBusy === `delete-logo:${activeLogo}`,
-                        )
-                      : null}
-                  </>,
-                )}
-              </div>
-              {activeLogoSrc ? (
+          <section
+            ref={logoSectionRef}
+            className={[
+              styles.section,
+              editFocusModule === 'logo' ? styles.sectionEditFocus : '',
+            ].filter(Boolean).join(' ')}
+            data-testid="design-kit-logo-section"
+            tabIndex={editFocusModule === 'logo' ? -1 : undefined}
+            aria-label={t('brandDetail.logo')}
+            onDragOver={handleModuleDragOver}
+            onDrop={(event) => handleModuleDrop('logo', event)}
+          >
+            <div className={styles.dsHead}>
+              <h3 className={styles.sectionTitle}>{t('brandDetail.logo')}</h3>
+              {editFocusModule === 'logo' ? (
+                <span className={styles.editFocusHint}>
+                  {t('ds.manualEditModuleHint', { module: t('brandDetail.logo') })}
+                </span>
+              ) : null}
+              {moduleActions(
                 <>
-                  <button
-                    type="button"
-                    className={`${styles.logoStage} ${styles.logoStageButton}`}
-                    data-kit-logo-stage
-                    onClick={() => setLightbox({ src: activeLogoSrc, caption: kit.name })}
-                    aria-label={`${t('common.openPreview')}: ${kit.name}`}
-                  >
-                    <img
-                      className={styles.logoStageImg}
-                      src={activeLogoSrc}
-                      alt={kit.name}
-                      onError={() => markBroken(activeLogoSrc)}
-                    />
-                  </button>
-                  {logoCandidates.length > 1 ? (
-                    <div className={styles.logoThumbs}>
-                      {logoCandidates.map((cand, i) => (
-                        <button
-                          key={cand}
-                          type="button"
-                          className={`${styles.logoThumb} ${i === activeLogo ? styles.logoThumbActive : ''}`}
-                          onClick={() => setActiveLogo(i)}
-                          aria-pressed={i === activeLogo}
-                        >
-                          <img src={cand} alt="" onError={() => markBroken(cand)} />
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                  {kit.logoNotes ? <p className={styles.logoNotes}>{kit.logoNotes}</p> : null}
-                </>
-              ) : (
-                emptyModule(t('ds.moduleEmptyLogo'), 'logo')
+                  {uploadAction('logo')}
+                  {canUpload ? moduleActionButton(t('ds.pasteImage'), 'copy', () => void pasteImage('logo'), Boolean(uploading || anyActionBusy)) : null}
+                  {activeLogoSrc && onDeleteLogo
+                    ? moduleActionButton(
+                        t('ds.deleteLogo'),
+                        'trash',
+                        () => void onDeleteLogo(activeLogo),
+                        Boolean(uploading || anyActionBusy),
+                        actionBusy === `delete-logo:${activeLogo}`,
+                      )
+                    : null}
+                </>,
               )}
-            </section>
-          ) : null}
+            </div>
+            {activeLogoSrc ? (
+              <>
+                <button
+                  type="button"
+                  className={`${styles.logoStage} ${styles.logoStageButton}`}
+                  data-kit-logo-stage
+                  onClick={() => setLightbox({ src: activeLogoSrc, caption: kit.name })}
+                  aria-label={`${t('common.openPreview')}: ${kit.name}`}
+                >
+                  <img
+                    className={styles.logoStageImg}
+                    src={activeLogoSrc}
+                    alt={kit.name}
+                    onError={() => markBroken(activeLogoSrc)}
+                  />
+                </button>
+                {logoCandidates.length > 1 ? (
+                  <div className={styles.logoThumbs}>
+                    {logoCandidates.map((cand, i) => (
+                      <button
+                        key={cand}
+                        type="button"
+                        className={`${styles.logoThumb} ${i === activeLogo ? styles.logoThumbActive : ''}`}
+                        onClick={() => setActiveLogo(i)}
+                        aria-pressed={i === activeLogo}
+                      >
+                        <img src={cand} alt="" onError={() => markBroken(cand)} />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {kit.logoNotes ? <p className={styles.logoNotes}>{kit.logoNotes}</p> : null}
+              </>
+            ) : (
+              emptyModule(t('ds.moduleEmptyLogo'), 'logo')
+            )}
+          </section>
 
           {fonts.length > 0 ? (
             <section

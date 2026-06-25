@@ -139,6 +139,19 @@ export interface BrandMeta {
   /** Human-readable label for the wall that blocked extraction (e.g.
    *  "Cloudflare"). Set alongside `blocked`. */
   blockedReason?: string;
+  /** Seeded conversation that carries the programmatic-extraction transcript.
+   *  Persisted so any completion point (finalize success, soft-fail/blocked,
+   *  user stop, timeout) can reconcile the synthetic assistant message's run
+   *  status to a terminal state regardless of the racy background timer. */
+  conversationId?: string;
+  /** The seeded assistant message id whose run status the lifecycle reconciles
+   *  out of the perpetual `running` state once extraction terminates. */
+  extractionTranscriptMessageId?: string;
+  /** The seeded user message id paired with the assistant message above. */
+  extractionTranscriptUserMessageId?: string;
+  /** When the programmatic pass started (ms epoch), so a terminal reconcile can
+   *  stamp an accurate elapsed window on the synthetic message. */
+  extractionStartedAt?: number;
 }
 
 /** A brand as surfaced to the library list + detail page. */

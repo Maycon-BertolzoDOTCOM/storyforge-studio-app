@@ -216,6 +216,7 @@ interface Props {
   // HomeView itself never imports them; EntryShell threads them
   // through so the dispatcher can stay declarative.
   onOpenNewProject?: (tab: 'template') => void;
+  onStartBlankProject?: () => Promise<void> | void;
   promptHandoff?: HomePromptHandoff | null;
   skills?: SkillSummary[];
   skillsLoading?: boolean;
@@ -244,6 +245,7 @@ export function HomeView({
   onOpenIntegrations,
   onOpenMcp,
   onOpenNewProject,
+  onStartBlankProject,
   promptHandoff,
   skills = EMPTY_SKILLS,
   skillsLoading = false,
@@ -283,7 +285,7 @@ export function HomeView({
     text: string;
     chipId: string | null;
   } | null>(null);
-  const [sessionMode, setSessionMode] = useState<ChatSessionMode>('design');
+  const sessionMode: ChatSessionMode = 'design';
   const [activeSkill, setActiveSkill] = useState<SkillSummary | null>(null);
   const [selectedPluginContexts, setSelectedPluginContexts] = useState<SelectedPluginContext[]>([]);
   const [selectedMcpContexts, setSelectedMcpContexts] = useState<SelectedMcpContext[]>([]);
@@ -1096,11 +1098,13 @@ export function HomeView({
     focusPromptAtEnd();
   }
 
-  // "…or start a blank project": create an empty project directly — no dialog,
-  // no design system, template, prompt, or plugin — and enter it.
   async function startBlankProject() {
     setError(null);
     try {
+      if (onStartBlankProject) {
+        await onStartBlankProject();
+        return;
+      }
       const { project } = await createProject({
         name: t('common.untitled'),
         skillId: null,
@@ -1844,9 +1848,9 @@ export function HomeView({
           setWorkingDirToken(null);
         }}
         onExamplePromptStatusChange={handleExamplePromptStatusChange}
-        onStartBlankProject={startBlankProject}
-        sessionMode={sessionMode}
-        onSessionModeChange={setSessionMode}
+        onStartBlankProject={() => {
+          void startBlankProject();
+        }}
         executionSwitcher={executionSwitcher}
       />
 

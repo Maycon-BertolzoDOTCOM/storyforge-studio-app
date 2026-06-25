@@ -76,6 +76,39 @@ const DEFAULT_PLUGIN = {
   },
 };
 
+const DOCUMENT_NEW_GENERATION_PLUGIN = {
+  ...DEFAULT_PLUGIN,
+  manifest: {
+    ...DEFAULT_PLUGIN.manifest,
+    od: {
+      ...DEFAULT_PLUGIN.manifest.od,
+      useCase: {
+        query: 'Generate a {{artifactKind}} for {{audience}} on {{topic}}.',
+      },
+      inputs: [
+        {
+          name: 'artifactKind',
+          type: 'string',
+          required: true,
+          label: 'Artifact kind',
+        },
+        {
+          name: 'audience',
+          type: 'string',
+          required: true,
+          label: 'Audience',
+        },
+        {
+          name: 'topic',
+          type: 'string',
+          required: true,
+          label: 'Topic',
+        },
+      ],
+    },
+  },
+};
+
 const HIDDEN_DEFAULT_PLUGIN = {
   ...DEFAULT_PLUGIN,
   id: 'od-default',
@@ -325,6 +358,22 @@ const DEFAULT_APPLY_RESULT = {
     snapshotId: 'snap-default',
     pluginId: 'od-new-generation',
     inputs: AUTHORING_DEFAULT_SCENARIO_INPUTS,
+  },
+};
+
+const DOCUMENT_NEW_GENERATION_APPLY_RESULT = {
+  ...AUTHORING_APPLY_RESULT,
+  query: DOCUMENT_NEW_GENERATION_PLUGIN.manifest.od.useCase.query,
+  inputs: DOCUMENT_NEW_GENERATION_PLUGIN.manifest.od.inputs,
+  appliedPlugin: {
+    ...AUTHORING_APPLY_RESULT.appliedPlugin,
+    snapshotId: 'snap-document-new-generation',
+    pluginId: 'od-new-generation',
+    inputs: {
+      artifactKind: 'document',
+      audience: 'readers',
+      topic: 'the user brief',
+    },
   },
 };
 
@@ -793,6 +842,70 @@ describe('HomeView prompt handoff', () => {
       { pluginInputs?: Record<string, unknown> },
     ];
     expect(protoSubmittedInputs).not.toHaveProperty('fidelity');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('keeps Document prompt entry submittable even when od-new-generation has required inputs', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async (url) => {
+      if (typeof url === 'string' && url === '/api/plugins') {
+        return new Response(JSON.stringify({ plugins: [DOCUMENT_NEW_GENERATION_PLUGIN] }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (typeof url === 'string' && url.includes('/api/plugins/od-new-generation/apply')) {
+        return new Response(JSON.stringify(DOCUMENT_NEW_GENERATION_APPLY_RESULT), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    stubAnimationFrame();
+    const onSubmit = vi.fn();
+
+    render(
+      <HomeView
+        projects={[]}
+        onSubmit={onSubmit}
+        onOpenProject={() => undefined}
+        onViewAllProjects={() => undefined}
+      />,
+    );
+
+    await clearActiveTypeChip();
+    fireEvent.click(await screen.findByTestId('home-hero-rail-document'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('home-hero-template-trigger').textContent).toContain('Document');
+    });
+    await setPromptAndSettle('Write a crisp launch memo for the new analytics product.');
+    const submit = screen.getByTestId('home-hero-submit') as HTMLButtonElement;
+    await waitFor(() => expect(submit.disabled).toBe(false));
+
+    fireEvent.click(submit);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/plugins/od-new-generation/apply',
+      expect.anything(),
+    ));
+    const applyCall = fetchMock.mock.calls.find(([url]) => (
+      typeof url === 'string' && url.includes('/api/plugins/od-new-generation/apply')
+    ));
+    expect(JSON.parse(String((applyCall?.[1] as RequestInit).body))).toMatchObject({
+      inputs: {
+        artifactKind: 'document',
+        audience: 'readers',
+        topic: 'the user brief',
+      },
+    });
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      pluginId: 'od-new-generation',
+      appliedPluginSnapshotId: 'snap-document-new-generation',
+      projectKind: 'other',
+      prompt: 'Write a crisp launch memo for the new analytics product.',
+    })));
     expect(screen.queryByRole('alert')).toBeNull();
   });
 

@@ -1544,6 +1544,19 @@
   border-radius: var(--radius);
 }
 
+.compact .logoStage {
+  min-height: 96px;
+  padding: 16px;
+}
+
+.compact .logoStageImg {
+  max-height: 56px;
+}
+
+.compact .logoNotes {
+  font-size: 11px;
+}
+
 .compact .description {
   font-size: 12px;
   line-height: 1.5;

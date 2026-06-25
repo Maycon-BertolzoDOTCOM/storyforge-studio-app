@@ -8,9 +8,17 @@ import { I18nProvider } from '../../src/i18n';
 import type { DesignSystemSummary } from '../../src/types';
 
 vi.mock('../../src/providers/registry', () => ({
-  fetchDesignSystem: vi.fn(async () => ({ body: '# Claymorphism' })),
-  fetchDesignSystemPreview: vi.fn(async () => '<!doctype html><p>tokens</p>'),
-  fetchDesignSystemShowcase: vi.fn(async () => '<!doctype html><p>showcase</p>'),
+  designSystemStaticUrl: (id: string, filePath: string) => `/design-systems/${id}/${filePath}`,
+  fetchDesignSystem: vi.fn(async () => ({
+    id: 'claymorphism',
+    title: 'Claymorphism',
+    summary: 'Bundled design system',
+    category: 'style',
+    body: '# Claymorphism',
+  })),
+  fetchProjectFileText: vi.fn(async () => null),
+  openExternalUrl: vi.fn(),
+  projectRawUrl: (projectId: string, filePath: string) => `/raw/${projectId}/${filePath}`,
 }));
 
 const SYSTEM = {

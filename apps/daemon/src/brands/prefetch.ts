@@ -84,6 +84,14 @@ export type PrefetchResult = {
 
 export type PrefetchProgress = (step: string, detail?: string) => void;
 
+/** Per-fetch deadline, also abortable by the caller's signal (a user Stop on the
+ *  programmatic pass) so an in-flight request tears down promptly instead of
+ *  running out its full timeout. */
+function fetchDeadline(signal?: AbortSignal | null): AbortSignal {
+  const timeout = AbortSignal.timeout(FETCH_TIMEOUT_MS);
+  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+}
+
 async function fetchText(
   url: string,
   cap: number,
@@ -93,13 +101,15 @@ async function fetchText(
      *  that body is signal (it routes us into the blocked-mode pipeline),
      *  not an error. */
     allowHttpError?: boolean;
+    /** Caller cancellation (user Stop) layered onto the per-fetch timeout. */
+    signal?: AbortSignal;
   },
 ): Promise<{ text: string; finalUrl: string; contentType: string; ok: boolean } | null> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,text/css,*/*" },
       redirect: "follow",
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      signal: fetchDeadline(opts?.signal),
     });
     if (!res.ok && !opts?.allowHttpError) return null;
     const buf = Buffer.from(await res.arrayBuffer());
@@ -123,6 +133,7 @@ async function fetchText(
 async function fetchBinary(
   url: string,
   referer?: string,
+  signal?: AbortSignal,
 ): Promise<{ buf: Buffer; contentType: string } | null> {
   const attempt = async (): Promise<{ buf: Buffer; contentType: string } | null> => {
     try {
@@ -136,7 +147,7 @@ async function fetchBinary(
           ...(referer ? { Referer: referer } : {}),
         },
         redirect: "follow",
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        signal: fetchDeadline(signal),
       });
       if (!res.ok) return null;
       const buf = Buffer.from(await res.arrayBuffer());
@@ -701,10 +712,12 @@ const EXTRA_PAGE_HINTS = /\/(about|company|pricing|product|features|story|missio
 export async function prefetchBrand(
   url: string,
   brandDir: string,
-  onProgress: PrefetchProgress = () => {},
+  opts: { onProgress?: PrefetchProgress; signal?: AbortSignal } = {},
 ): Promise<PrefetchResult | null> {
+  const onProgress = opts.onProgress ?? (() => {});
+  const { signal } = opts;
   onProgress("fetch", url);
-  let page = await fetchText(url, HTML_CAP, { allowHttpError: true });
+  let page = await fetchText(url, HTML_CAP, { allowHttpError: true, signal });
   // A non-2xx body is only useful when it's a bot-wall challenge page (it
   // routes into blocked mode below). A site's own 404/500 page is not the
   // brand — treat that as a failed fetch.
@@ -738,7 +751,7 @@ export async function prefetchBrand(
       return null;
     }
   }
-  return harvestFromHtml(html, baseUrl, brandDir, { url, renderedDom, onProgress });
+  return harvestFromHtml(html, baseUrl, brandDir, { url, renderedDom, onProgress, signal });
 }
 
 interface HarvestFromHtmlOptions {
@@ -754,6 +767,8 @@ interface HarvestFromHtmlOptions {
    *  run. False when the caller already supplied rendered DOM. Defaults true. */
   allowChrome?: boolean;
   onProgress?: PrefetchProgress;
+  /** Caller cancellation (user Stop) threaded into the harvest's sub-fetches. */
+  signal?: AbortSignal;
 }
 
 /** Turn page HTML (+ optional seed CSS) into a PrefetchResult: harvest colors,
@@ -766,7 +781,7 @@ async function harvestFromHtml(
   brandDir: string,
   opts: HarvestFromHtmlOptions,
 ): Promise<PrefetchResult> {
-  const { url } = opts;
+  const { url, signal } = opts;
   const onProgress: PrefetchProgress = opts.onProgress ?? (() => {});
   const allowChrome = opts.allowChrome ?? true;
   let renderedDom = opts.renderedDom ?? null;
@@ -807,12 +822,12 @@ async function harvestFromHtml(
       }
     }
     const cssResults = await Promise.all(
-      cssLinks.slice(0, MAX_CSS_FILES).map((u) => fetchText(u, CSS_CAP)),
+      cssLinks.slice(0, MAX_CSS_FILES).map((u) => fetchText(u, CSS_CAP, { signal })),
     );
     for (const r of cssResults) if (r) cssChunks.push(r.text);
     // Google Fonts CSS carries the canonical family names — fetch those too.
     const gfResults = await Promise.all(
-      googleFontsUrls.slice(0, 2).map((u) => fetchText(u, CSS_CAP)),
+      googleFontsUrls.slice(0, 2).map((u) => fetchText(u, CSS_CAP, { signal })),
     );
     for (const r of gfResults) if (r) cssChunks.push(r.text);
     allCss = cssChunks.join("\n");
@@ -882,7 +897,7 @@ async function harvestFromHtml(
   if (refs.length === 0 && renderedDom && !blocked) refs = findLogoRefs(renderedDom, baseUrl);
   for (const ref of refs) {
     if (logos.length >= MAX_LOGOS) break;
-    const bin = await fetchBinary(ref.url, baseUrl);
+    const bin = await fetchBinary(ref.url, baseUrl, signal);
     if (!bin) continue;
     const file = `${ref.kind}-${logos.length}${extFor(bin.contentType, ref.url)}`;
     fs.writeFileSync(path.join(logosDir, file), bin.buf);
@@ -958,7 +973,7 @@ async function harvestFromHtml(
   const candidates = navLinks.filter((l) => sameHost(l.url) && EXTRA_PAGE_HINTS.test(l.url));
   for (const cand of candidates.slice(0, MAX_EXTRA_PAGES)) {
     onProgress("extra-page", cand.url);
-    const extra = await fetchText(cand.url, HTML_CAP);
+    const extra = await fetchText(cand.url, HTML_CAP, { signal });
     if (!extra) continue;
     const t = decodeEntities(/<title[^>]*>([\s\S]*?)<\/title>/i.exec(extra.text)?.[1] ?? "").trim();
     const text = [

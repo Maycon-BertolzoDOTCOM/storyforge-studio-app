@@ -120,6 +120,7 @@ import { PluginsView } from './PluginsView';
 import type { CreateInput, CreateTab, ImportClaudeDesignOutcome } from './NewProjectPanel';
 import type { PluginLoopSubmit } from './PluginLoopHome';
 import {
+  createProject,
   type PluginShareAction,
   type PluginShareProjectOutcome,
 } from '../state/projects';
@@ -486,6 +487,7 @@ export function EntryShell({
   const route = useRoute();
   const view: EntryViewKind = route.kind === 'home' ? route.view : 'home';
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [blankProjectCreating, setBlankProjectCreating] = useState(false);
   // The entry nav rail is collapsed by default (Manus-style) so the entry
   // view opens clean and full-width; the panel toggle in the topbar opens it
   // as an overlay that dismisses on selection / backdrop click / Escape.
@@ -573,6 +575,25 @@ export function EntryShell({
   function openNewProject(tab: CreateTab = 'prototype') {
     setNewProjectInitialTab(tab);
     setNewProjectOpen(true);
+  }
+
+  async function startBlankProject() {
+    if (blankProjectCreating) return;
+    setBlankProjectCreating(true);
+    setNewProjectOpen(false);
+    try {
+      const { project } = await createProject({
+        name: t('common.untitled'),
+        skillId: null,
+        designSystemId: null,
+      });
+      await onOpenProject(project.id);
+    } catch (err) {
+      console.warn('Could not create a blank project', err);
+      throw err;
+    } finally {
+      setBlankProjectCreating(false);
+    }
   }
 
   function handleCreate(input: CreateInput) {
@@ -755,7 +776,15 @@ export function EntryShell({
         <EntryNavRail
           view={view}
           onViewChange={changeView}
-          onNewProject={() => openNewProject()}
+          onNewProject={() => {
+            trackHomeNavClick(analytics.track, {
+              page_name: 'home',
+              area: 'nav',
+              element: 'new_project_plus',
+            });
+            void startBlankProject().catch(() => undefined);
+          }}
+          newProjectDisabled={blankProjectCreating}
           open={railOpen}
           onClose={() => setRailOpen(false)}
         />
@@ -845,6 +874,7 @@ export function EntryShell({
                 onOpenNewProject={(tab) => {
                   openNewProject(tab);
                 }}
+                onStartBlankProject={startBlankProject}
                 promptHandoff={homePromptHandoff}
                 skills={skills}
                 skillsLoading={skillsLoading}

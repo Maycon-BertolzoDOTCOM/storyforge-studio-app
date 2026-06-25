@@ -23,7 +23,6 @@ import type {
   RefObject,
 } from 'react';
 import type {
-  ChatSessionMode,
   ConnectorDetail,
   DesignSystemSummary,
   InputFieldSpec,
@@ -75,7 +74,6 @@ import { applyFacetSelection } from './plugins-home/facets';
 import { inferPluginPreview } from './plugins-home/preview';
 import { pluginSubfacetLabel } from './plugins-home/subfacetLabel';
 import { ComposerPlusMenu } from './ComposerPlusMenu';
-import { SessionModeToggle } from './SessionModeToggle';
 import { TemplatePicker } from './home-hero/TemplatePicker';
 import { LibraryPicker } from './LibraryPicker';
 import { assetTitle } from './LibraryAssetMeta';
@@ -90,8 +88,8 @@ import {
 import { CaretFloatingLayer } from './composer/CaretFloatingLayer';
 import { PlaceholderCarousel } from './home-hero/PlaceholderCarousel';
 import {
+  buildPlaceholderScenarios,
   PLACEHOLDER_BASE_HINT_KEY,
-  PLACEHOLDER_SCENARIO_DEFS,
   type PlaceholderScenario,
 } from './home-hero/placeholderScenarios';
 
@@ -131,8 +129,6 @@ interface Props {
   // showing: the host seeds the prompt with `scenario.text`, binds the
   // scenario's template, and creates the project — one-click "just start".
   onSubmitScenario?: (scenario: PlaceholderScenario) => void;
-  sessionMode?: ChatSessionMode;
-  onSessionModeChange?: (mode: ChatSessionMode) => void;
   activePluginTitle: string | null;
   // True when the active plugin chip shows a user-picked plugin (Community card
   // or example-prompt preset) rather than a task-type chip's default plugin —
@@ -265,8 +261,6 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     onSubmit,
     onSubmitScenario = () => undefined,
     firstRunGuide,
-    sessionMode = 'design',
-    onSessionModeChange,
     activePluginTitle,
     activePluginIsExplicit = false,
     activePluginRecord = null,
@@ -392,21 +386,21 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
   // with nothing bound we cycle the full set. Memoised by chip + locale so the
   // reference only changes on a real switch, which restarts the carousel.
   const carouselScenarios = useMemo<PlaceholderScenario[]>(() => {
-    const resolved = PLACEHOLDER_SCENARIO_DEFS.map((def) => ({
-      id: def.id,
-      chipId: def.chipId,
-      text: t(def.textKey),
-    }));
-    return activeChipId
-      ? resolved.filter((scenario) => scenario.chipId === activeChipId)
-      : resolved;
-  }, [activeChipId, t]);
+    return buildPlaceholderScenarios({
+      activeChipId,
+      resolveTextKey: (key) => t(key),
+      examplesForChip: (chipId) => homeHeroChipPromptExamples(chipId, locale),
+      fallbackForChip: (chipId) => fallbackPlaceholderScenarioText(chipId, locale, t),
+    });
+  }, [activeChipId, locale, t]);
   // The placeholder carousel runs while the composer is empty and nothing
   // OTHER than a create-template chip is bound. A selected template keeps it
   // alive (showing that template's scenarios); only an explicit plugin/skill
   // pick — which owns its own placeholder — or a non-empty composer stops it.
-  // Media/live-artifact templates carry no scenarios, so the pool is empty and
-  // the editor falls back to its own placeholder there.
+  // Template types without curated carousel lines fall back to their localized
+  // prompt examples, then to a localized chip-label prompt. That keeps every
+  // create template submittable from an empty composer instead of silently
+  // disabling Send.
   const carouselActive =
     active &&
     !submitting &&
@@ -1624,13 +1618,6 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
             ) : null}
           </div>
           <div className="home-hero__foot-right">
-            {onSessionModeChange ? (
-              <SessionModeToggle
-                mode={sessionMode}
-                onChange={onSessionModeChange}
-                disabled={submitting}
-              />
-            ) : null}
             {executionSwitcher ? (
               <div className="home-hero__execution-switcher">
                 {executionSwitcher}
@@ -3121,6 +3108,26 @@ function homeHeroChipDescription(chipId: string, t: ReturnType<typeof useT>): st
     case 'create-brand-kit': return t('homeHero.chip.createBrandKitDesc');
     default: return '';
   }
+}
+
+function fallbackPlaceholderScenarioText(
+  chipId: string,
+  locale: Locale,
+  t: ReturnType<typeof useT>,
+): string | null {
+  const label = homeHeroChipLabel(chipId, t).trim();
+  if (!label || label === chipId) return null;
+  const description = homeHeroChipDescription(chipId, t).trim();
+  const kind = promptLocaleKind(locale);
+  if (kind === 'zh') {
+    return description ? `创建一个${label}：${description}` : `创建一个${label}`;
+  }
+  if (kind === 'ja') {
+    return description ? `${label}を作成する：${description}` : `${label}を作成する`;
+  }
+  return description
+    ? `Create ${englishArticle(label)} ${label}: ${description}`
+    : `Create ${englishArticle(label)} ${label}`;
 }
 
 // The hover "what happens next" line — describes how the scenario will be

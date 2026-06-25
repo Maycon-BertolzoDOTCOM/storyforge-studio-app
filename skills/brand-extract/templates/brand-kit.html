@@ -149,7 +149,10 @@
   .asset:hover { border-color: var(--accent); transform: translateY(-1px); }
   .asset.pending { opacity: .55; pointer-events: none; }
   .asset-frame { aspect-ratio: 16 / 10; background: var(--line-soft); position: relative; overflow: hidden; }
-  .asset-frame iframe { position: absolute; top: 0; left: 0; width: 200%; height: 200%; border: 0; transform: scale(.5); transform-origin: top left; pointer-events: none; background: #fff; }
+  /* --asset-surface follows the brand theme (set from JS): light brands keep a
+     near-white backdrop, dark brands get a dark one, so the iframe backdrop that
+     flashes before a brand-asset page paints matches the kit's cast. */
+  .asset-frame iframe { position: absolute; top: 0; left: 0; width: 200%; height: 200%; border: 0; transform: scale(.5); transform-origin: top left; pointer-events: none; background: var(--asset-surface, #fff); }
   .asset-meta { padding: 11px 13px; }
   .asset-name { font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .asset-name .open { font-size: 11px; color: var(--accent); }
@@ -289,9 +292,29 @@
   var fg = role(brand, 'foreground', '#1a1a18');
   var muted = role(brand, 'muted', '#57564f');
   var accent = role(brand, 'accent', '#c96442');
+  var surface = role(brand, 'surface', '#ffffff');
+
+  // Theme-aware surface for logo / brand-asset tiles. A light-themed brand must
+  // paint these on a light surface (and a dark one on a dark surface) — never
+  // let a single mis-derived dark `background` role paint the whole logo region
+  // black on an otherwise-light kit.
+  //
+  // We decide the kit's cast by a vote across the neutral roles rather than the
+  // `background` role alone, so one mis-measured swatch can't flip the theme: a
+  // genuinely light brand reads light on background + surface + (inverted)
+  // foreground, a dark brand the opposite. Then we pick a neutral that keeps the
+  // mark visible — a light brand gets a near-white paper (so a dark mark reads),
+  // a dark brand keeps its dark canvas (so a light mark reads).
+  var lightVotes = (isLight(bg) ? 1 : 0) + (isLight(surface) ? 1 : 0) + (isLight(fg) ? 0 : 1);
+  var kitLight = lightVotes >= 2;
+  var logoSurface = kitLight
+    ? (isLight(surface) ? surface : isLight(bg) ? bg : '#ffffff')
+    : (!isLight(bg) ? bg : !isLight(surface) ? surface : '#1a1a18');
 
   // Apply brand accent/ink to the page chrome so the kit feels on-brand.
   document.documentElement.style.setProperty('--accent', accent);
+  // Brand-asset iframe backdrops follow the same theme-aware surface as the logo.
+  document.documentElement.style.setProperty('--asset-surface', logoSurface);
 
   var typo = brand.typography || {};
   var googleLinks = [typo.display, typo.body, typo.mono]
@@ -320,10 +343,10 @@
         : esc(txt('noLogoFound', 'No logo found'))) + '</div>';
     }
     var thumbs = cands.length > 1 ? '<div class="logo-thumbs">' + cands.map(function (c, i) {
-      return '<button class="logo-thumb' + (i===0?' active':'') + '" data-od-id="brand-logo-thumb-' + i + '" data-od-edit="image" data-src="' + esc(c) + '" style="background:' + esc(bg) + '"><img src="' + esc(c) + '" alt=""></button>';
+      return '<button class="logo-thumb' + (i===0?' active':'') + '" data-od-id="brand-logo-thumb-' + i + '" data-od-edit="image" data-src="' + esc(c) + '" style="background:' + esc(logoSurface) + '"><img src="' + esc(c) + '" alt=""></button>';
     }).join('') + '</div>' : '';
     var notes = brand.logo && brand.logo.notes ? '<p class="logo-notes" data-od-id="brand-logo-notes" data-od-edit="text">' + esc(brand.logo.notes) + '</p>' : '';
-    return '<div class="logo-stage" id="logo-stage" data-od-id="brand-logo-stage" data-od-edit="container" data-od-label="Logo stage" style="background:' + esc(bg) + '" data-light-src="' + esc(cands[0]) + '" data-light-caption="' + esc(brand.name || txt('logo', 'Logo')) + '" tabindex="0" role="button" aria-label="' + esc(txt('previewLogoAria', 'Preview logo')) + '">' +
+    return '<div class="logo-stage" id="logo-stage" data-od-id="brand-logo-stage" data-od-edit="container" data-od-label="Logo stage" style="background:' + esc(logoSurface) + '" data-light-src="' + esc(cands[0]) + '" data-light-caption="' + esc(brand.name || txt('logo', 'Logo')) + '" tabindex="0" role="button" aria-label="' + esc(txt('previewLogoAria', 'Preview logo')) + '">' +
       '<img id="logo-img" data-od-id="brand-logo-img" data-od-edit="image" src="' + esc(cands[0]) + '" alt="' + esc(brand.name || txt('logoAlt', 'logo')) + '"></div>' + thumbs + notes;
   }
 

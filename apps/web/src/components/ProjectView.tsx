@@ -2462,13 +2462,33 @@ export function ProjectView({
       if (!handle || !handle.isDesktopWebview) {
         return { ok: false, message: t('chat.brandBrowserAssistDesktopOnly') };
       }
+      // Guard against a tab that never actually navigated/loaded — reading a
+      // blank webview would otherwise look like an empty page.
+      const tabUrl = handle.getURL();
+      if (!tabUrl || tabUrl === 'about:blank') {
+        return { ok: false, message: t('chat.brandBrowserAssistReadFailed') };
+      }
+      // Electron's executeJavaScript never times out on its own; a tab still on a
+      // challenge wall / mid-redirect / hung renderer would freeze the Confirm
+      // forever. Cap the read so the card surfaces a retryable error instead.
+      const readTab = async (script: string): Promise<string> => {
+        const promise = handle.executeJavaScript<string>(script, true);
+        if (!promise) return '';
+        return Promise.race([
+          promise,
+          new Promise<string>((_, reject) =>
+            window.setTimeout(
+              () => reject(new Error(t('chat.brandBrowserAssistReadFailed'))),
+              8000,
+            ),
+          ),
+        ]);
+      };
       let html = '';
       let css = '';
       try {
-        const htmlPromise = handle.executeJavaScript<string>(BROWSER_SERIALIZE_HTML_SCRIPT, true);
-        html = htmlPromise ? await htmlPromise : '';
-        const cssPromise = handle.executeJavaScript<string>(BROWSER_SERIALIZE_STYLES_SCRIPT, true);
-        css = cssPromise ? await cssPromise : '';
+        html = await readTab(BROWSER_SERIALIZE_HTML_SCRIPT);
+        css = await readTab(BROWSER_SERIALIZE_STYLES_SCRIPT).catch(() => '');
       } catch (err) {
         return {
           ok: false,
@@ -2561,6 +2581,34 @@ export function ProjectView({
     },
     [refreshConversationMessagesFromServer, scheduleProjectTimeout],
   );
+
+  // The programmatic brand-extraction transcript is a synthetic row the daemon
+  // reconciles to a terminal state out of band (finalize success, the 30s
+  // "needs a hand" checkpoint, or a user Stop) — there is no SSE run streaming
+  // it. Poll the conversation while that row is still "running" so the terminal
+  // flip shows up live instead of leaving an ever-climbing "Working" clock until
+  // a manual reload. Self-cleans the moment the row settles or a live agent run
+  // takes over (we never refresh on top of an active stream).
+  const hasRunningBrandTranscriptRow = useMemo(
+    () =>
+      currentProject.metadata?.importedFrom === 'brand-extraction'
+      && messages.some((m) => m.role === 'assistant' && m.runStatus === 'running'),
+    [currentProject.metadata?.importedFrom, messages],
+  );
+  useEffect(() => {
+    if (!hasRunningBrandTranscriptRow || streaming) return undefined;
+    const conversationId = activeConversationId;
+    if (!conversationId) return undefined;
+    const timer = window.setInterval(() => {
+      void refreshConversationMessagesFromServer(conversationId);
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [
+    hasRunningBrandTranscriptRow,
+    streaming,
+    activeConversationId,
+    refreshConversationMessagesFromServer,
+  ]);
 
   const markStreamingConversation = useCallback((conversationId: string) => {
     streamingConversationIdRef.current = conversationId;

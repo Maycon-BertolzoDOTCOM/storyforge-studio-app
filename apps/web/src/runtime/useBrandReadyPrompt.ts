@@ -24,8 +24,11 @@ const POLL_INTERVAL_MS = 5000;
 const MAX_POLLS = 300;
 // When programmatic extraction is still running this long with no result, offer
 // the browser-assisted fallback (alongside the immediate offer when an anti-bot
-// wall is detected). ~60s per the product decision.
-const ASSIST_TIMEOUT_MS = 60_000;
+// wall is detected). 30s: past that, the deterministic harvest is almost
+// certainly stuck (unreachable origin / anti-bot wall / a tab that never
+// loaded), so surface the next step instead of leaving the user waiting. Mirrors
+// the daemon-side stall checkpoint that posts the "needs a hand" transcript card.
+const ASSIST_TIMEOUT_MS = 30_000;
 
 function shownStorageKey(brandId: string): string {
   return `od:brand-ready-prompt:${brandId}`;

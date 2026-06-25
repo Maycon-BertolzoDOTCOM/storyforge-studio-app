@@ -258,17 +258,50 @@ export async function startBrandExtraction(
   const pendingPrompt = runProgrammatic
     ? null
     : brandExtractionPrompt({ url, brandId: id, host, hasWebsiteSource, hasDesignMdSource });
+
+  // Entity-first: register the `user:<id>` design system NOW, as a draft, so it
+  // appears under "Your systems" the moment the project opens and stays editable
+  // even if extraction fails or is stopped — instead of only materializing on a
+  // successful finalize (the bug where a started extraction never showed up in
+  // the list). finalizeBrandCore reuses this exact id (never duplicates),
+  // enriching the draft in place. Best-effort: a registry hiccup just falls back
+  // to the create-on-finalize path.
+  let draftDesignSystemId: string | null = null;
+  if (runProgrammatic && opts.userDesignSystemsRoot) {
+    try {
+      const draft = await createUserDesignSystem(opts.userDesignSystemsRoot, {
+        title: host,
+        category: 'Brands',
+        surface: 'web',
+        status: 'draft',
+        artifactMode: 'agent-managed',
+        provenance: { sourceNotes: `Extracting from ${url}` },
+      });
+      draftDesignSystemId = draft.id;
+      meta.designSystemId = draft.id;
+      patchMeta(brandsRoot, id, { designSystemId: draft.id });
+    } catch (err) {
+      console.warn(`[brand] failed to pre-create draft design system for ${id}`, err);
+    }
+  }
   insertProject(db, {
     id: projectId,
     name,
     skillId: null,
-    designSystemId: null,
+    designSystemId: draftDesignSystemId,
     pendingPrompt,
     metadata,
     customInstructions: null,
     createdAt: now,
     updatedAt: now,
   });
+  if (draftDesignSystemId && opts.userDesignSystemsRoot) {
+    try {
+      await linkUserDesignSystemProject(opts.userDesignSystemsRoot, draftDesignSystemId, projectId);
+    } catch (err) {
+      console.warn(`[brand] failed to link draft design system to project for ${id}`, err);
+    }
+  }
   const conversationId = randomId();
   insertConversation(db, {
     id: conversationId,
@@ -356,6 +389,19 @@ export async function startBrandExtraction(
         transcriptAgent: opts.transcriptAgent,
       })
     : null;
+  // Persist the transcript handles so EVERY terminal point — finalize success,
+  // soft-fail/blocked/timeout, and user stop — can reconcile the synthetic
+  // "AMR · Working" row out of its perpetual `running` state, regardless of the
+  // racy background timer. Without this the row stays "Working 13m…" forever
+  // even after the brand finalizes `ready` in the background.
+  if (programmaticTranscript) {
+    patchMeta(brandsRoot, id, {
+      conversationId,
+      extractionTranscriptMessageId: programmaticTranscript.assistantMessageId,
+      extractionTranscriptUserMessageId: programmaticTranscript.userMessageId,
+      extractionStartedAt: programmaticStartedAt,
+    });
+  }
   if (runProgrammatic && opts.userDesignSystemsRoot) {
     const programmaticOptions: RunProgrammaticExtractionOptions = {
       id,
@@ -375,56 +421,84 @@ export async function startBrandExtraction(
     if (opts.prefetch) programmaticOptions.prefetch = opts.prefetch;
     if (opts.description) programmaticOptions.description = opts.description;
     if (designMd) programmaticOptions.designMd = designMd;
-    if (opts.programmaticAbortSignal) programmaticOptions.abortSignal = opts.programmaticAbortSignal;
 
-    // Run the full programmatic finalize (harvest + synthesize + register) out
-    // of band. The timer defers even synchronous work inside
-    // runProgrammaticExtraction (notably DESIGN.md parsing) until after the HTTP
-    // route has a chance to return the ids that make the transcript visible in
-    // the left pane. PROGRAMMATIC_EXTRACT_TIMEOUT_MS still caps the work so a
-    // hanging origin can never leak a forever-pending promise.
-    const settled = withTimeout(
-      new Promise<BrandFinalizeResponse | null>((resolve, reject) => {
-        setTimeout(() => {
-          void runProgrammaticExtraction(programmaticOptions).then(resolve, reject);
-        }, 0);
-      }),
+    // Two independent clocks — never one that can kill a slow-but-succeeding
+    // origin:
+    //   - a 30s SOFT checkpoint flips the synthetic row to the actionable
+    //     "taking longer than usual — open the page in Browser / retry / use AI"
+    //     terminal WITHOUT aborting, so a heavy site (e.g. Whole Foods) still
+    //     finalizes in the background and overwrites the card with success. This
+    //     answers "30s with no result should surface a next step".
+    //   - a generous HARD cap aborts only as a runaway backstop; the per-fetch
+    //     8s timeouts already bound the real harvest, so this should never fire
+    //     for a healthy origin.
+    const hardCap = new AbortController();
+    const hardCapTimer = setTimeout(
+      () => hardCap.abort(new ProgrammaticExtractionAbortError()),
       PROGRAMMATIC_EXTRACT_TIMEOUT_MS,
-    ).catch((err) => {
-      if (isProgrammaticExtractionAbortError(err) || opts.programmaticAbortSignal?.aborted) {
-        return null;
-      }
-      console.warn(`[brand] programmatic extraction failed for ${id} — falling back to agent`, err);
-      return null;
+    );
+    hardCapTimer.unref?.();
+    programmaticOptions.abortSignal = opts.programmaticAbortSignal
+      ? AbortSignal.any([opts.programmaticAbortSignal, hardCap.signal])
+      : hardCap.signal;
+
+    let extractionSettled = false;
+    const stallTimer = setTimeout(() => {
+      if (extractionSettled) return;
+      void reconcileProgrammaticExtractionTranscript({
+        db,
+        brandsRoot,
+        projectsRoot,
+        brandId: id,
+        outcome: 'needs_attention',
+        locale,
+      }).catch(() => {});
+    }, PROGRAMMATIC_STALL_CHECKPOINT_MS);
+    stallTimer.unref?.();
+
+    // Defer so the HTTP route returns the ids (making the transcript visible in
+    // the left pane) before any synchronous extraction work — notably DESIGN.md
+    // parsing — runs.
+    const settled = new Promise<BrandFinalizeResponse | null>((resolve) => {
+      setTimeout(() => {
+        runProgrammaticExtraction(programmaticOptions).then(resolve, (err) => {
+          if (!isProgrammaticExtractionAbortError(err) && !opts.programmaticAbortSignal?.aborted) {
+            console.warn(`[brand] programmatic extraction failed for ${id} — falling back to agent`, err);
+          }
+          resolve(null);
+        });
+      }, 0);
+    }).finally(() => {
+      extractionSettled = true;
+      clearTimeout(stallTimer);
+      clearTimeout(hardCapTimer);
     });
     opts.onBackgroundExtraction?.(settled);
+
     void settled
       .then((result) => {
-        if (!result && !programmaticOptions.abortSignal?.aborted) {
-          updateProject(db, projectId, { pendingPrompt: fallbackPrompt });
-        }
-        return seedReadyProgrammaticExtractionTranscript({
+        // A deliberate user Stop is reconciled by the cancel route, which knows
+        // the run was stopped (not given up on). Everything else settles here.
+        if (opts.programmaticAbortSignal?.aborted) return undefined;
+        // Success: finalizeBrandCore already flipped the row to `succeeded` from
+        // the authoritative completion point, so there is nothing to do.
+        if (result) return undefined;
+        // Give-up (blocked / too thin / unreachable / hard-cap backstop): hand
+        // the brand to the agent fallback and retire the synthetic row into the
+        // actionable "needs a hand" terminal so it stops counting up forever.
+        updateProject(db, projectId, { pendingPrompt: fallbackPrompt });
+        return reconcileProgrammaticExtractionTranscript({
           db,
-          conversationId,
-          randomId,
-          sourceUrl: url,
-          sourceLabel: host,
           brandsRoot,
           projectsRoot,
-          projectId,
+          brandId: id,
+          outcome: 'needs_attention',
           locale,
-          startedAt: programmaticStartedAt,
-          transcript: programmaticTranscript,
-          transcriptAgent: opts.transcriptAgent,
-          metadata: {
-            ...metadata,
-            entryFile: BRAND_KIT_FILE,
-          },
         });
       })
       .catch((err) => {
         if (isClosedDatabaseError(err)) return;
-        console.warn(`[brand] failed to seed programmatic extraction transcript for ${id}`, err);
+        console.warn(`[brand] failed to reconcile programmatic extraction transcript for ${id}`, err);
       });
   }
 
@@ -496,32 +570,110 @@ interface ProgrammaticExtractionTranscript {
   assistantMessageId: string;
 }
 
-async function seedReadyProgrammaticExtractionTranscript(input: {
+/** The terminal outcomes the synthetic programmatic-extraction row settles into.
+ *  `succeeded` overwrites any earlier card (a slow site that eventually lands);
+ *  the others never clobber a recorded success. */
+export type ProgrammaticExtractionOutcome = 'succeeded' | 'needs_attention' | 'stopped';
+
+/**
+ * Flip the seeded programmatic-extraction transcript row to a terminal run
+ * status. This is the SINGLE authority that retires the synthetic
+ * "AMR · Working 13m…" row, driven entirely by persisted brand meta + the
+ * message itself, so it works from EVERY completion point — finalize success,
+ * give-up / blocked / stall, and user stop — and survives a daemon restart.
+ * Best-effort and idempotent; safe to call repeatedly.
+ *
+ * The bug this fixes: the row used to be reconciled only by a single racy timer
+ * gated on re-reading `status === 'ready'`. A heavy site that finalized AFTER
+ * the timer fired left the row "running" forever ("succeeded but never
+ * terminated"); a blocked/failed origin left it "running" forever too ("stuck
+ * running"). Anchoring the reconcile to the real terminal points removes the
+ * race entirely.
+ */
+export async function reconcileProgrammaticExtractionTranscript(input: {
   db: Parameters<typeof insertProject>[0];
-  conversationId: string;
-  randomId: () => string;
-  sourceUrl: string;
-  sourceLabel: string;
   brandsRoot: string;
   projectsRoot: string;
-  projectId: string;
-  locale: string;
-  startedAt: number;
-  transcript?: ProgrammaticExtractionTranscript | null | undefined;
-  transcriptAgent?: StartBrandExtractionOptions['transcriptAgent'];
-  metadata: ProjectMetadata;
+  brandId: string;
+  outcome: ProgrammaticExtractionOutcome;
+  locale?: string;
 }): Promise<void> {
-  const latest = readBrandDetail(input.brandsRoot, input.metadata.brandId ?? '');
-  if ((latest?.meta.status ?? null) !== 'ready' || !latest?.meta.designSystemId) return;
-  await seedProgrammaticExtractionTranscript({
-    ...input,
-    brandName: latest.brand?.name ?? input.sourceLabel,
-    designSystemId: latest.meta.designSystemId,
-    transcript: input.transcript,
-    metadata: {
-      ...input.metadata,
-      brandDesignSystemId: latest.meta.designSystemId,
-    },
+  const meta = readMeta(input.brandsRoot, input.brandId);
+  const conversationId = meta?.conversationId;
+  const assistantMessageId = meta?.extractionTranscriptMessageId;
+  if (!meta || !conversationId || !assistantMessageId) return;
+
+  const current = listMessages(input.db, conversationId).find((m) => m.id === assistantMessageId);
+  if (!current) return;
+  // Never downgrade a recorded success; never re-clobber a settled non-success.
+  if (current.runStatus === 'succeeded') return;
+  if (input.outcome !== 'succeeded' && current.runStatus && current.runStatus !== 'running') return;
+
+  const locale = input.locale ?? meta.locale ?? undefined;
+  const copy = brandExtractionTranscriptCopy(locale);
+  const sourceLine = meta.sourceUrl.startsWith('designmd://') ? copy.sourceDesignMd : meta.sourceUrl;
+  const startedAt = current.startedAt ?? meta.extractionStartedAt ?? current.createdAt ?? Date.now();
+  const createdAt = current.createdAt ?? startedAt;
+  const now = Date.now();
+  const agentFields = {
+    ...(current.agentId ? { agentId: current.agentId } : {}),
+    ...(current.agentName ? { agentName: current.agentName } : {}),
+  };
+
+  if (input.outcome === 'succeeded') {
+    const detail = readBrandDetail(input.brandsRoot, input.brandId);
+    const designSystemId = meta.designSystemId ?? detail?.meta.designSystemId;
+    // Defensive: only claim success once the system is actually registered.
+    if (!designSystemId) return;
+    const brandName = detail?.brand?.name?.trim() || hostnameOf(meta.sourceUrl);
+    const title = copy.doneTitle(brandName);
+    const body = copy.doneBody(designSystemId, sourceLine);
+    const next = copy.next;
+    const projectId = meta.projectId ?? brandProjectId(input.brandId);
+    const producedFiles = await brandExtractionProducedFiles(input.projectsRoot, projectId, {
+      kind: 'brand',
+      importedFrom: 'brand-extraction',
+      brandId: input.brandId,
+      brandSourceUrl: meta.sourceUrl,
+      entryFile: BRAND_KIT_FILE,
+      brandDesignSystemId: designSystemId,
+    });
+    upsertMessage(input.db, conversationId, {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: [title, '', body, '', next].join('\n'),
+      ...agentFields,
+      events: [
+        { kind: 'text', text: `${title}\n\n` },
+        { kind: 'text', text: `${body}\n\n${next}` },
+      ],
+      producedFiles,
+      runStatus: 'succeeded',
+      createdAt,
+      startedAt,
+      endedAt: now,
+    });
+    return;
+  }
+
+  // needs_attention | stopped — an actionable terminal so the row stops counting
+  // up. The web surfaces the browser-assist card (open the page / retry)
+  // alongside, driven off meta.blocked / the stall signal.
+  const stopped = input.outcome === 'stopped';
+  const title = stopped ? copy.stoppedTitle : copy.stalledTitle;
+  const body = stopped
+    ? copy.stoppedBody(sourceLine)
+    : copy.stalledBody(sourceLine, meta.blockedReason ?? null);
+  upsertMessage(input.db, conversationId, {
+    id: assistantMessageId,
+    role: 'assistant',
+    content: [title, '', body].join('\n'),
+    ...agentFields,
+    events: [{ kind: 'text', text: `${title}\n\n${body}` }],
+    runStatus: stopped ? 'canceled' : 'failed',
+    createdAt,
+    startedAt,
+    endedAt: now,
   });
 }
 
@@ -631,6 +783,13 @@ interface BrandExtractionTranscriptCopy {
   started: (source: string) => string;
   doneTitle: (name: string) => string;
   doneBody: (designSystemId: string, source: string) => string;
+  /** Actionable terminal shown when the programmatic pass stalls (30s) or hits
+   *  a wall the deterministic harvest can't pass. */
+  stalledTitle: string;
+  stalledBody: (source: string, reason: string | null) => string;
+  /** Terminal shown when the user stops the programmatic pass. */
+  stoppedTitle: string;
+  stoppedBody: (source: string) => string;
 }
 
 function brandExtractionTranscriptCopy(locale?: string | null): BrandExtractionTranscriptCopy {
@@ -644,6 +803,12 @@ function brandExtractionTranscriptCopy(locale?: string | null): BrandExtractionT
         doneBody: (designSystemId, source) =>
           `我已经从 ${source} 创建并注册了 ${designSystemId} 设计系统。现在可以预览，也可以直接用于新设计。`,
         next: '接下来，你可以运行 AI 优化做更深一轮抽取，或者用这个系统新建设计。',
+        stalledTitle: '程序化抽取需要你帮一把。',
+        stalledBody: (source, reason) =>
+          `我没能自动从 ${source} 抽取完成${reason ? `（${reason}）` : ''}。在右侧 Browser 标签把页面打开并刷新好（必要时清掉人机验证），然后点重试；也可以直接用 AI 继续。`,
+        stoppedTitle: '抽取已停止。',
+        stoppedBody: (source) =>
+          `你停止了从 ${source} 的抽取。已经抽到的内容会保留成一个可编辑的设计系统，你可以从这里继续编辑或重试。`,
       };
     case 'zh-TW':
       return {
@@ -654,6 +819,12 @@ function brandExtractionTranscriptCopy(locale?: string | null): BrandExtractionT
         doneBody: (designSystemId, source) =>
           `我已經從 ${source} 建立並註冊了 ${designSystemId} 設計系統。現在可以預覽，也可以直接用於新設計。`,
         next: '接下來，你可以執行 AI 優化做更深一輪抽取，或者用這個系統建立新設計。',
+        stalledTitle: '程式化抽取需要你幫一把。',
+        stalledBody: (source, reason) =>
+          `我沒能自動從 ${source} 抽取完成${reason ? `（${reason}）` : ''}。在右側 Browser 分頁把頁面開啟並重新整理好（必要時清掉人機驗證），然後點重試；也可以直接用 AI 繼續。`,
+        stoppedTitle: '抽取已停止。',
+        stoppedBody: (source) =>
+          `你停止了從 ${source} 的抽取。已經抽到的內容會保留成一個可編輯的設計系統，你可以從這裡繼續編輯或重試。`,
       };
     default:
       return {
@@ -664,6 +835,12 @@ function brandExtractionTranscriptCopy(locale?: string | null): BrandExtractionT
         doneBody: (designSystemId, source) =>
           `I created and registered the ${designSystemId} design system from ${source}. It is ready to preview and can be used in new designs now.`,
         next: 'Next, you can run AI Optimize for a deeper extraction pass, or create a new design with this system.',
+        stalledTitle: 'The automatic pass needs a hand.',
+        stalledBody: (source, reason) =>
+          `I couldn't finish extracting ${source} automatically${reason ? ` (${reason})` : ''}. Open the page in the Browser tab and refresh it (clear any human check), then retry — or keep going with AI.`,
+        stoppedTitle: 'Extraction stopped.',
+        stoppedBody: (source) =>
+          `You stopped extracting ${source}. Whatever was gathered is kept as an editable design system — pick up from there or retry.`,
       };
   }
 }
@@ -706,27 +883,18 @@ async function brandExtractionProducedFiles(
   }];
 }
 
-/** Upper bound on the background programmatic-first extraction so a slow or
- *  hanging origin can never leave a permanently pending transcript update. */
-const PROGRAMMATIC_EXTRACT_TIMEOUT_MS = 45_000;
+/** Soft checkpoint: once the programmatic pass has run this long with no
+ *  finalized system, flip the synthetic transcript row to the actionable
+ *  "needs a hand" terminal so the user sees a next step instead of an
+ *  ever-climbing "Working" clock. Does NOT abort the work — a slow-but-healthy
+ *  origin still finalizes and overwrites the card with success. */
+const PROGRAMMATIC_STALL_CHECKPOINT_MS = 30_000;
 
-/** Resolve `p`, or reject once `ms` elapses. The underlying work may still
- *  finish, but the background transcript updater stops awaiting it. */
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms);
-    p.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
-}
+/** Hard runaway backstop: abort the background programmatic-first extraction so
+ *  a pathological origin can never leak a forever-pending promise. Generous on
+ *  purpose — the per-fetch 8s timeouts bound the real harvest, so a healthy
+ *  (even heavy) site finalizes well before this. */
+const PROGRAMMATIC_EXTRACT_TIMEOUT_MS = 180_000;
 
 class ProgrammaticExtractionAbortError extends Error {
   constructor() {
@@ -991,6 +1159,28 @@ async function finalizeBrandCore(opts: FinalizeBrandCoreOptions): Promise<BrandF
     blockedReason: undefined,
   });
 
+  // Authoritatively retire the synthetic "Working" transcript row the moment
+  // the brand is actually finalized `ready` + registered. This is the fix for
+  // "succeeded but never terminated": it runs from the real completion point, so
+  // it lands even when the brand finalizes long after the background stall timer
+  // fired (heavy site) and regardless of which path (programmatic or agent
+  // `od brand finalize`) drove the finalize. Best-effort — a reconcile failure
+  // must never fail an otherwise-successful finalize.
+  try {
+    await reconcileProgrammaticExtractionTranscript({
+      db,
+      brandsRoot,
+      projectsRoot,
+      brandId: id,
+      outcome: 'succeeded',
+      ...(opts.locale ?? meta.locale ? { locale: opts.locale ?? meta.locale } : {}),
+    });
+  } catch (err) {
+    if (!isClosedDatabaseError(err)) {
+      console.warn(`[brand] failed to reconcile success transcript for ${id}`, err);
+    }
+  }
+
   // Sediment the brand into memory so future chats can ground a vague request
   // ("做个落地页") in this brand's palette, type, voice and enforceable rules.
   // Best-effort and gated on the master memory switch inside the reflow — a
@@ -1007,8 +1197,13 @@ async function finalizeBrandCore(opts: FinalizeBrandCoreOptions): Promise<BrandF
 }
 
 /** Deterministic harvester that downloads a site's brand material into the
- *  brand workspace. Injectable so tests run offline. */
-export type PrefetchFn = (url: string, brandDir: string) => Promise<PrefetchResult | null>;
+ *  brand workspace. Injectable so tests run offline. The optional signal lets a
+ *  user Stop tear down in-flight fetches instead of waiting out their timeouts. */
+export type PrefetchFn = (
+  url: string,
+  brandDir: string,
+  opts?: { signal?: AbortSignal },
+) => Promise<PrefetchResult | null>;
 
 export interface RunProgrammaticExtractionOptions {
   id: string;
@@ -1079,7 +1274,11 @@ export async function runProgrammaticExtraction(
   if (opts.hasWebsiteSource === false) return null;
 
   throwIfProgrammaticExtractionAborted(opts.abortSignal);
-  const material = await prefetch(meta.sourceUrl, brandDir);
+  const material = await prefetch(
+    meta.sourceUrl,
+    brandDir,
+    opts.abortSignal ? { signal: opts.abortSignal } : undefined,
+  );
   throwIfProgrammaticExtractionAborted(opts.abortSignal);
   if (!material) return null;
   if (material.blocked) {

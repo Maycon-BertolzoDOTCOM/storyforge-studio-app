@@ -531,6 +531,24 @@ export function DesignsTab({
 					</div>
 				</div>
 				<div className="toolbar-right">
+					{onNewProject && projects.length > 0 ? (
+						<button
+							type="button"
+							className="designs-new-project-button"
+							data-testid="designs-new-project"
+							onClick={() => {
+								trackProjectsListControlsClick(analytics.track, {
+									page_name: "projects",
+									area: "list_controls",
+									element: "create_project",
+								});
+								onNewProject();
+							}}
+						>
+							<Icon name="plus" size={13} />
+							<span>{t("entry.navNewProject")}</span>
+						</button>
+					) : null}
 					<div className="toolbar-search">
 						<span className="search-icon" aria-hidden>
 							<Icon name="search" size={13} />
@@ -671,6 +689,7 @@ export function DesignsTab({
 								<button
 									type="button"
 									className="primary designs-empty-cta"
+									data-testid="designs-empty-new-project"
 									onClick={() => {
 										trackProjectsListControlsClick(analytics.track, {
 											page_name: "projects",
