@@ -13,6 +13,7 @@ import {
   normalizeDesktopSidecarMessage,
   type DesktopClickInput,
   type DesktopEvalInput,
+  type DesktopExportArtifactInput,
   type DesktopExportPdfInput,
   type DesktopScreenshotInput,
   type DesktopUpdateInput,
@@ -667,6 +668,68 @@ export async function runDesktopMain(
     void shutdown().finally(() => process.exit(0));
   }
 
+<<<<<<< HEAD
+=======
+  console.info("[open-design desktop] starting desktop IPC server", { ipc: runtime.ipc });
+  ipcServer = await createJsonIpcServer({
+    socketPath: runtime.ipc,
+    handler: async (message: unknown) => {
+      const request = normalizeDesktopSidecarMessage(message);
+      const startedAt = Date.now();
+      const input = "input" in request ? summarizeDesktopIpcInput(request.input) : null;
+      console.info("[open-design desktop] desktop IPC request start", { input, type: request.type });
+      try {
+        const activeDesktop = desktop;
+        switch (request.type) {
+          case SIDECAR_MESSAGES.STATUS:
+            return await desktopStatusSnapshot(activeDesktop);
+          case SIDECAR_MESSAGES.SHUTDOWN:
+            setImmediate(() => {
+              shutdownAndExit();
+            });
+            return { accepted: true };
+        }
+        if (activeDesktop == null) {
+          throw new Error("desktop runtime is not initialized");
+        }
+        switch (request.type) {
+          case SIDECAR_MESSAGES.EVAL:
+            return await activeDesktop.eval(request.input as DesktopEvalInput);
+          case SIDECAR_MESSAGES.SCREENSHOT:
+            return await activeDesktop.screenshot(request.input as DesktopScreenshotInput);
+          case SIDECAR_MESSAGES.CONSOLE:
+            return activeDesktop.console();
+          case SIDECAR_MESSAGES.SHOW:
+            activeDesktop.show();
+            return { accepted: true };
+          case SIDECAR_MESSAGES.CLICK:
+            return await activeDesktop.click(request.input as DesktopClickInput);
+          case SIDECAR_MESSAGES.EXPORT_PDF:
+            return await activeDesktop.exportPdf(request.input as DesktopExportPdfInput);
+          case SIDECAR_MESSAGES.EXPORT_ARTIFACT:
+            return await activeDesktop.exportArtifact(request.input as DesktopExportArtifactInput);
+          case SIDECAR_MESSAGES.UPDATE:
+            return await updater.handle((request.input as DesktopUpdateInput).action);
+        }
+      } catch (error) {
+        console.error("[open-design desktop] desktop IPC request failed", {
+          durationMs: Date.now() - startedAt,
+          error: error instanceof Error ? error.message : String(error),
+          type: request.type,
+        });
+        throw error;
+      } finally {
+        console.info("[open-design desktop] desktop IPC request end", {
+          durationMs: Date.now() - startedAt,
+          type: request.type,
+        });
+      }
+    },
+  });
+  console.info("[open-design desktop] desktop IPC server listening", { ipc: runtime.ipc });
+
+  console.info("[open-design desktop] creating desktop runtime");
+>>>>>>> 29b138f7a (feat(brands): turn any brand into a reusable design system (#4691))
   desktop = await createDesktopRuntime({
     desktopAuthSecret,
     discoverUrl: options.discoverWebUrl ?? createWebDiscovery(runtime),

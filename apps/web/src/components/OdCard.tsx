@@ -20,13 +20,94 @@ import type {
   OdCardVerifyScorecard,
   OdCardRowStatus,
   OdCardRuleProposal,
+  OdCardBrandBrowserAssist,
 } from '@open-design/contracts';
 import { Button } from '@open-design/components';
 import { Icon, type IconName } from './Icon';
 import { useT } from '../i18n';
 import styles from './OdCard.module.css';
 
+<<<<<<< HEAD
 export function OdCardView({ card }: { card: OdCard }) {
+=======
+const RULE_PROPOSAL_DECISION_PREFIX = 'od:rule-proposal-decision:';
+
+type RuleProposalDecision =
+  | { status: 'idle' }
+  | { status: 'saved'; name: string }
+  | { status: 'discarded' };
+
+function hashRuleProposalKey(input: string): string {
+  let hash = 5381;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash * 33) ^ input.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function ruleProposalStorageKey(card: OdCardRuleProposal, instanceScope?: string): string {
+  return `${RULE_PROPOSAL_DECISION_PREFIX}${hashRuleProposalKey(
+    JSON.stringify([
+      instanceScope ?? '',
+      card.name,
+      card.description ?? '',
+      card.assertion,
+      card.check,
+      card.rationale ?? '',
+    ]),
+  )}`;
+}
+
+function readRuleProposalDecision(key: string): RuleProposalDecision {
+  if (typeof window === 'undefined') return { status: 'idle' };
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return { status: 'idle' };
+    const parsed = JSON.parse(raw) as Partial<RuleProposalDecision> | null;
+    if (parsed?.status === 'discarded') return { status: 'discarded' };
+    if (parsed?.status === 'saved') {
+      return {
+        status: 'saved',
+        name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name : '',
+      };
+    }
+  } catch {
+    // Storage can be unavailable in hardened contexts; fall back to per-mount state.
+  }
+  return { status: 'idle' };
+}
+
+function writeRuleProposalDecision(key: string, decision: Exclude<RuleProposalDecision, { status: 'idle' }>) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(decision));
+  } catch {
+    // Best effort only: keeping the in-memory state still lets the current mount update.
+  }
+}
+
+/** Outcome a brand-browser-assist confirm handler reports back to the card so it
+ *  can show a done / error state. */
+export interface BrandBrowserAssistResult {
+  ok: boolean;
+  /** Failure reason to show inline (e.g. "needs the desktop app"). */
+  message?: string;
+}
+
+export type BrandBrowserAssistConfirm = (
+  card: OdCardBrandBrowserAssist,
+) => Promise<BrandBrowserAssistResult | void> | BrandBrowserAssistResult | void;
+
+export function OdCardView({
+  card,
+  instanceScope,
+  onBrandBrowserAssistConfirm,
+}: {
+  card: OdCard;
+  instanceScope?: string;
+  onBrandBrowserAssistConfirm?: BrandBrowserAssistConfirm;
+}) {
+>>>>>>> 29b138f7a (feat(brands): turn any brand into a reusable design system (#4691))
   switch (card.kind) {
     case 'task-brief':
       return <TaskBriefCard card={card} />;
@@ -35,7 +116,13 @@ export function OdCardView({ card }: { card: OdCard }) {
     case 'verify-scorecard':
       return <VerifyScorecardCard card={card} />;
     case 'rule-proposal':
+<<<<<<< HEAD
       return <RuleProposalCard card={card} />;
+=======
+      return <RuleProposalCard card={card} instanceScope={instanceScope} />;
+    case 'brand-browser-assist':
+      return <BrandBrowserAssistCard card={card} onConfirm={onBrandBrowserAssistConfirm} />;
+>>>>>>> 29b138f7a (feat(brands): turn any brand into a reusable design system (#4691))
     default:
       return null;
   }
@@ -362,6 +449,117 @@ function RuleProposalCard({ card }: { card: OdCardRuleProposal }) {
           onClick={() => setStatus('discarded')}
         >
           {t('artifact.odCardRuleDiscard')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const BRAND_ASSIST_DECISION_PREFIX = 'od:brand-browser-assist-decision:';
+
+function brandAssistStorageKey(brandId: string): string {
+  return `${BRAND_ASSIST_DECISION_PREFIX}${brandId}`;
+}
+
+function readBrandAssistDone(key: string): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(key) === 'done';
+  } catch {
+    return false;
+  }
+}
+
+function writeBrandAssistDone(key: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(key, 'done');
+  } catch {
+    // Best effort — the in-memory `done` state still hides the button this mount.
+  }
+}
+
+// Brand extraction hit an anti-bot wall. This card asks the user to clear it in
+// the in-app browser tab, then its Confirm button runs a CLIENT-side handler
+// (read the unblocked DOM → re-extract) — it does NOT round-trip to the agent.
+// A localStorage latch keyed off the brand id keeps a resolved card from
+// re-prompting on reload.
+function BrandBrowserAssistCard({
+  card,
+  onConfirm,
+}: {
+  card: OdCardBrandBrowserAssist;
+  onConfirm?: BrandBrowserAssistConfirm;
+}) {
+  const t = useT();
+  const storageKey = useMemo(() => brandAssistStorageKey(card.brandId), [card.brandId]);
+  const [done, setDone] = useState(() => readBrandAssistDone(storageKey));
+  const [status, setStatus] = useState<'idle' | 'working' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  if (done) {
+    return (
+      <div className={`${styles.card} ${styles.ruleSaved}`} data-od-card="brand-browser-assist">
+        <span className={styles.ruleSavedIcon} aria-hidden>
+          <Icon name="check" size={14} />
+        </span>
+        <span className={styles.ruleSavedLabel}>{t('artifact.odCardBrandAssistDone')}</span>
+      </div>
+    );
+  }
+
+  const confirm = async () => {
+    if (!onConfirm) return;
+    setStatus('working');
+    setErrorMsg(null);
+    try {
+      // The handler reports `{ ok: true }` only once the brand actually
+      // finalized; anything else (a desktop-only refusal, a thin harvest, a
+      // missing handler) keeps the button so the user can retry.
+      const result = await onConfirm(card);
+      if (!result || result.ok !== true) {
+        setStatus('error');
+        setErrorMsg((result && result.message) || null);
+        return;
+      }
+      writeBrandAssistDone(storageKey);
+      setDone(true);
+      setStatus('idle');
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg(err instanceof Error ? err.message : null);
+    }
+  };
+
+  return (
+    <div className={`${styles.card} ${styles.ruleCard}`} data-od-card="brand-browser-assist">
+      <div className={styles.ruleHead}>
+        <span className={styles.ruleHeadIcon} aria-hidden>
+          <Icon name="globe" size={13} />
+        </span>
+        <span className={styles.ruleKicker}>
+          {t('artifact.odCardBrandAssistKicker', { reason: card.reason || 'Cloudflare' })}
+        </span>
+      </div>
+      <div className={styles.ruleSummary}>
+        <p className={styles.ruleDescription}>{t('artifact.odCardBrandAssistBody')}</p>
+        {card.url ? <p className={styles.ruleName}>{card.url}</p> : null}
+      </div>
+      {status === 'error' ? (
+        <p className={styles.ruleError} role="status">
+          {errorMsg || t('artifact.odCardBrandAssistError')}
+        </p>
+      ) : null}
+      <div className={styles.ruleActions}>
+        <Button
+          variant="primary"
+          className={styles.ruleAction}
+          disabled={status === 'working' || !onConfirm}
+          onClick={() => void confirm()}
+        >
+          {status === 'working'
+            ? t('artifact.odCardBrandAssistWorking')
+            : t('artifact.odCardBrandAssistConfirm')}
         </Button>
       </div>
     </div>
