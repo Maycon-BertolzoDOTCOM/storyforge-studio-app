@@ -1,6 +1,6 @@
 ---
 /*
- * Customer stories index — `/story/`
+ * Customer stories index — `/stories/`
  *
  * Landing page for the customer-story collection (the nav "Stories" entry under
  * Resources points here). Layout borrows the OD house style: big masthead, a
@@ -8,7 +8,7 @@
  * value-prop grid — so the page reads as substantial even with one story.
  *
  * Stories are a small hand-maintained array — add a row when a new
- * `/story/<slug>` ships; promote to a content collection if it grows.
+ * `/stories/<slug>` ships; promote to a content collection if it grows.
  */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -41,12 +41,12 @@ const card = STORY_CARD[locale] ?? STORY_CARD.en!;
 
 const vp = STORY_VP[locale] ?? STORY_VP.en!;
 
-// Story registry. Add a row when a new `/story/<slug>` page ships.
+// Story registry. Add a row when a new `/stories/<slug>` page ships.
 const stories = [
   {
     slug: 'ikigai-one',
     company: 'Ikigai One',
-    cover: '/story/ikigai-one-cover.webp',
+    cover: '/stories/ikigai-one-cover.webp',
     title: card.title,
     blurb: card.blurb,
   },
@@ -55,7 +55,23 @@ const stories = [
 const title = ui.metaTitle;
 const description = ui.metaDescription;
 const fallbackSite = 'https://open-design.ai/';
-const ogImage = new URL('/story/ikigai-one-cover.webp', Astro.site ?? fallbackSite).toString();
+const ogImage = new URL('/stories/ikigai-one-cover.webp', Astro.site ?? fallbackSite).toString();
+
+// CollectionPage JSON-LD so the stories listing has structured data (parity
+// with the blog index). Lists each story as an Article.
+const collectionJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: ui.metaTitle,
+  description: ui.metaDescription,
+  url: new URL(Astro.url.pathname, Astro.site ?? fallbackSite).toString(),
+  inLanguage: localeDef.htmlLang,
+  hasPart: stories.map((s) => ({
+    '@type': 'Article',
+    headline: s.title,
+    url: new URL(href(`/stories/${s.slug}/`), Astro.site ?? fallbackSite).toString(),
+  })),
+};
 
 const headerHtml = renderToStaticMarkup(
   createElement<HeaderProps>(Header, {
@@ -81,6 +97,7 @@ const headerHtml = renderToStaticMarkup(
       pathname={Astro.url.pathname}
       image={ogImage}
     />
+    <script is:inline type='application/ld+json' set:html={JSON.stringify(collectionJsonLd)} />
     <GoogleAnalytics />
   </head>
   <body>
@@ -102,7 +119,7 @@ const headerHtml = renderToStaticMarkup(
           <div class='container'>
             <div class='sx-grid'>
               {stories.map((s) => (
-                <a class='sx-card' href={href(`/story/${s.slug}/`)}>
+                <a class='sx-card' href={href(`/stories/${s.slug}/`)}>
                   <span class='sx-media'>
                     <img src={s.cover} alt={s.company} loading='eager' />
                   </span>

@@ -363,7 +363,7 @@ export function Header({
                   </a>
                 </li>
                 <li>
-                  <a href={href('/story/')}>
+                  <a href={href('/stories/')}>
                     <span className='dropdown-name'>
                       {productMenuCopy.resourceItems.stories}
                     </span>
