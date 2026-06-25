@@ -158,6 +158,18 @@ async function runRunners(mode?: string): Promise<Record<string, string>> {
   );
 }
 
+function runnerOutput(profiles: Record<string, string>, key: string): string {
+  const value = profiles[key];
+  if (value === undefined) {
+    throw new Error(`Missing runner profile output: ${key}`);
+  }
+  return value;
+}
+
+function runnerLabels(profiles: Record<string, string>, key: string): string[] {
+  return JSON.parse(runnerOutput(profiles, key)) as string[];
+}
+
 async function writeFakeGhBin(binDir: string, releases: unknown[]): Promise<void> {
   const ghPath = join(binDir, "gh");
   const ghCmdPath = join(binDir, "gh.cmd");
@@ -507,28 +519,28 @@ describe("packaged smoke workflow", () => {
 
   it("[P2] resolves CI runner profiles by mode", async () => {
     const defaultProfiles = await runRunners();
-    expect(defaultProfiles.mode).toBe("default");
-    expect(JSON.parse(defaultProfiles.contabo_control)).toEqual([
+    expect(runnerOutput(defaultProfiles, "mode")).toBe("default");
+    expect(runnerLabels(defaultProfiles, "contabo_control")).toEqual([
       "self-hosted",
       "Linux",
       "X64",
       "od-persistent-ci",
       "od-ci-hot-poc",
     ]);
-    expect(JSON.parse(defaultProfiles.hosted_or_blacksmith)).toEqual(["ubuntu-24.04"]);
-    expect(JSON.parse(defaultProfiles.blacksmith_default)).toEqual(["blacksmith-4vcpu-ubuntu-2404"]);
+    expect(runnerLabels(defaultProfiles, "hosted_or_blacksmith")).toEqual(["ubuntu-24.04"]);
+    expect(runnerLabels(defaultProfiles, "blacksmith_default")).toEqual(["blacksmith-4vcpu-ubuntu-2404"]);
 
     const performanceProfiles = await runRunners("performance");
-    expect(performanceProfiles.mode).toBe("performance");
-    expect(JSON.parse(performanceProfiles.contabo_control)).toEqual(["ubuntu-24.04"]);
-    expect(JSON.parse(performanceProfiles.hosted_or_blacksmith)).toEqual(["blacksmith-4vcpu-ubuntu-2404"]);
-    expect(JSON.parse(performanceProfiles.blacksmith_default)).toEqual(["blacksmith-4vcpu-ubuntu-2404"]);
+    expect(runnerOutput(performanceProfiles, "mode")).toBe("performance");
+    expect(runnerLabels(performanceProfiles, "contabo_control")).toEqual(["ubuntu-24.04"]);
+    expect(runnerLabels(performanceProfiles, "hosted_or_blacksmith")).toEqual(["blacksmith-4vcpu-ubuntu-2404"]);
+    expect(runnerLabels(performanceProfiles, "blacksmith_default")).toEqual(["blacksmith-4vcpu-ubuntu-2404"]);
 
     const economicProfiles = await runRunners("economic");
-    expect(economicProfiles.mode).toBe("economic");
-    expect(JSON.parse(economicProfiles.contabo_control)).toEqual(["ubuntu-24.04"]);
-    expect(JSON.parse(economicProfiles.hosted_or_blacksmith)).toEqual(["ubuntu-24.04"]);
-    expect(JSON.parse(economicProfiles.blacksmith_default)).toEqual(["ubuntu-24.04"]);
+    expect(runnerOutput(economicProfiles, "mode")).toBe("economic");
+    expect(runnerLabels(economicProfiles, "contabo_control")).toEqual(["ubuntu-24.04"]);
+    expect(runnerLabels(economicProfiles, "hosted_or_blacksmith")).toEqual(["ubuntu-24.04"]);
+    expect(runnerLabels(economicProfiles, "blacksmith_default")).toEqual(["ubuntu-24.04"]);
   });
 
   it("[P2] routes CI follow-ons through generic handoff workflows", async () => {
