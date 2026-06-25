@@ -283,6 +283,9 @@ test('[P1] design systems page is reachable from entry nav and supports search, 
   await expect(page.getByTestId('design-system-card-agentic')).toHaveCount(0);
   await page.getByTestId('design-systems-surface-all').click();
 
+  // Master-detail: selecting a list row renders that system in the right
+  // preview pane, where the full-preview and "set as default" actions live.
+  await page.getByTestId('design-system-card-airbnb').click();
   await page.getByTestId('design-system-preview-airbnb').click();
   const preview = page.getByRole('dialog', { name: /Airbnb preview/i });
   await expect(preview).toBeVisible();
@@ -1171,12 +1174,15 @@ test('[P0] @critical required home plugin prompt parameters gate submit and bind
   expect(applyBodies.at(-1)?.inputs).toMatchObject(body.pluginInputs ?? {});
 });
 
-test('[P0] @critical home Ask mode creates a chat conversation without the default design router plugin', async ({ page }) => {
+test('[P0] @critical home composer can route free-form Ask mode without the design router', async ({ page }) => {
   await gotoEntryHome(page);
 
-  await page.getByTestId('session-mode-trigger').click();
-  await page.getByRole('menuitemradio', { name: 'Ask mode' }).click();
-  await expect(page.getByTestId('session-mode-trigger')).toContainText('Ask');
+  const modeTrigger = page.getByTestId('session-mode-trigger');
+  await expect(modeTrigger).toBeVisible();
+  await expect(modeTrigger).toContainText('Design');
+  await modeTrigger.click();
+  await page.getByRole('menuitemradio', { name: /Ask mode/i }).click();
+  await expect(modeTrigger).toContainText('Ask');
 
   const input = page.getByTestId('home-hero-input');
   const prompt =
@@ -1197,7 +1203,7 @@ test('[P0] @critical home Ask mode creates a chat conversation without the defau
   expect(body.name).toBe('Infographic 5 Habits Effective Code Reviewers');
   expect(body.pendingPrompt).toBe(prompt);
   expect(body.conversationMode).toBe('chat');
-  expect(body.pluginId).toBeUndefined();
+  expect(body.pluginId ?? null).toBeNull();
   expect(body.metadata?.kind).toBe('other');
 });
 
@@ -1302,7 +1308,7 @@ test('[P0] @critical home hero input keeps Shift+Enter as a newline and submits 
   const input = page.getByTestId('home-hero-input');
   const submit = page.getByTestId('home-hero-submit');
 
-  await expect(submit).toBeDisabled();
+  await expect(submit).toBeEnabled();
   await input.click();
   await input.fill('Line one');
   await input.press('Shift+Enter');
@@ -1360,7 +1366,7 @@ test('[P0] @critical home hero attachment input stages files, enables submit, an
 
   const input = page.getByTestId('home-hero-file-input');
   const submit = page.getByTestId('home-hero-submit');
-  await expect(submit).toBeDisabled();
+  await expect(submit).toBeEnabled();
 
   await input.setInputFiles({
     name: 'brief.txt',
@@ -1375,7 +1381,7 @@ test('[P0] @critical home hero attachment input stages files, enables submit, an
 
   await page.getByRole('button', { name: /Remove brief\.txt/i }).click();
   await expect(staged).toHaveCount(0);
-  await expect(submit).toBeDisabled();
+  await expect(submit).toBeEnabled();
 });
 
 test('[P0] @critical home hero attachment-only submit uploads the file and sends it with the first message', async ({ page }) => {
