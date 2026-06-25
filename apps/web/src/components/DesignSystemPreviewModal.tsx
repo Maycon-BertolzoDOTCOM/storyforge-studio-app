@@ -208,7 +208,7 @@ export function DesignSystemPreviewModal({ system, onClose }: Props) {
           templates_type: system.source ?? 'library',
         })
       }
-      sidebar={richProjectPreview ? undefined : {
+      sidebar={{
         label: t('ds.specToggle'),
         defaultOpen: true,
         onToggle: handleSidebarToggle,
