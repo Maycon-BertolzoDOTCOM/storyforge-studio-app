@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ProjectView } from '../../src/components/ProjectView';
@@ -19,6 +19,8 @@ import {
   listMessages,
 } from '../../src/state/projects';
 import { fetchPreviewComments } from '../../src/providers/registry';
+
+const fileWorkspaceSpy = vi.hoisted(() => vi.fn());
 
 vi.mock('../../src/i18n', () => ({
   useI18n: () => ({
@@ -96,7 +98,11 @@ vi.mock('../../src/components/AvatarMenu', () => ({
 }));
 
 vi.mock('../../src/components/FileWorkspace', () => ({
-  FileWorkspace: () => <div data-testid="file-workspace" />,
+  DESIGN_SYSTEM_TAB: '__design_system__',
+  FileWorkspace: (props: { openRequest?: { name: string } | null }) => {
+    fileWorkspaceSpy(props);
+    return <div data-testid="file-workspace" />;
+  },
 }));
 
 vi.mock('../../src/components/Loading', () => ({
@@ -149,6 +155,7 @@ const conversation = (projectId: string): Conversation => ({
 function renderProjectView(
   currentProject: Project,
   onClearPendingPrompt = vi.fn(),
+  overrides: Partial<ComponentProps<typeof ProjectView>> = {},
 ) {
   return render(
     <ProjectView
@@ -170,6 +177,7 @@ function renderProjectView(
       onTouchProject={vi.fn()}
       onProjectChange={vi.fn()}
       onProjectsRefresh={vi.fn()}
+      {...overrides}
     />,
   );
 }
@@ -206,6 +214,64 @@ describe('ProjectView pending prompt seeding', () => {
 
     await waitFor(() => {
       expect(composerValue()).toBe('');
+    });
+  });
+
+  it('refreshes design systems when a brand project references a missing backing system', async () => {
+    const onDesignSystemsRefresh = vi.fn();
+    renderProjectView(
+      {
+        ...project('brand-draft'),
+        metadata: {
+          kind: 'brand',
+          importedFrom: 'brand-extraction',
+          brandId: 'brand-draft',
+          brandDesignSystemId: 'user:brand-draft',
+        },
+      },
+      vi.fn(),
+      { onDesignSystemsRefresh },
+    );
+
+    await waitFor(() => expect(onDesignSystemsRefresh).toHaveBeenCalledTimes(1));
+  });
+
+  it('auto-opens the design system tab once a brand extraction backing system is available', async () => {
+    renderProjectView(
+      {
+        ...project('brand-ready'),
+        metadata: {
+          kind: 'brand',
+          importedFrom: 'brand-extraction',
+          brandId: 'brand-ready',
+          brandDesignSystemId: 'user:brand-ready',
+        },
+      },
+      vi.fn(),
+      {
+        designSystems: [
+          {
+            id: 'user:brand-ready',
+            title: 'Brand Ready',
+            category: 'Brands',
+            summary: '',
+            swatches: [],
+            surface: 'web',
+            body: '# Brand Ready',
+            source: 'user',
+            status: 'draft',
+            isEditable: true,
+          } as DesignSystemSummary,
+        ],
+      },
+    );
+
+    await waitFor(() => {
+      expect(
+        fileWorkspaceSpy.mock.calls.some(([props]) =>
+          props.openRequest?.name === '__design_system__',
+        ),
+      ).toBe(true);
     });
   });
 

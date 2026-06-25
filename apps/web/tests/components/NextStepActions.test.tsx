@@ -3,7 +3,12 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { NextStepActions } from '../../src/components/NextStepActions';
+import {
+  BRAND_CONTINUE_EXTRACTION_PROMPT,
+  NextStepActions,
+  PROJECT_CONTINUE_PROMPT,
+  PROJECT_GENERATE_ARTIFACT_PROMPT,
+} from '../../src/components/NextStepActions';
 import { I18nProvider } from '../../src/i18n';
 import { en } from '../../src/i18n/locales/en';
 import type { Locale } from '../../src/i18n/types';
@@ -118,6 +123,42 @@ describe('NextStepActions', () => {
     expect(onAiOptimize).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByTestId('next-step-brand-action-brand-create-design'));
     expect(onCreateDesign).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers continue extraction and AI Optimize for incomplete brand extraction', () => {
+    const onPromptAction = vi.fn();
+    const onAiOptimize = vi.fn();
+    renderActions({
+      variant: 'brand-extraction-incomplete',
+      onPromptAction,
+      onAiOptimize,
+      onCreateDesign: undefined,
+    });
+
+    expect(screen.getByText('Continue extraction')).toBeTruthy();
+    expect(screen.getByText(en['nextStep.brandAiOptimizeTitle'])).toBeTruthy();
+    expect(screen.queryByText(en['nextStep.brandCreateDesignTitle'])).toBeNull();
+
+    fireEvent.click(screen.getByTestId('next-step-brand-action-brand-continue-extraction'));
+    expect(onPromptAction).toHaveBeenCalledWith(BRAND_CONTINUE_EXTRACTION_PROMPT);
+    fireEvent.click(screen.getByTestId('next-step-brand-action-brand-ai-optimize'));
+    expect(onAiOptimize).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers ordinary project recovery prompts for incomplete turns without artifacts', () => {
+    const onPromptAction = vi.fn();
+    renderActions({
+      variant: 'project-incomplete',
+      fileName: null,
+      onPromptAction,
+    });
+
+    expect(screen.getByText('Continue working')).toBeTruthy();
+    expect(screen.getByText('Generate artifact')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('next-step-project-action-project-continue'));
+    expect(onPromptAction).toHaveBeenCalledWith(PROJECT_CONTINUE_PROMPT);
+    fireEvent.click(screen.getByTestId('next-step-project-action-project-generate-artifact'));
+    expect(onPromptAction).toHaveBeenCalledWith(PROJECT_GENERATE_ARTIFACT_PROMPT);
   });
 
   it('keeps brand-extraction rows visible and disabled while their actions are starting', () => {

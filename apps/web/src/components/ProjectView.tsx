@@ -1092,6 +1092,8 @@ export function ProjectView({
   } = useBrandReadyPrompt(currentProject.metadata);
   const pendingBrandDesignSystemOpenRef = useRef<string | null>(null);
   const handledBrandReadyDesignSystemRef = useRef<string | null>(null);
+  const missingDesignSystemRefreshRef = useRef<string | null>(null);
+  const autoOpenedBrandDesignSystemRef = useRef<string | null>(null);
   const brandEmptyTranscriptRetriesRef = useRef<Map<string, number>>(new Map());
   const [chatSeed, setChatSeed] = useState<{ id: string; value: string } | null>(null);
   const [autoAuditRepairSeed, setAutoAuditRepairSeed] =
@@ -4698,10 +4700,7 @@ export function ProjectView({
   // make room for the prioritized send.
   const handleStop = useCallback(() => {
     const stoppedAt = Date.now();
-    const shouldCancelProgrammaticBrandExtraction = messagesRef.current.some((message) =>
-      isProgrammaticBrandExtractionStatusMessage(message, currentProject.metadata)
-    );
-    const programmaticBrandId = shouldCancelProgrammaticBrandExtraction
+    const programmaticBrandId = isProgrammaticBrandExtractionProject(currentProject.metadata)
       ? currentProject.metadata?.brandId?.trim() || ''
       : '';
     if (programmaticBrandId) {
@@ -4709,6 +4708,8 @@ export function ProjectView({
         .finally(() => {
           void projectDetail.refresh();
           void onProjectsRefresh();
+          void onDesignSystemsRefresh?.();
+          void refreshWorkspaceItems();
         });
     }
     cancelSendTextBuffer(true);
@@ -4737,9 +4738,11 @@ export function ProjectView({
     cancelSendTextBuffer,
     cancelReattachTextBuffers,
     currentProject.metadata,
+    onDesignSystemsRefresh,
     onProjectsRefresh,
     persistMessage,
     projectDetail.refresh,
+    refreshWorkspaceItems,
   ]);
 
   // Flip the deck preview to the slide a queued send's marked element lives on
@@ -5810,11 +5813,45 @@ export function ProjectView({
     return designSystems.find((d) => d.id === projectDesignSystemId) ?? null;
   }, [designSystems, projectDesignSystemId, projectIsDesignSystemProject]);
   useEffect(() => {
+    if (!projectIsDesignSystemProject || !projectDesignSystemId) {
+      missingDesignSystemRefreshRef.current = null;
+      return;
+    }
+    if (designSystemProject) {
+      missingDesignSystemRefreshRef.current = null;
+      return;
+    }
+    if (missingDesignSystemRefreshRef.current === projectDesignSystemId) return;
+    missingDesignSystemRefreshRef.current = projectDesignSystemId;
+    void Promise.resolve(onDesignSystemsRefresh?.()).catch((err) => {
+      missingDesignSystemRefreshRef.current = null;
+      console.warn('[design-system] failed to refresh missing project design system', err);
+    });
+  }, [
+    designSystemProject,
+    onDesignSystemsRefresh,
+    projectDesignSystemId,
+    projectIsDesignSystemProject,
+  ]);
+  useEffect(() => {
     const pending = pendingBrandDesignSystemOpenRef.current;
     if (!pending || designSystemProject?.id !== pending) return;
     pendingBrandDesignSystemOpenRef.current = null;
     requestOpenFile(DESIGN_SYSTEM_TAB);
   }, [designSystemProject?.id, requestOpenFile]);
+  useEffect(() => {
+    if (!projectIsProgrammaticBrandExtraction || !designSystemProject?.id) {
+      autoOpenedBrandDesignSystemRef.current = null;
+      return;
+    }
+    if (autoOpenedBrandDesignSystemRef.current === designSystemProject.id) return;
+    autoOpenedBrandDesignSystemRef.current = designSystemProject.id;
+    requestOpenFile(DESIGN_SYSTEM_TAB);
+  }, [
+    designSystemProject?.id,
+    projectIsProgrammaticBrandExtraction,
+    requestOpenFile,
+  ]);
   const designSystemActivityEvents = useMemo(
     () => designSystemProject ? latestDesignSystemActivityEvents(messages) : [],
     [designSystemProject, messages],
@@ -6736,6 +6773,7 @@ export function ProjectView({
           onSavePreviewComment={savePreviewComment}
           onRemovePreviewComment={removePreviewComment}
           onSendBoardCommentAttachments={handleSendBoardCommentAttachments}
+          onBrandExtractionStopRequest={projectIsProgrammaticBrandExtraction ? handleStop : undefined}
           onRequestBrowserUsePrompt={handleBrowserUsePrompt}
           onPluginFolderAgentAction={handlePluginFolderAgentAction}
           activePluginActionPaths={activePluginActionPaths}

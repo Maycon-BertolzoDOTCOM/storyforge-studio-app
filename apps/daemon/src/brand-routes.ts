@@ -178,6 +178,16 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
           extractionTerminalRunId: undefined,
           extractionTerminalError: PROGRAMMATIC_CANCEL_ERROR,
         });
+        await renderBrandPreviewIntoProject({
+          id,
+          brandsRoot,
+          skillsRoot,
+          projectsRoot,
+          ...(detail.meta.projectId ? { projectId: detail.meta.projectId } : {}),
+          ...(detail.meta.locale ? { locale: detail.meta.locale } : {}),
+        }).catch((err) => {
+          console.warn(`[brand] failed to render stopped draft preview for ${id}`, err);
+        });
         // Retire the synthetic "Working" row so Stop visibly terminates the
         // fake conversation immediately, even if an in-flight fetch is still
         // tearing down. No-ops when the brand already finalized (the row is

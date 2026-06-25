@@ -205,7 +205,7 @@ export interface BrandExtractStartResponse {
   sourceUrl: string;
   /** Current lifecycle at project creation time; normally `extracting`. */
   status: BrandStatus;
-  /** Present only for legacy callers/edge paths that already have a registered system. */
+  /** Draft/ready `user:<id>` design system reserved for this brand when available. */
   designSystemId?: string;
   /** Display name when already available. */
   brandName?: string;

@@ -145,8 +145,9 @@ function renderOnboarding(
 
 function renderHome(
   overrides: Partial<React.ComponentProps<typeof EntryShell>> = {},
+  path = '/',
 ) {
-  window.history.replaceState(null, '', '/');
+  window.history.replaceState(null, '', path);
   const props: React.ComponentProps<typeof EntryShell> = {
     skills: [],
     designTemplates: [],
@@ -335,6 +336,15 @@ describe('EntryShell settings menu', () => {
   });
 });
 
+describe('EntryShell design systems view', () => {
+  it('refreshes the design-system catalog when the view is active', async () => {
+    const onDesignSystemsRefresh = vi.fn();
+    renderHome({ onDesignSystemsRefresh }, '/design-systems');
+
+    await waitFor(() => expect(onDesignSystemsRefresh).toHaveBeenCalledTimes(1));
+  });
+});
+
 describe('EntryShell new project rail', () => {
   it('creates a blank project directly from the rail plus', async () => {
     window.localStorage.setItem('od.entry.railOpen', 'false');
@@ -398,6 +408,92 @@ describe('EntryShell new project rail', () => {
         page_name: 'home',
         area: 'nav',
         element: 'new_project_plus',
+      }),
+      undefined,
+    );
+  });
+
+  it('creates a blank project directly from the Projects tab button', async () => {
+    window.localStorage.setItem('od.entry.railOpen', 'false');
+    const fetchMock = vi.fn(
+      async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+        const url = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+        if (url === '/api/projects' && init?.method === 'POST') {
+          return jsonResponse({
+            project: {
+              id: 'blank-project-from-projects',
+              name: 'Untitled',
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            },
+            conversationId: 'conversation-2',
+          });
+        }
+        if (url.endsWith('/api/projects/project-existing/files')) {
+          return jsonResponse({ files: [] });
+        }
+        if (url.endsWith('/api/live-artifacts?projectId=project-existing')) {
+          return jsonResponse({ liveArtifacts: [] });
+        }
+        if (url.endsWith('/api/community/discord')) {
+          return jsonResponse({
+            inviteCode: 'mHAjSMV6gz',
+            inviteUrl: 'https://discord.gg/mHAjSMV6gz',
+            onlineCount: 0,
+            memberCount: 0,
+            fetchedAt: Date.now(),
+            stale: false,
+          });
+        }
+        if (url.endsWith('/api/github/open-design')) {
+          return jsonResponse({
+            repo: 'nexu-io/open-design',
+            stargazers_count: 0,
+            fetchedAt: Date.now(),
+            stale: false,
+          });
+        }
+        return jsonResponse({});
+      });
+    globalThis.fetch = fetchMock as typeof fetch;
+    const props = renderHome({
+      projects: [
+        {
+          id: 'project-existing',
+          name: 'Existing project',
+          skillId: null,
+          designSystemId: null,
+          createdAt: 1,
+          updatedAt: 2,
+          status: { value: 'not_started' },
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByTestId('entry-rail-toggle'));
+    fireEvent.click(screen.getByTestId('entry-nav-projects'));
+    fireEvent.click(screen.getByTestId('designs-new-project'));
+
+    await waitFor(() => {
+      expect(props.onOpenProject).toHaveBeenCalledWith('blank-project-from-projects');
+    });
+    expect(screen.queryByTestId('new-project-modal')).toBeNull();
+    expect(props.onCreateProject).not.toHaveBeenCalled();
+    const createCall = fetchMock.mock.calls.find(
+      ([input, init]) => input === '/api/projects' && init?.method === 'POST',
+    );
+    expect(createCall).toBeTruthy();
+    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
+      name: 'Untitled',
+      skillId: null,
+      designSystemId: null,
+    });
+    expect(analyticsMocks.track).toHaveBeenCalledWith(
+      'ui_click',
+      expect.objectContaining({
+        page_name: 'projects',
+        area: 'list_controls',
+        element: 'create_project',
       }),
       undefined,
     );

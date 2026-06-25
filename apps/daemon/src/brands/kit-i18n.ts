@@ -12,6 +12,8 @@ export interface BrandKitCopy {
   brandAssets: string;
   extracting: string;
   brandReady: string;
+  draftSaved: string;
+  stopExtraction: string;
   lookingForLogo: string;
   noLogoFound: string;
   previewLogoAria: string;
@@ -54,6 +56,8 @@ const EN: BrandKitCopy = {
   brandAssets: 'Brand assets',
   extracting: 'Extracting...',
   brandReady: 'Brand ready',
+  draftSaved: 'Draft saved',
+  stopExtraction: 'Stop extraction',
   lookingForLogo: 'Looking for a logo...',
   noLogoFound: 'No logo found',
   previewLogoAria: 'Preview logo',
@@ -97,6 +101,8 @@ const ZH_CN: BrandKitCopy = {
   brandAssets: '品牌资产',
   extracting: '提取中...',
   brandReady: '设计体系已就绪',
+  draftSaved: '草稿已保存',
+  stopExtraction: '停止提取',
   lookingForLogo: '正在查找标志...',
   noLogoFound: '未找到标志',
   previewLogoAria: '预览标志',
@@ -138,6 +144,8 @@ const ZH_TW: BrandKitCopy = {
   brandAssets: '品牌資產',
   extracting: '擷取中...',
   brandReady: '設計系統已就緒',
+  draftSaved: '草稿已儲存',
+  stopExtraction: '停止擷取',
   lookingForLogo: '正在尋找標誌...',
   noLogoFound: '未找到標誌',
   previewLogoAria: '預覽標誌',

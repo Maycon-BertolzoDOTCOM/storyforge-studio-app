@@ -488,6 +488,10 @@ export function EntryShell({
   const view: EntryViewKind = route.kind === 'home' ? route.view : 'home';
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [blankProjectCreating, setBlankProjectCreating] = useState(false);
+  useEffect(() => {
+    if (view !== 'design-systems') return;
+    void onDesignSystemsRefresh?.();
+  }, [onDesignSystemsRefresh, view]);
   // The entry nav rail is collapsed by default (Manus-style) so the entry
   // view opens clean and full-width; the panel toggle in the topbar opens it
   // as an overlay that dismisses on selection / backdrop click / Escape.
@@ -901,7 +905,9 @@ export function EntryShell({
                     onRename={onRenameProject}
                     onRefresh={onProjectsRefresh}
                     isActive={view === 'projects'}
-                    onNewProject={() => openNewProject()}
+                    onNewProject={() => {
+                      void startBlankProject().catch(() => undefined);
+                    }}
                   />
                 </div>
               )}
@@ -969,6 +975,7 @@ export function EntryShell({
               <BrandsTab
                 onApplyDesignSystem={onChangeDefaultDesignSystem}
                 onOpenProject={onOpenProject}
+                onDesignSystemsRefresh={onDesignSystemsRefresh}
               />
             </div>
             {view === 'integrations' ? (

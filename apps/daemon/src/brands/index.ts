@@ -52,7 +52,7 @@ import { brandSystemDir, rebuildSystem } from './system.js';
 import { extractJsonBlock, validateBrand } from './validate.js';
 import { brandFromMaterial } from './provisional.js';
 import { prefetchBrand, prefetchFromHtml, type PrefetchResult } from './prefetch.js';
-import { BRAND_KIT_FILE, writeBrandKitPreview } from './kit-render.js';
+import { BRAND_KIT_FILE, writeBrandKitPreview, type BrandKitStatus } from './kit-render.js';
 import { normalizeBrandKitLocale } from './kit-i18n.js';
 import { selfHostGoogleFonts } from './fonts.js';
 import { adoptExistingLogos, ensureLogoFallback, type LogoFallbackFn, type LogoSlot } from './logo-fallback.js';
@@ -280,6 +280,7 @@ export async function startBrandExtraction(
       draftDesignSystemId = draft.id;
       meta.designSystemId = draft.id;
       patchMeta(brandsRoot, id, { designSystemId: draft.id });
+      metadata.brandDesignSystemId = draft.id;
     } catch (err) {
       console.warn(`[brand] failed to pre-create draft design system for ${id}`, err);
     }
@@ -508,6 +509,7 @@ export async function startBrandExtraction(
     conversationId,
     sourceUrl: url,
     status: meta.status,
+    ...(draftDesignSystemId ? { designSystemId: draftDesignSystemId } : {}),
   };
 }
 
@@ -1395,7 +1397,11 @@ export async function renderBrandPreviewIntoProject(
   const meta = readMeta(brandsRoot, id);
   if (!meta) throw new Error(`brand not found: ${id}`);
   const projectId = opts.projectId ?? meta.projectId ?? brandProjectId(id);
-  const status: 'extracting' | 'ready' = meta.status === 'ready' ? 'ready' : 'extracting';
+  const status: BrandKitStatus = meta.status === 'ready'
+    ? 'ready'
+    : meta.status === 'extracting' || meta.status === 'needs_input'
+      ? 'extracting'
+      : 'draft';
 
   const raw = await readProjectTextOrNull(projectsRoot, projectId, 'brand.json');
   let brand: Record<string, unknown> = { sourceUrl: meta.sourceUrl, colors: [], typography: {} };

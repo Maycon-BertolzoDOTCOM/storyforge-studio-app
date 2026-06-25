@@ -23,7 +23,12 @@ import type { SkillSummary } from '../types';
 import styles from './NextStepActions.module.css';
 
 type TranslateFn = (key: keyof Dict, vars?: Record<string, string | number>) => string;
-export type NextStepActionsVariant = 'default' | 'design-system' | 'brand-extraction';
+export type NextStepActionsVariant =
+  | 'default'
+  | 'project-incomplete'
+  | 'design-system'
+  | 'brand-extraction'
+  | 'brand-extraction-incomplete';
 
 export const DESIGN_SYSTEM_NEXT_STEP_ACTIONS = [
   {
@@ -42,6 +47,27 @@ export const DESIGN_SYSTEM_NEXT_STEP_ACTIONS = [
   },
 ] as const;
 
+export const PROJECT_CONTINUE_PROMPT =
+  'Continue from the stopped or incomplete turn. Read the conversation, current project files, and any visible errors, then take the next concrete step. If a primary artifact already exists, update it in place; otherwise create the missing primary artifact and summarize what changed.';
+
+export const PROJECT_GENERATE_ARTIFACT_PROMPT =
+  'Generate the missing project artifact now. Use the current conversation and project context to create the primary previewable deliverable, usually index.html unless another file type is clearly requested. Save it into this project and include a concise summary of the files created.';
+
+export const PROJECT_INCOMPLETE_NEXT_STEP_ACTIONS = [
+  {
+    id: 'project-continue',
+    icon: 'refresh' as IconName,
+    title: 'Continue working',
+    prompt: PROJECT_CONTINUE_PROMPT,
+  },
+  {
+    id: 'project-generate-artifact',
+    icon: 'plus' as IconName,
+    title: 'Generate artifact',
+    prompt: PROJECT_GENERATE_ARTIFACT_PROMPT,
+  },
+] as const;
+
 export const BRAND_EXTRACTION_NEXT_STEP_ACTIONS = [
   {
     id: 'brand-ai-optimize',
@@ -57,6 +83,31 @@ export const BRAND_EXTRACTION_NEXT_STEP_ACTIONS = [
     descriptionKey: 'nextStep.brandCreateDesignBody' as keyof Dict,
     busyKey: 'nextStep.createDesignBusy' as keyof Dict,
   },
+] as const;
+
+export const BRAND_CONTINUE_EXTRACTION_PROMPT =
+  'Continue the programmatic design-system extraction from the saved draft. Re-open the source website and current brand files, inspect brand.html, brand.json, DESIGN.md, system assets, and any prefetched source files if present, then fill missing logo, palette, typography, imagery, and kit guidance progressively. Update the same design system id and do not create a duplicate.';
+
+export const BRAND_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS = [
+  {
+    id: 'brand-continue-extraction',
+    icon: 'sparkles' as IconName,
+    title: 'Continue extraction',
+    description: 'Pick up the saved draft and keep filling logo, palette, type, imagery, and kit files.',
+    prompt: BRAND_CONTINUE_EXTRACTION_PROMPT,
+  },
+  {
+    id: 'brand-ai-optimize',
+    icon: 'sparkles' as IconName,
+    titleKey: 'nextStep.brandAiOptimizeTitle' as keyof Dict,
+    descriptionKey: 'nextStep.brandAiOptimizeBody' as keyof Dict,
+    busyKey: 'brandEnrichment.busy' as keyof Dict,
+  },
+] as const;
+
+const ALL_BRAND_EXTRACTION_NEXT_STEP_ACTIONS = [
+  ...BRAND_EXTRACTION_NEXT_STEP_ACTIONS,
+  ...BRAND_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS,
 ] as const;
 
 // Surfaced under More → Design toolbox. The two featured ids already have their
@@ -139,10 +190,25 @@ function place(
 
 type Anchor = { left: number; top: number };
 type SubKind = 'toolbox' | 'share';
-type BrandExtractionActionId = (typeof BRAND_EXTRACTION_NEXT_STEP_ACTIONS)[number]['id'];
+type BrandExtractionAction = (typeof ALL_BRAND_EXTRACTION_NEXT_STEP_ACTIONS)[number];
+type BrandExtractionActionId = BrandExtractionAction['id'];
+type PromptNextStepAction =
+  | (typeof DESIGN_SYSTEM_NEXT_STEP_ACTIONS)[number]
+  | (typeof PROJECT_INCOMPLETE_NEXT_STEP_ACTIONS)[number];
 type Detail =
   | ({ kind: 'toolbox'; id: DesignToolboxActionId } & Anchor)
   | ({ kind: 'brand'; id: BrandExtractionActionId } & Anchor);
+
+function brandActionTitle(action: BrandExtractionAction, t: TranslateFn, busy: boolean): string {
+  if ('busyKey' in action && busy) return t(action.busyKey);
+  if ('titleKey' in action) return t(action.titleKey);
+  return action.title;
+}
+
+function brandActionDescription(action: BrandExtractionAction, t: TranslateFn): string {
+  if ('descriptionKey' in action) return t(action.descriptionKey);
+  return action.description;
+}
 
 export function NextStepActions({
   fileName,
@@ -293,7 +359,7 @@ export function NextStepActions({
     [closeAll, onToolboxAction, track],
   );
   const handlePromptAction = useCallback(
-    (action: (typeof DESIGN_SYSTEM_NEXT_STEP_ACTIONS)[number]) => {
+    (action: PromptNextStepAction) => {
       track('toolbox_action', action.id);
       onPromptAction?.(action.prompt);
       closeAll();
@@ -314,6 +380,23 @@ export function NextStepActions({
     onCreateDesign?.();
     closeAll();
   }, [closeAll, createDesignBusy, onCreateDesign, track]);
+
+  const handleBrandAction = useCallback(
+    (action: BrandExtractionAction) => {
+      if (action.id === 'brand-continue-extraction') {
+        track('toolbox_action', action.id);
+        onPromptAction?.(action.prompt);
+        closeAll();
+        return;
+      }
+      if (action.id === 'brand-ai-optimize') {
+        handleAiOptimize();
+        return;
+      }
+      handleCreateDesign();
+    },
+    [closeAll, handleAiOptimize, handleCreateDesign, onPromptAction, track],
+  );
 
   const handlePickSkill = useCallback(
     (skillId: string) => {
@@ -358,8 +441,18 @@ export function NextStepActions({
   const hasShareGroup = canShare || canDownload || canContribute;
   const hasMore = !!onToolboxAction || hasShareGroup;
   const showToolbox = !!onToolboxAction;
+  const showProjectIncompleteRows = variant === 'project-incomplete' && !!onPromptAction;
   const showDesignSystemRows = variant === 'design-system' && !!onPromptAction;
-  const showBrandRows = variant === 'brand-extraction' && (!!onAiOptimize || !!onCreateDesign);
+  const brandActions = variant === 'brand-extraction-incomplete'
+    ? BRAND_EXTRACTION_INCOMPLETE_NEXT_STEP_ACTIONS
+    : BRAND_EXTRACTION_NEXT_STEP_ACTIONS;
+  const showBrandRows =
+    (variant === 'brand-extraction' || variant === 'brand-extraction-incomplete') &&
+    (
+      variant === 'brand-extraction-incomplete'
+        ? !!onPromptAction || !!onAiOptimize
+        : !!onAiOptimize || !!onCreateDesign
+    );
 
   // Hover handlers shared by every flyout surface: stay open while hovered.
   const keepOpen = { onMouseEnter: cancelClose, onMouseLeave: scheduleClose };
@@ -367,19 +460,20 @@ export function NextStepActions({
   return (
     <div className={styles.root} data-testid="next-step-actions">
       <div className={styles.label}>{t('nextStep.title')}</div>
-      {showBrandRows || showDesignSystemRows || showToolbox || hasMore ? (
+      {showBrandRows || showProjectIncompleteRows || showDesignSystemRows || showToolbox || hasMore ? (
         <div className={styles.toolboxList} data-testid="next-step-toolbox">
           {showBrandRows
-            ? BRAND_EXTRACTION_NEXT_STEP_ACTIONS.map((action) => {
+            ? brandActions.map((action) => {
                 const busy =
                   (action.id === 'brand-ai-optimize' && aiOptimizeBusy) ||
                   (action.id === 'brand-create-design' && createDesignBusy);
                 const unavailable =
+                  (action.id === 'brand-continue-extraction' && !onPromptAction) ||
                   (action.id === 'brand-ai-optimize' && !onAiOptimize) ||
                   (action.id === 'brand-create-design' && !onCreateDesign);
                 if (unavailable) return null;
-                const title = t(busy ? action.busyKey : action.titleKey);
-                const description = t(action.descriptionKey);
+                const title = brandActionTitle(action, t, busy);
+                const description = brandActionDescription(action, t);
                 return (
                   <button
                     key={action.id}
@@ -390,7 +484,7 @@ export function NextStepActions({
                     aria-label={`${title}. ${description}`}
                     disabled={busy}
                     title={description}
-                    onClick={action.id === 'brand-ai-optimize' ? handleAiOptimize : handleCreateDesign}
+                    onClick={() => handleBrandAction(action)}
                     onMouseEnter={(e) => openBrandDetail(action.id, e.currentTarget.getBoundingClientRect())}
                     onMouseLeave={scheduleClose}
                   >
@@ -408,6 +502,21 @@ export function NextStepActions({
                 );
               })
             : null}
+          {showProjectIncompleteRows
+            ? PROJECT_INCOMPLETE_NEXT_STEP_ACTIONS.map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  className={styles.toolboxRow}
+                  data-testid={`next-step-project-action-${action.id}`}
+                  onClick={() => handlePromptAction(action)}
+                >
+                  <Icon name={action.icon} size={14} className={styles.toolboxRowIcon} />
+                  <span className={styles.toolboxRowTitle}>{action.title}</span>
+                  <Icon name="chevron-right" size={13} className={styles.toolboxRowArrow} />
+                </button>
+              ))
+            : null}
           {showDesignSystemRows
             ? DESIGN_SYSTEM_NEXT_STEP_ACTIONS.map((action) => (
                 <button
@@ -424,6 +533,7 @@ export function NextStepActions({
               ))
             : null}
           {showToolbox && !showDesignSystemRows
+            && !showProjectIncompleteRows
             && !showBrandRows
             ? FEATURED_DESIGN_TOOLBOX_ACTION_IDS.map((id) => {
                 const action = getDesignToolboxAction(id);
@@ -470,7 +580,7 @@ export function NextStepActions({
         ? createPortal(
             (() => {
               if (detail.kind === 'brand') {
-                const action = BRAND_EXTRACTION_NEXT_STEP_ACTIONS.find((item) => item.id === detail.id);
+                const action = ALL_BRAND_EXTRACTION_NEXT_STEP_ACTIONS.find((item) => item.id === detail.id);
                 if (!action) return null;
                 return (
                   <div
@@ -479,8 +589,8 @@ export function NextStepActions({
                     style={{ left: detail.left, top: detail.top }}
                     {...keepOpen}
                   >
-                    <div className={styles.detailTitle}>{t(action.titleKey)}</div>
-                    <div className={styles.detailDesc}>{t(action.descriptionKey)}</div>
+                    <div className={styles.detailTitle}>{brandActionTitle(action, t, false)}</div>
+                    <div className={styles.detailDesc}>{brandActionDescription(action, t)}</div>
                   </div>
                 );
               }

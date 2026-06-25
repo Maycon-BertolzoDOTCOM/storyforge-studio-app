@@ -2,16 +2,19 @@
 
 /**
  * Gate coverage for the "next step" affordance under the last assistant
- * message. The card anchors on a deliverable: it appears only once the turn
- * (or the project) has a previewable HTML artifact to take a next step on. A
- * pure clarifying-questions / summary turn that produced no HTML must not
- * surface the card.
+ * message. Artifact-backed turns expose Share/Download/toolbox actions, while
+ * terminal no-artifact or interrupted turns still surface recovery prompts so
+ * users are never left at a dead end.
  */
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { AssistantMessage } from '../../src/components/AssistantMessage';
+import {
+  BRAND_CONTINUE_EXTRACTION_PROMPT,
+  PROJECT_GENERATE_ARTIFACT_PROMPT,
+} from '../../src/components/NextStepActions';
 import { en } from '../../src/i18n/locales/en';
 import type { ChatMessage, ProjectFile } from '../../src/types';
 
@@ -61,6 +64,7 @@ function producedFile(name: string, kind: ProjectFile['kind'] = 'html'): Project
 const handlers = () => ({
   onArtifactShare: vi.fn(),
   onToolboxAction: vi.fn(),
+  onNextStepPromptAction: vi.fn(),
 });
 
 const AUTO_MATCH_TITLE = en['chat.designToolbox.action.auto-match.title'];
@@ -116,17 +120,21 @@ describe('AssistantMessage next-step affordance', () => {
     expect(onShareToOpenDesign).toHaveBeenCalledTimes(1);
   });
 
-  it('does not render the card when the turn produced no previewable HTML artifact', () => {
+  it('renders project recovery actions when the turn produced no previewable artifact', () => {
+    const h = handlers();
     render(
       <AssistantMessage
         message={baseMessage({ producedFiles: [producedFile('notes.md', 'text')] })}
         streaming={false}
         projectId="proj-1"
         isLast
-        {...handlers()}
+        {...h}
       />,
     );
-    expect(screen.queryByTestId('next-step-actions')).toBeNull();
+    expect(screen.getByTestId('next-step-actions')).toBeTruthy();
+    expect(screen.getByText('Generate artifact')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('next-step-project-action-project-generate-artifact'));
+    expect(h.onNextStepPromptAction).toHaveBeenCalledWith(PROJECT_GENERATE_ARTIFACT_PROMPT);
   });
 
   it('renders once the project has a previewable HTML artifact from an earlier turn', () => {
@@ -142,6 +150,31 @@ describe('AssistantMessage next-step affordance', () => {
     );
     expect(screen.getByTestId('next-step-actions')).toBeTruthy();
     expect(screen.getByText(AUTO_MATCH_TITLE)).toBeTruthy();
+  });
+
+  it('renders incomplete brand extraction next steps after cancellation without an artifact', () => {
+    const h = handlers();
+    render(
+      <AssistantMessage
+        message={baseMessage({
+          runStatus: 'canceled',
+          content: 'Stopped.',
+          producedFiles: [],
+        })}
+        streaming={false}
+        projectId="proj-brand"
+        isLast
+        nextStepVariant="brand-extraction"
+        onNextStepAiOptimize={vi.fn()}
+        {...h}
+      />,
+    );
+
+    expect(screen.getByTestId('next-step-actions')).toBeTruthy();
+    expect(screen.getByText('Continue extraction')).toBeTruthy();
+    expect(screen.getByText(en['nextStep.brandAiOptimizeTitle'])).toBeTruthy();
+    fireEvent.click(screen.getByTestId('next-step-brand-action-brand-continue-extraction'));
+    expect(h.onNextStepPromptAction).toHaveBeenCalledWith(BRAND_CONTINUE_EXTRACTION_PROMPT);
   });
 
   it('does not render when the handlers are not wired', () => {

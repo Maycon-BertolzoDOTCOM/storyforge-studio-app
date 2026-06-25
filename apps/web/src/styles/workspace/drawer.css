@@ -446,17 +446,7 @@
   overflow: hidden;
   min-height: 168px;
 }
-.design-card.is-design-system-project {
-  border-color: color-mix(in srgb, var(--red) 62%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--red) 42%, transparent);
-}
 .design-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
-.design-card.is-design-system-project:hover {
-  border-color: var(--red);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--red) 54%, transparent),
-    var(--shadow-sm);
-}
 .design-card-thumb {
   flex: 1;
   min-height: 100px;
@@ -1028,22 +1018,10 @@
   transition: border-color 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out), transform 0.15s var(--ease-out);
   box-shadow: var(--shadow-xs);
 }
-.design-kanban-card.is-design-system-project {
-  border-color: color-mix(in srgb, var(--red) 62%, var(--border));
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--red) 42%, transparent),
-    var(--shadow-xs);
-}
 .design-kanban-card:hover {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
-}
-.design-kanban-card.is-design-system-project:hover {
-  border-color: var(--red);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--red) 54%, transparent),
-    var(--shadow-sm);
 }
 .design-kanban-card:active {
   transform: none;

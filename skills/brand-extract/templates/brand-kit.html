@@ -55,10 +55,14 @@
   .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 7px 12px; font-size: 13px; text-decoration: none; cursor: pointer; transition: border-color .14s ease; }
   .btn:hover { border-color: var(--accent); }
 
-  .status-pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 4px 11px 4px 9px; font-size: 12px; font-weight: 500; border: 1px solid var(--line); background: var(--surface); color: var(--ink-mute); }
+  .status-pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 4px 11px 4px 9px; font-family: inherit; font-size: 12px; font-weight: 500; border: 1px solid var(--line); background: var(--surface); color: var(--ink-mute); }
+  button.status-pill { cursor: pointer; }
+  button.status-pill:hover { border-color: var(--accent); color: var(--ink); }
+  button.status-pill:disabled { cursor: wait; opacity: .72; }
   .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
   .status-pill.extracting .dot { animation: pulse 1.1s ease-in-out infinite; }
   .status-pill.ready .dot { background: var(--ok); }
+  .status-pill.draft .dot { background: var(--ink-faint); }
   @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .35; transform: scale(.7);} }
 
   .sec { margin-top: 40px; }
@@ -286,6 +290,7 @@
   var status = data.status || 'extracting';
   var assets = arr(data.assets);
   var extracting = status === 'extracting';
+  var ready = status === 'ready';
 
   var colors = arr(brand.colors);
   var bg = role(brand, 'background', '#ffffff');
@@ -540,13 +545,22 @@
       }).join('') + '</div></section>';
   }
 
+  function statusPillHtml() {
+    if (extracting) {
+      var stopLabel = txt('stopExtraction', 'Stop extraction');
+      return '<button type="button" id="brand-stop-extraction" class="status-pill extracting" title="' + esc(stopLabel) + '" aria-label="' + esc(stopLabel) + '"><span class="dot"></span>' + esc(txt('extracting', 'Extracting...')) + '</button>';
+    }
+    var label = ready ? txt('brandReady', 'Brand ready') : txt('draftSaved', 'Draft saved');
+    return '<span class="status-pill ' + (ready ? 'ready' : 'draft') + '"><span class="dot"></span>' + esc(label) + '</span>';
+  }
+
   var html = '' +
     '<header class="kit-head" data-od-id="brand-header" data-od-edit="container"><div>' +
       '<h1 class="kit-title" data-od-id="brand-name" data-od-edit="text" style="font-family:' + fontStack(typo.display || {}) + '">' + esc(brand.name || (data.host || 'Brand')) + '</h1>' +
       (brand.tagline ? '<p class="kit-tagline" data-od-id="brand-tagline" data-od-edit="text">' + esc(brand.tagline) + '</p>' : '') +
       (brand.sourceUrl ? '<a class="kit-source" data-od-id="brand-source" data-od-edit="link" href="' + esc(brand.sourceUrl) + '" target="_blank" rel="noreferrer noopener">' + esc(brand.sourceUrl) + ' ↗</a>' : '') +
     '</div><div class="head-actions" data-od-id="brand-header-actions" data-od-edit="container">' +
-      '<span class="status-pill ' + (extracting ? 'extracting' : 'ready') + '"><span class="dot"></span>' + esc(extracting ? txt('extracting', 'Extracting...') : txt('brandReady', 'Brand ready')) + '</span>' +
+      statusPillHtml() +
     '</div></header>' +
     heroHtml() +
     '<div class="sec grid-top"><section><h2 class="sec-title">' + esc(txt('logo', 'Logo')) + '</h2>' + logoHtml() + '</section>' +
@@ -559,6 +573,16 @@
     assetsHtml();
 
   document.getElementById('root').innerHTML = html;
+
+  var stopBtn = document.getElementById('brand-stop-extraction');
+  if (stopBtn) {
+    stopBtn.addEventListener('click', function () {
+      stopBtn.disabled = true;
+      try {
+        window.parent.postMessage({ type: 'od:brand-extraction-stop-request' }, '*');
+      } catch (e) {}
+    });
+  }
 
   // Resilient images — never leak the browser's broken-image glyph.
   // Extraction can hand us a logo/imagery URL that 404s, is cross-origin

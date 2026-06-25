@@ -573,6 +573,14 @@ function AssistantMessageImpl({
   const runSucceeded =
     !streaming &&
     (message.runStatus === "succeeded" || (!message.runStatus && !!message.endedAt));
+  const runTerminal =
+    !streaming &&
+    (
+      message.runStatus === "succeeded" ||
+      message.runStatus === "failed" ||
+      message.runStatus === "canceled" ||
+      (!message.runStatus && !!message.endedAt)
+    );
   const canContinueTodos =
     !streaming &&
     !!isLast &&
@@ -601,17 +609,34 @@ function AssistantMessageImpl({
   const canShowOpenDesignSubmission = !!onShareToOpenDesign && showFeedback && runSucceeded;
   const showOpenDesignSubmission =
     canShowOpenDesignSubmission && (!!isLast || shareToOpenDesignBusy);
-  // "Next step" only makes sense once there is a deliverable to act on. Anchor
-  // the whole card (toolbox cascade + Share + Contribute) on a previewable HTML
-  // artifact — produced this turn or earlier in the project. A pure
-  // clarifying-questions / summary turn that emitted no HTML must not surface
-  // the card (issue: card appeared after a question-only turn with no artifact).
+  const effectiveNextStepVariant: NextStepActionsVariant =
+    nextStepVariant === 'brand-extraction' && (!runSucceeded || !nextStepArtifactName)
+      ? 'brand-extraction-incomplete'
+      : nextStepVariant === 'default' && (!runSucceeded || !nextStepArtifactName)
+        ? 'project-incomplete'
+        : nextStepVariant;
+  const hasNextStepPrimary =
+    effectiveNextStepVariant === 'brand-extraction'
+      ? !!onNextStepAiOptimize || !!onNextStepCreateDesign || !!onNextStepPromptAction
+      : effectiveNextStepVariant === 'brand-extraction-incomplete'
+        ? !!onNextStepPromptAction || !!onNextStepAiOptimize
+        : effectiveNextStepVariant === 'design-system'
+          ? !!onNextStepPromptAction
+          : effectiveNextStepVariant === 'project-incomplete'
+            ? !!onNextStepPromptAction ||
+              !!onToolboxAction ||
+              (!!nextStepArtifactName && (!!onArtifactShare || !!onArtifactDownload))
+            : !!onToolboxAction ||
+              (!!nextStepArtifactName && (!!onArtifactShare || !!onArtifactDownload));
+  // Terminal turns should leave the user with an actionable path, including
+  // canceled/failed/no-artifact turns. Artifact-backed cards still wire Share
+  // and Download to the chosen file; incomplete cards fall back to composer
+  // prompts or toolbox actions.
   const showNextStepActions =
     !streaming &&
     !!projectId &&
-    runSucceeded &&
-    !!nextStepArtifactName &&
-    ((!!isLast && !!onToolboxAction) || showOpenDesignSubmission);
+    runTerminal &&
+    ((!!isLast && hasNextStepPrimary) || showOpenDesignSubmission);
   // Pre-output vs working: before any real content (text / thinking / tools /
   // files) the footer shimmers "Preparing…"; the moment content lands it
   // flips to "Working". The elapsed clock stays anchored to the persisted run
@@ -831,7 +856,7 @@ function AssistantMessageImpl({
             toolboxSkillNames={isLast ? toolboxSkillNames : undefined}
             onShareToOpenDesign={showOpenDesignSubmission ? onShareToOpenDesign : undefined}
             shareToOpenDesignBusy={shareToOpenDesignBusy}
-            variant={nextStepVariant}
+            variant={effectiveNextStepVariant}
           />
         ) : null}
       </div>

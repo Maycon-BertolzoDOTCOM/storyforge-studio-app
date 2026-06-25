@@ -421,7 +421,7 @@ describe('agent-driven brand extraction engine', () => {
     const returnedAfterRequest = Date.now();
 
     expect(result.status).toBe('extracting');
-    expect(result.designSystemId).toBeUndefined();
+    expect(result.designSystemId).toMatch(/^user:/);
     if (!backgroundExtraction) throw new Error('expected background extraction promise');
     const initialMessages = listMessages(db, result.conversationId);
     expect(initialMessages.map((message) => message.role)).toEqual(['user', 'assistant']);
@@ -1491,7 +1491,7 @@ describe('agent-driven brand extraction engine', () => {
     // The project and transcript are available immediately while the
     // deterministic harvest continues in the background.
     expect(result.status).toBe('extracting');
-    expect(result.designSystemId).toBeUndefined();
+    expect(result.designSystemId).toMatch(/^user:/);
     if (!backgroundExtraction) throw new Error('expected background extraction promise');
     const initialMessages = listMessages(db, result.conversationId);
     expect(initialMessages.map((message) => message.role)).toEqual(['user', 'assistant']);
@@ -1565,7 +1565,7 @@ describe('agent-driven brand extraction engine', () => {
     });
 
     expect(result.status).toBe('extracting');
-    expect(result.designSystemId).toBeUndefined();
+    expect(result.designSystemId).toMatch(/^user:/);
     if (!backgroundExtraction) throw new Error('expected background extraction promise');
     const initialMessages = listMessages(db, result.conversationId);
     expect(initialMessages.map((message) => message.role)).toEqual(['user', 'assistant']);
@@ -1635,6 +1635,36 @@ describe('agent-driven brand extraction engine', () => {
 
     const html = readFileSync(path.join(projectsRoot, result.projectId, 'brand.html'), 'utf8');
     expect(html).toContain('"status":"extracting"');
+  });
+
+  it('renders stopped programmatic extraction previews as a saved draft', async () => {
+    const db = openDatabase(tempDir, { dataDir: tempDir });
+
+    const result = await startOfflineBrandExtraction({
+      url: 'acme.com',
+      brandsRoot,
+      projectsRoot,
+      skillsRoot: SKILLS_ROOT,
+      db,
+      userDesignSystemsRoot,
+      prefetch: async () => null,
+      logoFallback: NO_LOGO_FALLBACK,
+      imageryFallback: NO_IMAGERY_FALLBACK,
+    });
+
+    patchMeta(brandsRoot, result.id, { status: 'failed', error: 'Stopped by user' });
+    await renderBrandPreviewIntoProject({
+      id: result.id,
+      brandsRoot,
+      skillsRoot: SKILLS_ROOT,
+      projectsRoot,
+      projectId: result.projectId,
+    });
+
+    const html = readFileSync(path.join(projectsRoot, result.projectId, 'brand.html'), 'utf8');
+    expect(html).toContain('"status":"draft"');
+    expect(html).toContain('"draftSaved":"Draft saved"');
+    expect(html).not.toContain('"status":"extracting"');
   });
 
   it('does not finalize blocked or thin programmatic harvests as ready', async () => {
@@ -1795,7 +1825,7 @@ describe('agent-driven brand extraction engine', () => {
     // At return time the brand is still extracting (skeleton page), so the user
     // sees a progress state rather than waiting on the network.
     expect(result.status).toBe('extracting');
-    expect(result.designSystemId).toBeUndefined();
+    expect(result.designSystemId).toMatch(/^user:/);
     expect(readBrandDetail(brandsRoot, result.id)?.meta.status).toBe('extracting');
 
     // Once the background harvest settles, the brand finalizes to ready.
