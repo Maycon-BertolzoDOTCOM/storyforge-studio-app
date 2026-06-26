@@ -25,7 +25,8 @@ export type EntryHomeView =
   | 'design-systems'
   | 'library'
   | 'brands'
-  | 'integrations';
+  | 'integrations'
+  | 'settings';
 
 export type Route =
   | {
@@ -120,6 +121,9 @@ export function parseRoute(pathname: string): Route {
   if (parts[0] === 'integrations') {
     return { kind: 'home', view: 'integrations' };
   }
+  if (parts[0] === 'settings') {
+    return { kind: 'home', view: 'settings' };
+  }
   if (parts[0] === 'community') {
     return { kind: 'home', view: 'community' };
   }
@@ -170,6 +174,7 @@ export function buildPath(route: Route): string {
       return route.brandId ? `/brands/${encodeURIComponent(route.brandId)}` : '/brands';
     }
     if (route.view === 'integrations') return '/integrations';
+    if (route.view === 'settings') return '/settings';
     return '/';
   }
   if (route.kind === 'marketplace') return '/marketplace';

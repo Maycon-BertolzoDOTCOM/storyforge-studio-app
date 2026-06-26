@@ -33,7 +33,8 @@ export type EntryView =
   | 'design-systems'
   | 'library'
   | 'brands'
-  | 'integrations';
+  | 'integrations'
+  | 'settings';
 
 interface Props {
   view: EntryView;

@@ -1948,7 +1948,7 @@ function AppInner() {
     setSettingsWelcome(false);
     setSettingsInitialSection(section);
     setSettingsHighlight(opts?.highlight ?? null);
-    setSettingsOpen(true);
+    navigate({ kind: 'home', view: 'settings' });
   }, []);
 
   // Entry point from the failed-run AMR nudge: open Settings on the execution
@@ -1961,7 +1961,8 @@ function AppInner() {
   const openPetSettings = useCallback(() => {
     setSettingsWelcome(false);
     setSettingsInitialSection('pet');
-    setSettingsOpen(true);
+    setSettingsHighlight(null);
+    navigate({ kind: 'home', view: 'settings' });
   }, []);
 
   const openMcpSettings = useCallback(() => {
@@ -2111,6 +2112,55 @@ function AppInner() {
     [designSystems, config.disabledDesignSystems],
   );
 
+  const handleCloseSettings = () => {
+    // Closing Settings is still the canonical "I'm done" gesture now that
+    // there is no global Save button. The same close path is shared by the
+    // legacy modal and the full-page route.
+    const next = resolveSettingsCloseConfig(config, latestPersistedConfigRef.current);
+    if (!next.onboardingCompleted || !config.onboardingCompleted) {
+      latestPersistedConfigRef.current = next;
+      saveConfig(next);
+      void syncConfigToDaemon(next);
+      setConfig(next);
+    }
+    setSettingsOpen(false);
+    setSettingsHighlight(null);
+    if (route.kind === 'home' && route.view === 'settings') {
+      navigate({ kind: 'home', view: 'home' });
+    }
+  };
+
+  const renderSettingsSurface = (presentation: 'modal' | 'page') => (
+    <SettingsDialog
+      presentation={presentation}
+      initial={config}
+      agents={agents}
+      agentsLoading={agentsLoading}
+      daemonLive={daemonLive}
+      appVersionInfo={appVersionInfo}
+      welcome={presentation === 'modal' ? settingsWelcome : false}
+      initialSection={settingsInitialSection}
+      initialHighlight={settingsHighlight}
+      composioConfigLoading={composioConfigLoading}
+      onPersist={handleConfigPersist}
+      onPersistComposioKey={handleConfigPersistComposioKey}
+      onClose={handleCloseSettings}
+      onRefreshAgents={refreshAgents}
+      onAmrLoginStatusChange={handleAmrLoginStatusChange}
+      onSkillsRefresh={refreshSkills}
+      daemonMediaProviders={daemonMediaProviders}
+      daemonMediaProvidersFetchState={daemonMediaProvidersFetchState}
+      mediaProvidersNotice={mediaProvidersNotice}
+      onReloadMediaProviders={reloadMediaProvidersFromDaemon}
+      onProjectsRefresh={refreshProjects}
+      onSkillsChanged={handleSkillsChanged}
+      onDesignSystemsChanged={handleDesignSystemsChanged}
+      onDesignSystemImportRebuildJob={handleDesignSystemImportRebuildJob}
+      providerModelsCache={providerModelsCache}
+      onProviderModelsCacheChange={setProviderModelsCache}
+    />
+  );
+
   // Phase 2B / spec §11.6 — marketplace deep UI dispatch. The
   // /marketplace and /marketplace/:id routes render outside the
   // EntryView / ProjectView split so the discovery surface stays
@@ -2174,6 +2224,8 @@ function AppInner() {
         }
       />
     );
+  } else if (route.kind === 'home' && route.view === 'settings') {
+    appMain = renderSettingsSurface('page');
   } else if (activeProject) {
     appMain = (
       <>
@@ -2332,48 +2384,7 @@ function AppInner() {
       <TooltipLayer />
       <AnimatePresence>
       {settingsOpen ? (
-        <SettingsDialog
-          initial={config}
-          agents={agents}
-          agentsLoading={agentsLoading}
-          daemonLive={daemonLive}
-          appVersionInfo={appVersionInfo}
-          welcome={settingsWelcome}
-          initialSection={settingsInitialSection}
-          initialHighlight={settingsHighlight}
-          composioConfigLoading={composioConfigLoading}
-          onPersist={handleConfigPersist}
-          onPersistComposioKey={handleConfigPersistComposioKey}
-          onClose={() => {
-            // Closing the dialog is the canonical "I'm done" gesture
-            // now that there is no global Save button. We mark
-            // onboardingCompleted on close so the welcome modal stops
-            // re-prompting on every refresh, regardless of whether
-            // the user changed anything during the session.
-            const next = resolveSettingsCloseConfig(config, latestPersistedConfigRef.current);
-            if (!next.onboardingCompleted || !config.onboardingCompleted) {
-              latestPersistedConfigRef.current = next;
-              saveConfig(next);
-              void syncConfigToDaemon(next);
-              setConfig(next);
-            }
-            setSettingsOpen(false);
-            setSettingsHighlight(null);
-          }}
-          onRefreshAgents={refreshAgents}
-          onAmrLoginStatusChange={handleAmrLoginStatusChange}
-          onSkillsRefresh={refreshSkills}
-          daemonMediaProviders={daemonMediaProviders}
-          daemonMediaProvidersFetchState={daemonMediaProvidersFetchState}
-          mediaProvidersNotice={mediaProvidersNotice}
-          onReloadMediaProviders={reloadMediaProvidersFromDaemon}
-          onProjectsRefresh={refreshProjects}
-          onSkillsChanged={handleSkillsChanged}
-          onDesignSystemsChanged={handleDesignSystemsChanged}
-          onDesignSystemImportRebuildJob={handleDesignSystemImportRebuildJob}
-          providerModelsCache={providerModelsCache}
-          onProviderModelsCacheChange={setProviderModelsCache}
-        />
+        renderSettingsSurface('modal')
       ) : null}
       </AnimatePresence>
       <MemoryToast onOpenMemory={() => openSettings('memory')} />
