@@ -153,13 +153,13 @@ describe('DesignSystemPicker brand preview', () => {
 
     fireEvent.click(screen.getByTestId('project-ds-picker-trigger'));
 
-    // The brand-backed system previews the Brand Kit card (identity blurb +
-    // typography specimen + palette), not the thin design-system iframe.
+    // The brand-backed system previews the compact Brand Kit card (identity
+    // blurb + typography specimen + palette), not the thin design-system iframe.
     const brandPane = await screen.findByTestId('project-ds-picker-preview-kit');
     expect(brandPane).toBeTruthy();
     expect(screen.getByTestId('project-ds-picker-preview-kit-view').getAttribute('data-variant')).toBe('compact');
     expect(screen.getByText('Acme is a bold engineering brand for fast-moving teams.')).toBeTruthy();
-    expect(screen.getByText('Logo')).toBeTruthy();
+    expect(screen.queryByTestId('design-kit-logo-section')).toBeNull();
     expect(screen.getByText('Space Grotesk')).toBeTruthy();
     expect(screen.getByText('#0b5fff')).toBeTruthy();
     expect(screen.queryByTestId('project-ds-picker-preview-frame')).toBeNull();
@@ -181,7 +181,7 @@ describe('DesignSystemPicker brand preview', () => {
     });
     expect(await screen.findByTestId('project-ds-picker-preview-kit-view')).toBeTruthy();
     expect(screen.getByText('Friendly tactile product UI.')).toBeTruthy();
-    expect(screen.getByText('Logo')).toBeTruthy();
+    expect(screen.queryByTestId('design-kit-logo-section')).toBeNull();
     expect(screen.queryByTestId('project-ds-picker-preview-frame')).toBeNull();
   });
 });
