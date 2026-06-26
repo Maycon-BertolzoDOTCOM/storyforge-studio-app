@@ -75,6 +75,7 @@ import { applyFacetSelection } from './plugins-home/facets';
 import { inferPluginPreview } from './plugins-home/preview';
 import { pluginSubfacetLabel } from './plugins-home/subfacetLabel';
 import { ComposerPlusMenu } from './ComposerPlusMenu';
+import { SessionModeToggle } from './SessionModeToggle';
 import { TemplatePicker } from './home-hero/TemplatePicker';
 import { LibraryPicker } from './LibraryPicker';
 import { assetTitle } from './LibraryAssetMeta';
@@ -264,6 +265,8 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     onSubmit,
     onSubmitScenario = () => undefined,
     firstRunGuide,
+    sessionMode = 'design',
+    onSessionModeChange,
     activePluginTitle,
     activePluginIsExplicit = false,
     activePluginRecord = null,
@@ -1622,6 +1625,13 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
             ) : null}
           </div>
           <div className="home-hero__foot-right">
+            {onSessionModeChange ? (
+              <SessionModeToggle
+                mode={sessionMode}
+                onChange={onSessionModeChange}
+                disabled={submitting}
+              />
+            ) : null}
             {executionSwitcher ? (
               <div className="home-hero__execution-switcher">
                 {executionSwitcher}
