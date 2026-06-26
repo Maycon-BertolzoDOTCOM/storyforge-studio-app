@@ -8,6 +8,7 @@ import type { Page } from '@playwright/test';
 import { writeFakeVelaBin, seedVelaLoginConfig } from '@/amr';
 import { runErrorCard } from '@/playwright/chat';
 import { createFakeAgentRuntimes } from '@/playwright/fake-agents';
+import { T } from '@/timeouts';
 import {
   createProjectViaApi,
   gotoEntryHome,
@@ -22,7 +23,7 @@ import {
 let codexRuntime: Awaited<ReturnType<typeof createFakeAgentRuntimes>>['codex'];
 const ACTIVE_ARTIFACT_PREVIEW_SELECTOR = '[data-testid="artifact-preview-frame"]:visible, [data-testid="artifact-preview-frame-url-load"]:visible, [data-testid="artifact-preview-frame-srcdoc"]:visible, [data-testid="live-artifact-preview-frame"]:visible';
 
-test.describe.configure({ mode: 'serial' });
+test.describe.configure({ mode: 'serial', timeout: T.xlong });
 
 function artifactPreview(page: Page) {
   return page.locator(ACTIVE_ARTIFACT_PREVIEW_SELECTOR).first();
@@ -74,7 +75,7 @@ test('[P0] @critical AMR insufficient-balance failures surface Top up AMR and ke
 
   const topUp = page.getByRole('button', { name: /Top up AMR|前往充值|前往儲值/i }).first();
   const retry = page.getByRole('button', { name: /^Retry$|^重试$|^重試$/i }).first();
-  await expect(topUp).toBeVisible({ timeout: 15_000 });
+  await expect(topUp).toBeVisible({ timeout: T.long });
   await expect(retry).toBeVisible();
 
   await topUp.click();
@@ -140,13 +141,13 @@ test('[P0] @critical AMR auth failures offer inline Authorize & retry sign-in', 
   await sendPrompt(page, 'AMR auth failure recovery smoke');
 
   const authorizeAndRetry = page.getByRole('button', { name: /Authorize.*retry|授权并重试/i }).first();
-  await expect(authorizeAndRetry).toBeVisible({ timeout: 15_000 });
+  await expect(authorizeAndRetry).toBeVisible({ timeout: T.long });
   await authorizeAndRetry.click();
 
   // New inline flow: clicking Authorize & retry starts vela login in place (it
   // POSTs /login directly) instead of bouncing the user out to the Settings
   // dialog. The run then auto-retries once /status reports signed in.
-  await expect.poll(() => loginRequested, { timeout: 10_000 }).toBe(true);
+  await expect.poll(() => loginRequested, { timeout: T.medium }).toBe(true);
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
@@ -237,12 +238,12 @@ test('[P0] @critical AMR model catalog invalid-key failures route to authorizati
   await gotoProject(page, projectId);
 
   const authorizeAndRetry = page.getByRole('button', { name: /Authorize.*retry|授权并重试/i }).first();
-  await expect(authorizeAndRetry).toBeVisible({ timeout: 15_000 });
+  await expect(authorizeAndRetry).toBeVisible({ timeout: T.long });
   await expect(page.getByRole('button', { name: /^Retry$|^重试$|^重試$/i })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Switch to AMR & retry/i })).toHaveCount(0);
 
   await authorizeAndRetry.click();
-  await expect.poll(() => loginRequested, { timeout: 10_000 }).toBe(true);
+  await expect.poll(() => loginRequested, { timeout: T.medium }).toBe(true);
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
@@ -387,7 +388,7 @@ test('[P0] after an AMR failure the user can switch to Codex and complete a fres
   await sendPrompt(page, 'AMR auth failure before switch smoke');
   await expect(runErrorCard(page)).toContainText(
     /Open Design agent isn't signed in yet|AMR sign-in is required/i,
-    { timeout: 15_000 },
+    { timeout: T.long },
   );
   await expect(page.getByRole('button', { name: /Authorize.*retry|授权并重试/i }).first()).toBeVisible();
 
@@ -479,7 +480,7 @@ test('[P0] upstream outages keep Retry available without promoting AMR', async (
 
   await gotoProject(page, projectId);
 
-  await expect(page.getByRole('button', { name: /^Retry$|^重试$|^重試$/i }).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('button', { name: /^Retry$|^重试$|^重試$/i }).first()).toBeVisible({ timeout: T.long });
   await expect(page.getByText(/Generation service unavailable|model provider is temporarily unavailable/i).first()).toBeVisible();
   await expect(page.getByRole('button', { name: /Switch to AMR & retry/i })).toHaveCount(0);
   await expect(page.getByText(/Model call failed/i)).toHaveCount(0);
@@ -559,7 +560,7 @@ test('[P0] antigravity rate limits offer terminal model switching without promot
   await gotoProject(page, projectId);
 
   const launchTerminal = page.getByRole('button', { name: /Switch model in terminal/i }).first();
-  await expect(launchTerminal).toBeVisible({ timeout: 15_000 });
+  await expect(launchTerminal).toBeVisible({ timeout: T.long });
   await expect(page.getByRole('button', { name: /^Retry$|^重试$|^重試$/i }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: /Switch to AMR & retry/i })).toHaveCount(0);
 

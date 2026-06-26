@@ -37,34 +37,51 @@ export async function expectWorkspaceReady(page: Page) {
 
 export async function openSettingsDialog(page: Page) {
   await waitForLoadingToClear(page);
-  await dismissPrivacyDialog(page);
-  const settingsTrigger = page.getByTestId('entry-settings-menu-trigger');
-  if (await settingsTrigger.isVisible({ timeout: 1_000 }).catch(() => false)) {
-    await settingsTrigger.click();
-  } else {
-    await page.getByRole('button', { name: OPEN_SETTINGS_LABEL }).first().click();
-  }
   const dialog = page.getByRole('dialog');
   const menu = page
     .getByTestId('entry-settings-menu')
     .or(page.getByRole('menu', { name: SETTINGS_MENU_LABEL }))
     .first();
-  await expect
-    .poll(async () => {
-      if (await dialog.isVisible().catch(() => false)) return 'dialog';
-      if (await menu.isVisible().catch(() => false)) return 'menu';
-      return 'pending';
-    })
-    .not.toBe('pending');
-  if (await menu.isVisible().catch(() => false)) {
+  const settingsTrigger = page.getByTestId('entry-settings-menu-trigger');
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (await dialog.isVisible().catch(() => false)) return dialog;
+
+    await dismissPrivacyDialog(page);
+    if (await settingsTrigger.isVisible({ timeout: 1_000 }).catch(() => false)) {
+      await settingsTrigger.click();
+    } else {
+      await page.getByRole('button', { name: OPEN_SETTINGS_LABEL }).first().click();
+    }
+
+    await expect
+      .poll(
+        async () => {
+          if (await dialog.isVisible().catch(() => false)) return 'dialog';
+          if (await menu.isVisible().catch(() => false)) return 'menu';
+          return 'pending';
+        },
+        { timeout: T.medium },
+      )
+      .not.toBe('pending')
+      .catch(() => {});
+
+    if (await dialog.isVisible().catch(() => false)) return dialog;
+    if (!(await menu.isVisible().catch(() => false))) continue;
+
+    await dismissPrivacyDialog(page);
+    if (!(await menu.isVisible().catch(() => false))) continue;
+
     const settingsItem = menu
       .getByRole('menuitem', { name: SETTINGS_MENU_LABEL })
       .or(menu.getByRole('button', { name: SETTINGS_MENU_LABEL }))
       .first();
-    await expect(settingsItem).toBeVisible({ timeout: 10_000 });
+    if (!(await settingsItem.isVisible({ timeout: 1_000 }).catch(() => false))) continue;
     await settingsItem.click();
+    if (await dialog.isVisible({ timeout: T.medium }).catch(() => false)) return dialog;
   }
-  await expect(dialog).toBeVisible({ timeout: 10_000 });
+
+  await expect(dialog).toBeVisible({ timeout: T.medium });
   return dialog;
 }
 
