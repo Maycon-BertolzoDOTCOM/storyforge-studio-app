@@ -1034,6 +1034,7 @@ export function EntryShell({
           solo={isSolo}
           credits={demoCredits}
           onUpgrade={() => setLowCreditsOpen(true)}
+          onOpenSettings={() => onOpenSettings()}
           canManageWorkspace={canManageWorkspace}
           cloudWorkspace={cloudWorkspace}
         />

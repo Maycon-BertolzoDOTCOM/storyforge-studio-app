@@ -52,6 +52,7 @@ interface Props {
   /** Credits popover data + upgrade handler for the ✨ credits chip. */
   credits?: CreditsInfo;
   onUpgrade?: () => void;
+  onOpenSettings?: () => void;
   canManageWorkspace?: boolean;
   cloudWorkspace?: boolean;
 }
@@ -81,7 +82,7 @@ function NavButton({ active, ariaLabel, tooltip, onClick, testId, children }: Na
   );
 }
 
-export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose, footerExtra, solo = false, credits, onUpgrade, canManageWorkspace = true, cloudWorkspace = true }: Props) {
+export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose, footerExtra, solo = false, credits, onUpgrade, onOpenSettings, canManageWorkspace = true, cloudWorkspace = true }: Props) {
   const t = useT();
   const brandLabel = t('app.brand');
   const homeLabel = t('entry.navHome');
@@ -172,7 +173,15 @@ export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose, 
                 <button type="button" className="entry-nav-rail__menu-item is-primary" role="menuitem">
                   <Icon name="layout" size={15} /> 切换主题 <span className="entry-nav-rail__menu-chevron"><Icon name="chevron-right" size={13} /></span>
                 </button>
-                <button type="button" className="entry-nav-rail__menu-item" role="menuitem">
+                <button
+                  type="button"
+                  className="entry-nav-rail__menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setAccountOpen(false);
+                    onOpenSettings?.();
+                  }}
+                >
                   <Icon name="settings" size={15} /> 设置
                 </button>
                 <div className="entry-nav-rail__menu-divider" />
