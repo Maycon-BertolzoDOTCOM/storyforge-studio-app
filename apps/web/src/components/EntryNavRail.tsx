@@ -47,6 +47,7 @@ interface Props {
   /** Extra controls pinned to the bottom-left of the rail (GitHub star, Discord,
    *  Use-everywhere, settings) — moved out of the top bar so content rises. */
   footerExtra?: ReactNode;
+  footerNotice?: ReactNode;
   /** Solo plan (免费版 / 个人版): only one team, no other workspaces, and
    *  inviting collaborators routes through the upgrade flow. */
   solo?: boolean;
@@ -83,7 +84,7 @@ function NavButton({ active, ariaLabel, tooltip, onClick, testId, children }: Na
   );
 }
 
-export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose, footerExtra, solo = false, credits, onUpgrade, onOpenSettings, canManageWorkspace = true, cloudWorkspace = true }: Props) {
+export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose, footerExtra, footerNotice, solo = false, credits, onUpgrade, onOpenSettings, canManageWorkspace = true, cloudWorkspace = true }: Props) {
   const t = useT();
   const brandLabel = t('app.brand');
   const homeLabel = t('entry.navHome');
@@ -352,7 +353,16 @@ export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose, 
 
         {!cloudWorkspace ? (
           <>
-            <div className="entry-nav-rail__section">更多</div>
+            <div className="entry-nav-rail__section-divider" aria-hidden />
+            <NavButton
+              active={view === 'design-systems'}
+              ariaLabel={t('entry.navDesignSystems')}
+              tooltip={t('entry.navDesignSystems')}
+              onClick={() => selectView('design-systems')}
+              testId="entry-nav-design-systems"
+            >
+              <Icon name="palette" size={18} />
+            </NavButton>
             <NavButton
               active={view === 'plugins'}
               ariaLabel={t('entry.navPlugins')}
@@ -366,6 +376,7 @@ export function EntryNavRail({ view, onViewChange, onNewProject, open, onClose, 
         ) : null}
       </div>
       <div className="entry-nav-rail__footer">
+        {footerNotice}
         <div className="entry-rail-actions">
           {footerExtra}
           <EntryHelpMenu />

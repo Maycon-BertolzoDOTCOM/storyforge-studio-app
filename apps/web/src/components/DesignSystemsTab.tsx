@@ -72,6 +72,91 @@ const SURFACE_PILLS: { value: SurfaceFilter; labelKey: 'examples.modeAll' | 'ds.
   { value: 'audio', labelKey: 'ds.surfaceAudio' },
 ];
 
+const DEMO_TEAM_SYSTEM_IDS = ['demo-ds-commerce', 'demo-ds-mobile'];
+
+const DEMO_DESIGN_SYSTEMS: DesignSystemSummary[] = [
+  {
+    id: 'demo-ds-brand-lab',
+    title: 'Brand Lab System',
+    category: 'Design & Creative',
+    summary: 'Editorial typography, campaign colors, and launch-page components for brand experiments.',
+    swatches: ['#111827', '#f97316', '#fde68a', '#f8fafc'],
+    source: 'user',
+    status: 'draft',
+    isEditable: true,
+  },
+  {
+    id: 'demo-ds-commerce',
+    title: 'Commerce OS',
+    category: 'E-Commerce & Retail',
+    summary: 'Storefront cards, product states, checkout patterns, and merchandising rules.',
+    swatches: ['#18181b', '#ea580c', '#fed7aa', '#ffffff'],
+    source: 'user',
+    status: 'published',
+    isEditable: true,
+  },
+  {
+    id: 'demo-ds-mobile',
+    title: 'Mobile App Kit',
+    category: 'Media & Consumer',
+    summary: 'Native app navigation, cards, bottom sheets, and mobile-first spacing guidance.',
+    swatches: ['#0f172a', '#38bdf8', '#c084fc', '#f8fafc'],
+    source: 'user',
+    status: 'published',
+    isEditable: true,
+  },
+  {
+    id: 'demo-ds-saas',
+    title: 'SaaS Console',
+    category: 'Productivity & SaaS',
+    summary: 'Dense dashboards, settings panels, table systems, and admin workflows.',
+    swatches: ['#0f172a', '#2563eb', '#94a3b8', '#f8fafc'],
+    source: 'user',
+    status: 'draft',
+    isEditable: true,
+  },
+  {
+    id: 'demo-ds-finance',
+    title: 'Finance Clarity',
+    category: 'Fintech & Crypto',
+    summary: 'Trust-focused financial UI with careful status colors, charts, and disclosure patterns.',
+    swatches: ['#052e16', '#16a34a', '#bbf7d0', '#f9fafb'],
+    source: 'user',
+    status: 'draft',
+    isEditable: true,
+  },
+  {
+    id: 'demo-ds-ai-product',
+    title: 'AI Product Preset',
+    category: 'AI & LLM',
+    summary: 'Prompt surfaces, model controls, generation states, and AI disclosure patterns.',
+    swatches: ['#111827', '#7c3aed', '#a5b4fc', '#f5f3ff'],
+    source: 'built-in',
+    status: 'published',
+    surface: 'web',
+  },
+  {
+    id: 'demo-ds-founder',
+    title: 'Founder Story Preset',
+    category: 'Starter',
+    summary: 'Pitch decks, narrative memos, and launch storytelling with restrained editorial styling.',
+    swatches: ['#171717', '#d97706', '#e5e7eb', '#ffffff'],
+    source: 'built-in',
+    status: 'published',
+    surface: 'web',
+  },
+  {
+    id: 'demo-ds-visual-ads',
+    title: 'Campaign Visual Preset',
+    category: 'Design & Creative',
+    summary: 'Social visuals, ad variants, hero art direction, and image-generation constraints.',
+    swatches: ['#581c87', '#ec4899', '#fbcfe8', '#fff7ed'],
+    source: 'built-in',
+    status: 'published',
+    surface: 'image',
+  },
+];
+
 const OFFICIAL_PRESET_DOMAINS: Record<string, string> = {
   airbnb: 'airbnb.com',
   airtable: 'airtable.com',
@@ -289,7 +374,7 @@ export function DesignSystemsTab({
   };
   const [designSystemCollection, setDesignSystemCollection] = useState<DesignSystemCollection>('mine');
   // Personal design systems converted to the team scope (demo-local).
-  const [teamSystemIds, setTeamSystemIds] = useState<Set<string>>(() => new Set());
+  const [teamSystemIds, setTeamSystemIds] = useState<Set<string>>(() => new Set(DEMO_TEAM_SYSTEM_IDS));
   const [surfaceFilter, setSurfaceFilter] = useState<SurfaceFilter>('all');
   const [category, setCategory] = useState<string>('All');
   // The master-detail selection — which row renders in the right preview pane.
@@ -304,20 +389,28 @@ export function DesignSystemsTab({
 
   const q = filter.trim().toLowerCase();
 
+  const allSystems = useMemo(() => {
+    const existing = new Set(systems.map((system) => system.id));
+    return [
+      ...systems,
+      ...DEMO_DESIGN_SYSTEMS.filter((system) => !existing.has(system.id)),
+    ];
+  }, [systems]);
+
   const librarySystems = useMemo(
-    () => systems.filter((system) => !isUserSystem(system)),
-    [systems],
+    () => allSystems.filter((system) => !isUserSystem(system)),
+    [allSystems],
   );
 
   const userSystems = useMemo(
-    () => systems.filter((s) => isUserSystem(s) && !teamSystemIds.has(s.id)),
-    [systems, teamSystemIds],
+    () => allSystems.filter((s) => isUserSystem(s) && !teamSystemIds.has(s.id)),
+    [allSystems, teamSystemIds],
   );
 
   // User systems converted to the team scope.
   const teamSystems = useMemo(
-    () => systems.filter((s) => isUserSystem(s) && teamSystemIds.has(s.id)),
-    [systems, teamSystemIds],
+    () => allSystems.filter((s) => isUserSystem(s) && teamSystemIds.has(s.id)),
+    [allSystems, teamSystemIds],
   );
   const teamSearched = useMemo(
     () => teamSystems.filter((s) => systemMatchesQuery(locale, s, q)),
@@ -364,7 +457,7 @@ export function DesignSystemsTab({
     } else if (category !== 'All' && !categories.includes(category)) {
       setCategory('All');
     }
-  }, [systems, surfaceFilter, surfaceTotals, category, categories]);
+  }, [allSystems, surfaceFilter, surfaceTotals, category, categories]);
 
   // Systems matching the active style category and search text, before the
   // surface filter is applied. Both the surface pill counts and the visible
@@ -416,17 +509,17 @@ export function DesignSystemsTab({
   }, [activeIds]);
 
   // Apply a pending focus once the requested system is present in the catalog.
-  // Runs again whenever `systems` changes, so a focus that arrived before the
+  // Runs again whenever `allSystems` changes, so a focus that arrived before the
   // freshly-finalized brand design system loaded still lands after the refresh.
   // Brand systems are user systems, so make sure the "mine" scope is active.
   useEffect(() => {
     if (!pendingFocus) return;
-    const sys = systems.find((s) => s.id === pendingFocus);
+    const sys = allSystems.find((s) => s.id === pendingFocus);
     if (!sys) return; // not in the loaded list yet — wait for the next refresh
     if (isUserSystem(sys)) setDesignSystemCollection('mine');
     setPreviewId(pendingFocus);
     setPendingFocus(null);
-  }, [pendingFocus, systems]);
+  }, [pendingFocus, allSystems]);
 
   const selectedSystem = useMemo(() => {
     if (!previewId) return null;
@@ -527,7 +620,7 @@ export function DesignSystemsTab({
       succeeded = Boolean(deleted);
       if (!succeeded) errorCode = 'DS_DELETE_RETURNED_FALSE';
       if (succeeded && selectedId === system.id) {
-        const fallback = systems.find((candidate) =>
+        const fallback = allSystems.find((candidate) =>
           candidate.id !== system.id && isUserSystem(candidate),
         );
         if (fallback) onSelect(fallback.id);
@@ -646,7 +739,10 @@ export function DesignSystemsTab({
     return (
       <>
         <header className={styles.pageHeader} data-testid="design-systems-page-header">
-          <h1 className={styles.pageTitle}>{t('entry.navDesignSystems')}</h1>
+          <div className={styles.pageTitleBlock}>
+            <h1 className={styles.pageTitle}>{t('entry.navDesignSystems')}</h1>
+            <p className={styles.pageDescription}>团队可复用的品牌规范、组件规则和视觉资产。</p>
+          </div>
           <div className={styles.headerTools} data-testid="design-systems-header-tools" aria-hidden>
             <div className={`${styles.searchWrap} ${styles.headerSearch}`} data-testid="design-systems-header-search">
               <SearchGlyph className={styles.searchIcon} />
@@ -712,7 +808,10 @@ export function DesignSystemsTab({
         />
       ) : null}
       <header className={styles.pageHeader} data-testid="design-systems-page-header">
-        <h1 className={styles.pageTitle}>{t('entry.navDesignSystems')}</h1>
+        <div className={styles.pageTitleBlock}>
+          <h1 className={styles.pageTitle}>{t('entry.navDesignSystems')}</h1>
+          <p className={styles.pageDescription}>团队可复用的品牌规范、组件规则和视觉资产。</p>
+        </div>
         <div className={styles.headerTools} data-testid="design-systems-header-tools">
           <div className={`${styles.searchWrap} ${styles.headerSearch}`} data-testid="design-systems-header-search">
             <SearchGlyph className={styles.searchIcon} />

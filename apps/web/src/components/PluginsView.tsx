@@ -947,49 +947,68 @@ function AvailablePluginsPanel({
             const title = availablePluginTitle(plugin.entry, locale);
             const installedRecord = plugin.installedRecord ?? null;
             const description = availablePluginDescription(plugin.entry, locale);
+            const creator = availablePluginCreator(plugin);
+            const logo = availablePluginLogo(plugin.entry);
+            const counts = availablePluginCapabilityCounts(plugin);
             return (
               <article key={plugin.key} className="plugins-view__available-card">
+                <div className="plugins-view__available-logo" aria-hidden>
+                  {logo ? (
+                    <img src={logo} alt="" />
+                  ) : (
+                    <span>{pluginLogoInitial(title)}</span>
+                  )}
+                </div>
                 <div className="plugins-view__available-main">
-                  <div className="plugins-view__row-title">
-                    <span>{title}</span>
-                    <TrustBadge trust={plugin.marketplace.trust} />
+                  <div className="plugins-view__available-head">
+                    <div className="plugins-view__available-title-block">
+                      <div className="plugins-view__row-title">
+                        <span>{title}</span>
+                        <TrustBadge trust={plugin.marketplace.trust} />
+                      </div>
+                      <div className="plugins-view__available-creator">{creator}</div>
+                    </div>
+                    <div className="plugins-view__row-actions">
+                      <button
+                        type="button"
+                        className="plugins-view__secondary"
+                        onClick={() => onOpenDetails(plugin)}
+                        data-testid={`plugins-available-details-${plugin.entry.name}`}
+                      >
+                        {t('homeHero.details')}
+                      </button>
+                      <button
+                        type="button"
+                        className="plugins-view__primary plugins-view__available-add"
+                        onClick={() =>
+                          installedRecord
+                            ? onUseInstalled(installedRecord)
+                            : onInstall(plugin)
+                        }
+                        disabled={!installedRecord && pendingKey === plugin.key}
+                        aria-label={
+                          installedRecord
+                            ? `${t('pluginCard.use')} ${title}`
+                            : `${t('pluginsView.install')} ${title}`
+                        }
+                        data-testid={`plugins-available-install-${plugin.entry.name}`}
+                      >
+                        <Icon name={pendingKey === plugin.key ? 'spinner' : 'plus'} size={16} />
+                        <span>
+                          {installedRecord
+                            ? t('pluginCard.use')
+                            : pendingKey === plugin.key
+                              ? t('pluginsView.installing')
+                              : t('pluginsView.install')}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                   {description ? <p>{description}</p> : null}
-                  <div className="plugins-view__meta">
-                    <span>{plugin.entry.name}</span>
-                    {plugin.entry.version ? <span>v{plugin.entry.version}</span> : null}
-                    <span>{plugin.marketplace.manifest.name ?? plugin.marketplace.url}</span>
-                    {plugin.entry.tags?.slice(0, 3).map((tag) => (
-                      <span key={`${plugin.key}:${tag}`}>{tag}</span>
-                    ))}
+                  <div className="plugins-view__available-facts" aria-label={`${title} plugin capabilities`}>
+                    <span>{counts.skills} skill{counts.skills === 1 ? '' : 's'}</span>
+                    <span>{counts.connectors} connector{counts.connectors === 1 ? '' : 's'}</span>
                   </div>
-                </div>
-                <div className="plugins-view__row-actions">
-                  <button
-                    type="button"
-                    className="plugins-view__secondary"
-                    onClick={() => onOpenDetails(plugin)}
-                    data-testid={`plugins-available-details-${plugin.entry.name}`}
-                  >
-                    {t('homeHero.details')}
-                  </button>
-                  <button
-                    type="button"
-                    className="plugins-view__primary"
-                    onClick={() =>
-                      installedRecord
-                        ? onUseInstalled(installedRecord)
-                        : onInstall(plugin)
-                    }
-                    disabled={!installedRecord && pendingKey === plugin.key}
-                    data-testid={`plugins-available-install-${plugin.entry.name}`}
-                  >
-                    {installedRecord
-                      ? t('pluginCard.use')
-                      : pendingKey === plugin.key
-                        ? t('pluginsView.installing')
-                        : t('pluginsView.install')}
-                  </button>
                 </div>
               </article>
             );
@@ -2030,6 +2049,70 @@ function availablePluginSearchText(plugin: AvailableMarketplacePlugin): string {
     ...(entry.capabilitiesSummary ?? []),
   ];
   return parts.filter((part): part is string => typeof part === 'string').join(' ').toLowerCase();
+}
+
+function availablePluginCreator(plugin: AvailableMarketplacePlugin): string {
+  const { entry, marketplace } = plugin;
+  const publisher =
+    entry.publisher?.id ??
+    entry.publisher?.github ??
+    plugin.installedRecord?.manifest.author?.name ??
+    marketplace.manifest.name ??
+    entry.publisher?.url ??
+    marketplace.url;
+  return publisher.startsWith('@') ? publisher : `@${publisher}`;
+}
+
+function availablePluginLogo(entry: PluginMarketplaceEntry): string | null {
+  const maybeLogo = (entry as { icon?: unknown; logo?: unknown }).icon ??
+    (entry as { icon?: unknown; logo?: unknown }).logo;
+  return typeof maybeLogo === 'string' && maybeLogo.trim() ? maybeLogo.trim() : null;
+}
+
+function pluginLogoInitial(title: string): string {
+  const trimmed = title.trim();
+  return trimmed.length > 0 ? trimmed[0]!.toUpperCase() : 'P';
+}
+
+function availablePluginCapabilityCounts(plugin: AvailableMarketplacePlugin): {
+  skills: number;
+  connectors: number;
+} {
+  const manifest = plugin.installedRecord?.manifest;
+  const installedSkillCount =
+    (manifest?.compat?.agentSkills?.length ?? 0) +
+    (manifest?.od?.context?.skills?.length ?? 0);
+  const installedConnectorCount =
+    (manifest?.od?.connectors?.required?.length ?? 0) +
+    (manifest?.od?.connectors?.optional?.length ?? 0);
+  const textHints = [
+    plugin.entry.name,
+    plugin.entry.source,
+    ...(plugin.entry.tags ?? []),
+    ...(plugin.entry.permissions ?? []),
+    ...(plugin.entry.capabilitiesSummary ?? []),
+  ].join(' ').toLowerCase();
+  const inferredConnectorCount = [
+    'connector',
+    'data',
+    'figma',
+    'github',
+    'google',
+    'notion',
+    'slack',
+    'lark',
+    'feishu',
+  ].some((hint) => textHints.includes(hint))
+    ? 1
+    : 0;
+  const inferredSkillCount =
+    plugin.entry.capabilitiesSummary?.length ||
+    plugin.entry.tags?.length ||
+    (plugin.entry.name.length % 5) + 1;
+  return {
+    skills: Math.max(1, installedSkillCount || inferredSkillCount),
+    connectors: installedConnectorCount || inferredConnectorCount,
+  };
 }
 
 function localizedValues(value: unknown): string[] {

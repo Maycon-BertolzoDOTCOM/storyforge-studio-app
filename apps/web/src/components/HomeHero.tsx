@@ -145,6 +145,8 @@ interface Props {
   activeSkillId?: string | null;
   activeSkillTitle?: string | null;
   onClearActiveSkill?: () => void;
+  activeCommandTitle?: string | null;
+  onClearActiveCommand?: () => void;
   selectedPluginContexts?: InstalledPluginRecord[];
   selectedMcpContexts?: McpServerConfig[];
   selectedConnectorContexts?: ConnectorDetail[];
@@ -271,10 +273,12 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     activePluginRecord = null,
     activeSkillId = null,
     activeSkillTitle = null,
+    activeCommandTitle = null,
     activeChipId,
     onClearActivePlugin,
     onClearActiveChip = onClearActivePlugin,
     onClearActiveSkill = () => undefined,
+    onClearActiveCommand = () => undefined,
     selectedPluginContexts = EMPTY_PLUGIN_CONTEXTS,
     contextOnlyPlugins = EMPTY_PLUGIN_CONTEXTS,
     contextOnlyMcpServers = EMPTY_MCP_OPTIONS,
@@ -382,7 +386,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     return stagedFiles.find((file, index) => homeFileKey(file, index) === previewHomeFileKey) ?? null;
   }, [previewHomeFileKey, stagedFiles]);
   const previewHomeFileUrl = previewHomeFileKey ? stagedFilePreviewUrls.get(previewHomeFileKey) ?? null : null;
-  const placeholder = activePluginTitle || activeSkillTitle
+  const placeholder = activePluginTitle || activeSkillTitle || activeCommandTitle
     ? t('homeHero.placeholderActive')
     : t('homeHero.placeholder');
   const mentionActive = Boolean(mentionTrigger);
@@ -416,6 +420,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     prompt.trim().length === 0 &&
     stagedFiles.length === 0 &&
     !activeSkillTitle &&
+    !activeCommandTitle &&
     !activePluginIsExplicit &&
     !mentionActive &&
     carouselScenarios.length > 0;
@@ -1068,6 +1073,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     contextItemCount > 0 ||
     (showActivePluginChip && activePluginTitle) ||
     activeSkillTitle ||
+    activeCommandTitle ||
     stagedFiles.length > 0;
 
   let optionRenderIndex = 0;
@@ -1227,6 +1233,27 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
                   aria-label={t('homeHero.clearActiveSkill')}
                   title={t('homeHero.clearActiveSkill')}
                   data-tooltip={t('homeHero.clearActiveSkill')}
+                >
+                  <Icon name="close" size={9} />
+                </button>
+              </span>
+            ) : null}
+            {activeCommandTitle ? (
+              <span
+                className="home-hero__active-chip home-hero__active-chip--command"
+                data-testid="home-hero-active-command"
+              >
+                <span className="home-hero__active-icon" aria-hidden>
+                  <Icon name="terminal" size={12} />
+                </span>
+                <span className="home-hero__active-label">{activeCommandTitle}</span>
+                <button
+                  type="button"
+                  className="home-hero__active-clear od-tooltip"
+                  onClick={onClearActiveCommand}
+                  aria-label={t('common.close')}
+                  title={t('common.close')}
+                  data-tooltip={t('common.close')}
                 >
                   <Icon name="close" size={9} />
                 </button>

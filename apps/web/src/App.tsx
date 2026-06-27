@@ -2302,6 +2302,18 @@ function AppInner() {
           demoScenario={projectDemoScenario}
         />
         <DemoControlBar
+          page={route.kind === 'home' && route.view === 'onboarding' ? 'onboarding' : 'home'}
+          onPage={(page) => {
+            if (page === 'onboarding') {
+              setProjectDemoScenario('onboarding-new');
+              setProjectDemoPlan('free');
+              window.history.replaceState(null, '', '/onboarding');
+              navigate({ kind: 'home', view: 'onboarding' });
+            } else {
+              setProjectDemoScenario('home');
+              navigate({ kind: 'home', view: 'home' });
+            }
+          }}
           scenario={projectDemoScenario}
           plan={projectDemoPlan}
           onPlan={(plan) => setProjectDemoPlan(projectDemoUseMode === 'local' && plan === 'team' ? 'max' : plan)}

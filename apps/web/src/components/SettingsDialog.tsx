@@ -5059,6 +5059,8 @@ export function SettingsDialog({
         {surface}
         {showSettingsDemoControl ? (
           <DemoControlBar
+            page="home"
+            onPage={() => {}}
             scenario={demoScenario}
             plan={demoPlan}
             useMode={demoUseMode}

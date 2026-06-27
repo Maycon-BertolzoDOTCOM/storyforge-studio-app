@@ -503,7 +503,7 @@ export const zhCN: Dict = {
   'entry.navHome': '主页',
   'entry.navProjects': '项目',
   'entry.navTasks': '自动化',
-  'entry.navPlugins': '插件',
+  'entry.navPlugins': '扩展',
   'entry.navDesignSystems': '设计体系',
   'entry.navBrands': '设计系统',
   'entry.navIntegrations': '集成',

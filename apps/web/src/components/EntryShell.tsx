@@ -158,7 +158,7 @@ import { closeAmrActivationWindowBestEffort } from './AmrLoginPill';
 import { smoothScrollToTop } from '../utils/smoothScrollToTop';
 import { summarizeProjectNameFromPrompt } from '../utils/projectName';
 import { LIBRARY_UI_VISIBLE } from '../features/libraryUi';
-import { DemoControlBar, isInviteScenario, isSoloPlan, isViewerScenario, type DemoScenario, type DemoPlan, type DemoUseMode, type InviteRole } from './DemoControlBar';
+import { DemoControlBar, isInviteScenario, isSoloPlan, isViewerScenario, type DemoScenario, type DemoPage, type DemoPlan, type DemoUseMode, type InviteRole } from './DemoControlBar';
 import { InsufficientCreditsDialog } from './InsufficientCreditsDialog';
 import { InviteAcceptanceFlow } from './InviteAcceptanceFlow';
 import { Confetti } from './Confetti';
@@ -168,20 +168,12 @@ import {
   type ProviderModelsCache,
 } from './providerModelsCache';
 
-// Persist the entry nav-rail open/collapsed state so it survives both a
-// home -> project -> home navigation (EntryShell unmounts on the project
-// route) and a full reload. Without this the rail always reset to its
-// collapsed default on return.
+// Demo shell: the entry nav rail is always open for the workspace review flow.
 const RAIL_OPEN_STORAGE_KEY = 'od.entry.railOpen';
 const LOCAL_MODE_TIP_DISMISSED_KEY = 'od.demo.localModeTip.dismissed';
 
 function readStoredRailOpen(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return window.localStorage.getItem(RAIL_OPEN_STORAGE_KEY) === 'true';
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 function writeStoredRailOpen(open: boolean): void {
@@ -519,12 +511,6 @@ export function EntryShell({
   const route = useRoute();
   const view: EntryViewKind = route.kind === 'home' ? route.view : 'home';
   const [newProjectOpen, setNewProjectOpen] = useState(false);
-  // The entry nav rail is collapsed by default (Manus-style) so the entry
-  // view opens clean and full-width; the panel toggle in the topbar opens it
-  // as an overlay that dismisses on selection / backdrop click / Escape.
-  // Its open/collapsed state is persisted (localStorage) so it survives a
-  // home -> project -> home round trip (EntryShell unmounts on the project
-  // route) and a reload, instead of snapping back to collapsed.
   const [railOpen, setRailOpen] = useState<boolean>(readStoredRailOpen);
   const [demoScenario, setDemoScenario] = useState<DemoScenario>('home');
   const [demoPlan, setDemoPlan] = useState<DemoPlan>('free');
@@ -569,7 +555,7 @@ export function EntryShell({
 
   useEffect(() => {
     if (cloudWorkspace) return;
-    if (view === 'drafts' || view === 'all-projects' || view === 'design-systems' || view === 'members' || view === 'dashboard') {
+    if (view === 'drafts' || view === 'all-projects' || view === 'members' || view === 'dashboard') {
       navigate({ kind: 'home', view: 'home' });
     }
   }, [cloudWorkspace, navigate, view]);
@@ -638,12 +624,44 @@ export function EntryShell({
     changeView('home');
   }
 
-  function tryMarketplacePlugin(plugin: { name: string; description: string }) {
+  function tryMarketplacePlugin(plugin: {
+    id?: string;
+    name: string;
+    description: string;
+    category?: string;
+    marketplaceKind?: 'skill' | 'command';
+    command?: string;
+    commandLabel?: string;
+  }) {
     setHomePromptHandoff({
       id: Date.now(),
       source: 'marketplace-plugin-try',
       focus: true,
-      prompt: `Use ${plugin.name} to ${plugin.description.charAt(0).toLowerCase()}${plugin.description.slice(1)}`,
+      prompt: plugin.marketplaceKind === 'command' && plugin.command
+        ? `${plugin.command} ${plugin.description}`
+        : `Use ${plugin.name} to ${plugin.description.charAt(0).toLowerCase()}${plugin.description.slice(1)}`,
+      ...(plugin.marketplaceKind === 'skill' && plugin.id ? {
+        skill: {
+          id: plugin.id,
+          name: plugin.name,
+          description: plugin.description,
+          category: plugin.category ?? null,
+        },
+      } : {}),
+      ...(plugin.marketplaceKind === 'command' && plugin.id && plugin.command ? {
+        command: {
+          id: plugin.id,
+          label: plugin.commandLabel ?? plugin.command,
+        },
+      } : {}),
+      ...(plugin.marketplaceKind !== 'skill' && plugin.marketplaceKind !== 'command' && plugin.id ? {
+        plugin: {
+          id: plugin.id,
+          name: plugin.name,
+          description: plugin.description,
+          category: plugin.category ?? null,
+        },
+      } : {}),
     });
     changeView('home');
   }
@@ -822,52 +840,6 @@ export function EntryShell({
   // and content can rise up a row.
   const railFooterActions = (
     <>
-      {demoUseMode === 'local' && !localModeTipDismissed ? (
-        <section
-          role="button"
-          tabIndex={0}
-          className="entry-local-mode-tip"
-          onClick={() => {
-            setDemoUseMode('cloud');
-            setDemoScenario('onboarding-new');
-            setDemoPlan('free');
-            setCloudSignInOnly(true);
-            window.history.replaceState(null, '', '/onboarding');
-            navigate({ kind: 'home', view: 'onboarding' });
-          }}
-          onKeyDown={(event) => {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            setDemoUseMode('cloud');
-            setDemoScenario('onboarding-new');
-            setDemoPlan('free');
-            setCloudSignInOnly(true);
-            window.history.replaceState(null, '', '/onboarding');
-            navigate({ kind: 'home', view: 'onboarding' });
-          }}
-          aria-label="切换到 Open Design Cloud 登录注册"
-        >
-          <button
-            type="button"
-            className="entry-local-mode-tip__close"
-            onClick={(event) => {
-              event.stopPropagation();
-              setLocalModeTipDismissed(true);
-              writeLocalModeTipDismissed(true);
-            }}
-            aria-label="关闭 CLI / BYOK 使用方式说明"
-          >
-            <Icon name="close" size={12} />
-          </button>
-          <div className="entry-local-mode-tip__head">
-            <span className="entry-local-mode-tip__icon" aria-hidden>
-              <Icon name="terminal" size={13} />
-            </span>
-            <strong>CLI / BYOK</strong>
-          </div>
-          <p>本地或自带 Key 模式不启用团队协作；点击切到 Cloud 登录注册。</p>
-        </section>
-      ) : null}
       <GithubStarBadge />
       <a
         className="entry-discord-badge od-tooltip"
@@ -904,9 +876,69 @@ export function EntryShell({
     </>
   );
 
+  const railFooterNotice = demoUseMode === 'local' && !localModeTipDismissed ? (
+    <section
+      role="button"
+      tabIndex={0}
+      className="entry-local-mode-tip"
+      onClick={() => {
+        setDemoUseMode('cloud');
+        setDemoScenario('onboarding-new');
+        setDemoPlan('free');
+        setCloudSignInOnly(true);
+        window.history.replaceState(null, '', '/onboarding');
+        navigate({ kind: 'home', view: 'onboarding' });
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        setDemoUseMode('cloud');
+        setDemoScenario('onboarding-new');
+        setDemoPlan('free');
+        setCloudSignInOnly(true);
+        window.history.replaceState(null, '', '/onboarding');
+        navigate({ kind: 'home', view: 'onboarding' });
+      }}
+      aria-label="切换到 Open Design Cloud 登录注册"
+    >
+      <button
+        type="button"
+        className="entry-local-mode-tip__close"
+        onClick={(event) => {
+          event.stopPropagation();
+          setLocalModeTipDismissed(true);
+          writeLocalModeTipDismissed(true);
+        }}
+        aria-label="关闭 Open Design Cloud 版说明"
+      >
+        <Icon name="close" size={12} />
+      </button>
+      <div className="entry-local-mode-tip__head">
+        <span className="entry-local-mode-tip__icon" aria-hidden>
+          <Icon name="terminal" size={13} />
+        </span>
+        <strong>Open Design Cloud 版</strong>
+      </div>
+      <p>点击登录使用 Open Design Cloud，即可享受云端协作</p>
+    </section>
+  ) : null;
+
 
   const demoBar = (
     <DemoControlBar
+      page={view === 'onboarding' ? 'onboarding' : 'home'}
+      onPage={(page: DemoPage) => {
+        setCloudSignInOnly(false);
+        if (page === 'onboarding') {
+          setDemoScenario('onboarding-new');
+          setDemoPlan('free');
+          window.history.replaceState(null, '', '/onboarding');
+          navigate({ kind: 'home', view: 'onboarding' });
+        } else {
+          setDemoScenario('home');
+          navigate({ kind: 'home', view: 'home' });
+        }
+      }}
       scenario={demoScenario}
       plan={demoPlan}
       onPlan={(plan) => setDemoPlan(demoUseMode === 'local' && plan === 'team' ? 'max' : plan)}
@@ -916,7 +948,7 @@ export function EntryShell({
         if (mode === 'local' && demoPlan === 'team') {
           setDemoPlan('max');
         }
-        if (mode === 'local' && (view === 'drafts' || view === 'all-projects' || view === 'design-systems' || view === 'members' || view === 'dashboard')) {
+        if (mode === 'local' && (view === 'drafts' || view === 'all-projects' || view === 'members' || view === 'dashboard')) {
           navigate({ kind: 'home', view: 'home' });
         }
       }}
@@ -1073,6 +1105,7 @@ export function EntryShell({
           open={railOpen}
           onClose={() => setRailOpen(false)}
           footerExtra={railFooterActions}
+          footerNotice={railFooterNotice}
           solo={isSolo}
           credits={demoCredits}
           onUpgrade={() => setLowCreditsOpen(true)}
@@ -1082,16 +1115,6 @@ export function EntryShell({
         />
         <main className="entry-main entry-main--scroll" ref={entryMainScrollRef}>
           <div className="entry-main__topbar">
-            <button
-              type="button"
-              className="entry-rail-toggle"
-              onClick={() => setRailOpen((prev) => !prev)}
-              aria-label={t('entry.navExpand')}
-              aria-expanded={railOpen}
-              data-testid="entry-rail-toggle"
-            >
-              <Icon name="panel-left" size={20} />
-            </button>
             {null /* demo: hide model switcher from topbar */}
           </div>
           <div
@@ -1184,6 +1207,7 @@ export function EntryShell({
                   designSystems={designSystems}
                   limit={1000}
                   heading="草稿"
+                  description="自己创建的项目，仅自己可见"
                   space="drafts"
                   onOpen={onOpenProject}
                   onDelete={onDeleteProject}
@@ -1207,6 +1231,7 @@ export function EntryShell({
                   designSystems={designSystems}
                   limit={1000}
                   heading="全部项目"
+                  description="团队所有人的项目"
                   space="team"
                   onOpen={onOpenProject}
                   onDelete={onDeleteProject}

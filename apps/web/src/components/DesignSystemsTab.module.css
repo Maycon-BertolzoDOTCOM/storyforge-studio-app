@@ -14,9 +14,15 @@
 
 .pageHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
+}
+
+.pageTitleBlock {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
 .pageTitle {
@@ -26,6 +32,13 @@
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+.pageDescription {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .headerTools {

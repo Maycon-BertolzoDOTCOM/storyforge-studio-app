@@ -28,6 +28,7 @@ export function isViewerScenario(s: DemoScenario): boolean {
 // Max → Team (and Free → any paid tier).
 export type DemoPlan = 'free' | 'plus' | 'pro' | 'max' | 'team';
 export type DemoUseMode = 'cloud' | 'local';
+export type DemoPage = 'home' | 'onboarding';
 
 export function isSoloPlan(p: DemoPlan): boolean {
   return p !== 'team';
@@ -36,6 +37,8 @@ export function isSoloPlan(p: DemoPlan): boolean {
 export type InviteRole = 'editor' | 'admin' | 'viewer';
 
 interface Props {
+  page: DemoPage;
+  onPage: (page: DemoPage) => void;
   scenario: DemoScenario;
   onScenario: (s: DemoScenario) => void;
   plan: DemoPlan;
@@ -51,27 +54,26 @@ interface Props {
   onEditDemo?: () => void;
 }
 
-const MAIN_CHIPS: Array<{ id: DemoScenario; label: string }> = [
-  { id: 'home',           label: '主页' },
-  { id: 'onboarding-new', label: '新注册' },
+const PAGE_CHIPS: Array<{ id: DemoPage; label: string }> = [
+  { id: 'onboarding', label: 'Onboarding' },
+  { id: 'home', label: '主页' },
 ];
 
-const INVITE_CHIPS: Array<{ role: InviteRole; label: string }> = [
-  { role: 'editor', label: 'Editor' },
+const SCENARIO_CHIPS: Array<{ id: DemoScenario; label: string }> = [
+  { id: 'onboarding-new', label: '新用户注册（默认 owner）' },
 ];
 
 const ROLE_CHIPS: Array<{ id: DemoScenario; label: string; invite?: boolean }> = [
-  { id: 'invite-editor', label: 'Editor', invite: true },
-  { id: 'invite-admin',  label: 'Manager' },
-  { id: 'invite-viewer', label: 'Viewer' },
+  { id: 'invite-editor', label: '接受邀请网页端', invite: true },
+  { id: 'invite-viewer', label: '接受邀请客户端', invite: true },
 ];
 
 const PLAN_CHIPS: Array<{ id: DemoPlan; label: string }> = [
-  { id: 'free', label: '免费版' },
+  { id: 'free', label: 'free' },
   { id: 'plus', label: 'Plus' },
   { id: 'pro',  label: 'Pro' },
   { id: 'max',  label: 'Max' },
-  { id: 'team', label: '团队版' },
+  { id: 'team', label: 'team' },
 ];
 
 const USE_MODE_CHIPS: Array<{ id: DemoUseMode; label: string; desc: string }> = [
@@ -100,18 +102,22 @@ function writeCollapsedState(collapsed: boolean): void {
 }
 
 function labelForScenario(scenario: DemoScenario): string {
-  return [...MAIN_CHIPS, ...ROLE_CHIPS].find((chip) => chip.id === scenario)?.label ?? '主页';
+  return [...SCENARIO_CHIPS, ...ROLE_CHIPS].find((chip) => chip.id === scenario)?.label ?? '主页';
+}
+
+function labelForPage(page: DemoPage): string {
+  return PAGE_CHIPS.find((chip) => chip.id === page)?.label ?? '主页';
 }
 
 function labelForPlan(plan: DemoPlan): string {
-  return PLAN_CHIPS.find((chip) => chip.id === plan)?.label ?? '免费版';
+  return PLAN_CHIPS.find((chip) => chip.id === plan)?.label ?? 'free';
 }
 
 function labelForUseMode(useMode: DemoUseMode): string {
   return USE_MODE_CHIPS.find((chip) => chip.id === useMode)?.label ?? 'Cloud';
 }
 
-function Bar({ scenario, onScenario, plan, onPlan, useMode, onUseMode, onLowCredits, onAcceptInvite, onQueueDemo, onEditDemo }: Props) {
+function Bar({ page, onPage, scenario, onScenario, plan, onPlan, useMode, onUseMode, onLowCredits, onAcceptInvite, onQueueDemo, onEditDemo }: Props) {
   const [collapsed, setCollapsed] = useState(readCollapsedState);
   const availablePlans = useMode === 'local'
     ? PLAN_CHIPS.filter((chip) => chip.id !== 'team')
@@ -133,7 +139,7 @@ function Bar({ scenario, onScenario, plan, onPlan, useMode, onUseMode, onLowCred
         >
           <span className="demo-bar__summary-dot" aria-hidden />
           <span className="demo-bar__summary-title">Control</span>
-          <span className="demo-bar__summary-meta">{labelForScenario(scenario)} · {labelForUseMode(useMode)} · {labelForPlan(plan)}</span>
+          <span className="demo-bar__summary-meta">{labelForPage(page)} · {labelForUseMode(useMode)} · {labelForPlan(plan)}</span>
           <span className="demo-bar__summary-caret" aria-hidden>⌃</span>
         </button>
       </div>
@@ -172,10 +178,26 @@ function Bar({ scenario, onScenario, plan, onPlan, useMode, onUseMode, onLowCred
           </div>
         </div>
 
-        <div className="demo-bar__group demo-bar__group--scenario">
-          <span className="demo-bar__label">场景</span>
+        <div className="demo-bar__group">
+          <span className="demo-bar__label">页面</span>
           <div className="demo-bar__chips">
-            {MAIN_CHIPS.map((c) => (
+            {PAGE_CHIPS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`demo-bar__chip${page === c.id ? ' is-active' : ''}`}
+                onClick={() => onPage(c.id)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="demo-bar__group demo-bar__group--scenario">
+          <span className="demo-bar__label">路径</span>
+          <div className="demo-bar__chips">
+            {SCENARIO_CHIPS.map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -192,7 +214,7 @@ function Bar({ scenario, onScenario, plan, onPlan, useMode, onUseMode, onLowCred
                 className={`demo-bar__chip${scenario === c.id ? ' is-active' : ''}`}
                 onClick={() => onScenario(c.id)}
               >
-                {c.invite ? '接受邀请 · ' : ''}{c.label}
+                {c.label}
               </button>
             ))}
           </div>
@@ -233,24 +255,6 @@ function Bar({ scenario, onScenario, plan, onPlan, useMode, onUseMode, onLowCred
           </div>
         </div>
 
-        <div className="demo-bar__divider" />
-
-        {/* ── 被邀请：接受邀请落地流程（角色 = 邀请时设定） ── */}
-        <div className="demo-bar__group">
-          <span className="demo-bar__label">邀请</span>
-          <div className="demo-bar__chips">
-            {INVITE_CHIPS.map((c) => (
-              <button
-                key={c.role}
-                type="button"
-                className="demo-bar__chip"
-                onClick={() => onAcceptInvite(c.role)}
-              >
-                接受邀请 · {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

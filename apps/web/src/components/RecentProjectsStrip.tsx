@@ -16,6 +16,7 @@ import type {
   Project,
   ProjectDisplayStatus,
   ProjectFile,
+  ProjectKind,
   PromptTemplateSummary,
 } from '../types';
 import { Icon } from './Icon';
@@ -35,6 +36,7 @@ interface Props {
   loading?: boolean;
   /** Section heading (defaults to the Canva-style "最近使用"). */
   heading?: string;
+  description?: string;
   onOpen: (id: string) => void;
   onViewAll?: () => void;
   onDelete?: (id: string) => Promise<boolean | void> | boolean | void;
@@ -62,6 +64,38 @@ const MOCK_MEMBERS = [
   { name: '刘洋', initial: '刘', img: '/team-avatars/a7.png' },
 ];
 const MOCK_TIMES = ['刚刚', '12 分钟前', '1 小时前', '3 小时前', '昨天', '2 天前', '上周', '3 周前'];
+const DEMO_PROJECT_NAMES = [
+  'Brand Portal Refresh',
+  'Mobile Banking Concept',
+  'AI Writing Landing Page',
+  'Creator Dashboard Audit',
+  'E-commerce Product Detail',
+  'Design Ops Weekly Deck',
+  'Healthcare Intake Flow',
+  'Fintech Onboarding Kit',
+  'SaaS Pricing Experiment',
+  'Travel App Homepage',
+  'Analytics Command Center',
+  'Membership Checkout Flow',
+  'Developer Docs Redesign',
+  'Campaign Microsite',
+  'Consumer App Settings',
+  'Team Workspace Overview',
+  'Retail Loyalty Prototype',
+  'Enterprise Admin Console',
+  'Conference Event Site',
+  'Restaurant Booking Flow',
+  'Education Course Landing',
+  'Marketplace Seller Center',
+  'AI Image Studio',
+  'Portfolio Editorial Site',
+  'Subscription Paywall Test',
+  'Design System Migration',
+  'Customer Support Console',
+  'Real Estate Listing Page',
+  'Video Tool Launch Deck',
+  'Community Growth Report',
+];
 
 const ME = { name: '我', initial: '我', img: '/team-avatars/a2.png' };
 type SpaceKind = 'recent' | 'drafts' | 'team';
@@ -86,15 +120,53 @@ function mockCardMeta(index: number, space: SpaceKind) {
   return { ownerName: '我', ownerInitial: '我', ownerImg: ME.img, badge, time };
 }
 
+function withDemoProjects(projects: Project[], space: SpaceKind, targetCount: number): Project[] {
+  if (targetCount <= 0 || projects.length >= targetCount) return projects;
+  const existingIds = new Set(projects.map((project) => project.id));
+  const now = Date.now();
+  const demoProjects: Project[] = [];
+  for (let index = 0; demoProjects.length < targetCount - projects.length; index += 1) {
+    const name = DEMO_PROJECT_NAMES[index % DEMO_PROJECT_NAMES.length] ?? `Design Demo ${index + 1}`;
+    const id = `demo-${space}-${index + 1}`;
+    if (existingIds.has(id)) continue;
+    const kindCycle: ProjectKind[] = [
+      'prototype',
+      'deck',
+      'template',
+      'image',
+      'other',
+    ];
+    const kind = kindCycle[index % kindCycle.length] ?? 'prototype';
+    demoProjects.push({
+      id,
+      name,
+      skillId: null,
+      designSystemId: null,
+      createdAt: now - (index + projects.length + 1) * 86_400_000,
+      updatedAt: now - (index + projects.length + 1) * 3_600_000,
+      status: { value: 'succeeded', updatedAt: now - index * 3_600_000 },
+      metadata: {
+        kind,
+        fidelity: index % 4 === 0 ? 'wireframe' : 'high-fidelity',
+        platform: index % 3 === 0 ? 'mobile-ios' : 'responsive',
+        nameSource: 'user',
+      },
+    });
+  }
+  return [...projects, ...demoProjects];
+}
+
 const DECK_PREVIEW_WIDTH = 1280;
 const DECK_PREVIEW_HEIGHT = 720;
 const deckCoverCache = new Map<string, string>();
 const deckCoverInflight = new Map<string, Promise<string>>();
+const DEMO_PROJECT_TARGET_COUNT = 30;
 
 export function RecentProjectsStrip({
   projects,
   designSystems = EMPTY_DESIGN_SYSTEMS,
   heading = '最近使用',
+  description,
   space = 'recent',
   onOpen,
   onDelete,
@@ -120,8 +192,12 @@ export function RecentProjectsStrip({
     () => [...projects].sort((a, b) => b.updatedAt - a.updatedAt),
     [projects],
   );
+  const displayProjects = useMemo(
+    () => withDemoProjects(sorted, space, Math.min(limit, DEMO_PROJECT_TARGET_COUNT)),
+    [limit, sorted, space],
+  );
   // Canva-style "Recently used": all recent items, capped by `limit`.
-  const visibleProjects = useMemo(() => sorted.slice(0, limit), [sorted, limit]);
+  const visibleProjects = useMemo(() => displayProjects.slice(0, limit), [displayProjects, limit]);
   const [coverByProject, setCoverByProject] = useState<
     Record<string, { kind: 'html' | 'image' | 'video' | 'logo'; name: string } | null>
   >({});
@@ -155,6 +231,7 @@ export function RecentProjectsStrip({
     void Promise.all(
       visibleProjects.map(async (project) => {
         const designSystemProject = isDesignSystemProject(project);
+        if (project.id.startsWith('demo-')) return [project.id, null] as const;
         if (project.metadata?.entryFile && !designSystemProject) return [project.id, null] as const;
         let files: Awaited<ReturnType<typeof fetchProjectFiles>>;
         try {
@@ -218,7 +295,7 @@ export function RecentProjectsStrip({
   // above the plugin gallery. We also skip rendering during the
   // load window so the section doesn't pop in and then collapse;
   // the prompt hero is enough chrome on its own.
-  if (sorted.length === 0) {
+  if (visibleProjects.length === 0) {
     return null;
   }
 
@@ -257,7 +334,12 @@ export function RecentProjectsStrip({
   return (
     <section className="recent-projects" data-testid="recent-projects-strip">
       <header className="recent-projects__head">
-        <h2 className="recent-projects__heading">{heading}</h2>
+        <div className="recent-projects__title-block">
+          <h2 className="recent-projects__heading">{heading}</h2>
+          {description ? (
+            <p className="recent-projects__description">{description}</p>
+          ) : null}
+        </div>
         <div className="recent-projects__controls">
           {collaborationEnabled && space === 'team' ? (
             <button
@@ -367,15 +449,7 @@ export function RecentProjectsStrip({
                   ) : (
                     <span className="recent-projects__card-glyph">{cover.initial}</span>
                   )}
-                  {collaborationEnabled && meta.badge === 'private' ? (
-                    <span className="recent-projects__card-badge">
-                      <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="5" y="11" width="14" height="9" rx="2" />
-                        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-                      </svg>
-                      私人
-                    </span>
-                  ) : collaborationEnabled && meta.badge === 'shared' ? (
+                  {collaborationEnabled && meta.badge === 'shared' ? (
                     <span className="recent-projects__card-badge recent-projects__card-badge--shared">
                       <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="9" cy="8" r="3" />

@@ -503,7 +503,7 @@ export const en: Dict = {
   'entry.navHome': 'Home',
   'entry.navProjects': 'Projects',
   'entry.navTasks': 'Automations',
-  'entry.navPlugins': 'Plugins',
+  'entry.navPlugins': 'Extensions',
   'entry.navDesignSystems': 'Design systems',
   'entry.navBrands': 'Design System',
   'entry.navIntegrations': 'Integrations',

@@ -393,6 +393,11 @@
   background: color-mix(in srgb, var(--bg-subtle) 88%, var(--accent-tint));
   color: var(--text-strong);
 }
+.home-hero__active-chip--command {
+  background: color-mix(in srgb, var(--green, #16a34a) 10%, var(--bg-panel));
+  border-color: color-mix(in srgb, var(--green, #16a34a) 22%, var(--border-soft));
+  color: color-mix(in srgb, var(--green, #16a34a) 78%, var(--text-strong));
+}
 .home-hero__active-chip--context {
   background: color-mix(in srgb, var(--bg-panel) 90%, var(--bg-subtle));
   color: var(--text);

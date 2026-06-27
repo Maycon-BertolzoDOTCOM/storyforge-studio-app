@@ -23,6 +23,22 @@ export type HomePromptHandoff =
     prompt: string;
     focus: boolean;
     source: 'marketplace-plugin-try';
+    skill?: {
+      id: string;
+      name: string;
+      description: string;
+      category?: string | null;
+    };
+    plugin?: {
+      id: string;
+      name: string;
+      description: string;
+      category?: string | null;
+    };
+    command?: {
+      id: string;
+      label: string;
+    };
   };
 
 export const PLUGIN_AUTHORING_GOAL_INPUT = 'pluginGoal';

@@ -456,6 +456,7 @@ export function HomeView({
   } | null>(null);
   const [sessionMode, setSessionMode] = useState<ChatSessionMode>('design');
   const [activeSkill, setActiveSkill] = useState<SkillSummary | null>(null);
+  const [activeCommand, setActiveCommand] = useState<{ id: string; label: string } | null>(null);
   const [selectedPluginContexts, setSelectedPluginContexts] = useState<SelectedPluginContext[]>([]);
   const [selectedMcpContexts, setSelectedMcpContexts] = useState<SelectedMcpContext[]>([]);
   const [selectedConnectorContexts, setSelectedConnectorContexts] = useState<SelectedConnectorContext[]>([]);
@@ -734,8 +735,9 @@ export function HomeView({
     consumedHandoffIdRef.current = promptHandoff.id;
     setError(null);
     if (promptHandoff.source === 'marketplace-plugin-try') {
-      setActive(null);
-      setActiveSkill(null);
+      setActive(promptHandoff.plugin ? marketplacePluginToActive(promptHandoff.plugin) : null);
+      setActiveSkill(promptHandoff.skill ? marketplaceSkillToSummary(promptHandoff.skill) : null);
+      setActiveCommand(promptHandoff.command ?? null);
       setSelectedPluginContexts([]);
       setSelectedMcpContexts([]);
       setSelectedConnectorContexts([]);
@@ -749,6 +751,7 @@ export function HomeView({
     }
 
     if (promptHandoff.source === 'plugin-use') {
+      setActiveCommand(null);
       setPendingPluginUseHandoff({
         pluginId: promptHandoff.pluginId,
         action: promptHandoff.action ?? 'use',
@@ -763,6 +766,7 @@ export function HomeView({
 
     setActive(null);
     setActiveSkill(null);
+    setActiveCommand(null);
     setSelectedPluginContexts([]);
     setSelectedMcpContexts([]);
     setSelectedConnectorContexts([]);
@@ -1485,6 +1489,7 @@ export function HomeView({
     setFallbackProjectMetadata(null);
     setPendingApplyId(null);
     setPendingChipId(null);
+    setActiveCommand(null);
     setPrompt('');
     setPromptEditedByUser(false);
   }
@@ -1496,6 +1501,7 @@ export function HomeView({
     setFallbackProjectMetadata(null);
     setPendingApplyId(null);
     setPendingChipId(null);
+    setActiveCommand(null);
     setError(null);
     setPromptEditedByUser(prompt.trim().length > 0);
     focusPromptAtEnd();
@@ -1509,6 +1515,7 @@ export function HomeView({
     setFallbackProjectKind(null);
     setFallbackProjectMetadata(null);
     setActiveSkill(skill);
+    setActiveCommand(null);
     setError(null);
     const replacement = nextPrompt ?? localizeSkillPrompt(locale, skill) ?? '';
     if (replacement.trim().length > 0) {
@@ -1994,11 +2001,13 @@ export function HomeView({
         activePluginRecord={active?.record ?? null}
         activeSkillId={activeSkill?.id ?? null}
         activeSkillTitle={activeSkill ? localizeSkillName(locale, activeSkill) : null}
+        activeCommandTitle={activeCommand?.label ?? null}
         activeChipId={active?.chipId ?? null}
         showActivePluginChip={showActivePluginChip}
         onClearActivePlugin={clearActivePlugin}
         onClearActiveChip={clearActiveChipSelection}
         onClearActiveSkill={() => setActiveSkill(null)}
+        onClearActiveCommand={() => setActiveCommand(null)}
         selectedPluginContexts={selectedPluginContexts.map((item) => item.record)}
         selectedMcpContexts={selectedMcpContexts.map((item) => item.server)}
         selectedConnectorContexts={selectedConnectorContexts.map((item) => item.connector)}
@@ -2288,6 +2297,89 @@ function projectKindForSkill(skill: SkillSummary | null): ProjectKind | null {
   if (skill.mode === 'video' || skill.surface === 'video') return 'video';
   if (skill.mode === 'audio' || skill.surface === 'audio') return 'audio';
   return 'other';
+}
+
+function marketplaceSkillToSummary(skill: {
+  id: string;
+  name: string;
+  description: string;
+  category?: string | null;
+}): SkillSummary {
+  return {
+    id: skill.id,
+    name: skill.name,
+    description: skill.description,
+    triggers: [],
+    mode: 'prototype',
+    category: skill.category ?? null,
+    source: 'user',
+    previewType: 'text',
+    designSystemRequired: false,
+    defaultFor: [],
+    upstream: null,
+    hasBody: true,
+    examplePrompt: '',
+    aggregatesExamples: false,
+  };
+}
+
+function marketplacePluginToActive(plugin: {
+  id: string;
+  name: string;
+  description: string;
+  category?: string | null;
+}): ActivePlugin {
+  const now = Date.now();
+  const pluginSlug = plugin.id.replace(/[^a-z0-9._-]+/gi, '-').toLowerCase();
+  const record: InstalledPluginRecord = {
+    id: plugin.id,
+    title: plugin.name,
+    version: 'demo',
+    sourceKind: 'marketplace',
+    source: `marketplace:${plugin.id}`,
+    sourceMarketplaceEntryName: plugin.id,
+    marketplaceTrust: 'official',
+    trust: 'trusted',
+    capabilitiesGranted: [],
+    manifest: {
+      specVersion: '1.0.0',
+      name: pluginSlug || 'marketplace-plugin',
+      title: plugin.name,
+      version: 'demo',
+      description: plugin.description,
+      author: { name: 'Open Design' },
+      tags: plugin.category ? [plugin.category] : [],
+      od: {
+        kind: 'bundle',
+        taskKind: 'new-generation',
+        mode: 'prototype',
+        useCase: {
+          query: `Use ${plugin.name} to ${plugin.description.charAt(0).toLowerCase()}${plugin.description.slice(1)}`,
+        },
+      },
+    },
+    fsPath: '',
+    installedAt: now,
+    updatedAt: now,
+  };
+
+  return {
+    record,
+    result: null,
+    inputs: {},
+    inputFields: [],
+    inputsValid: true,
+    queryTemplate: null,
+    lastRenderedPrompt: null,
+    projectKind: 'prototype',
+    chipId: null,
+    mediaSurface: null,
+    projectMetadata: null,
+    editableInputNames: [],
+    preserveInputFields: false,
+    suppressPromptSync: false,
+    explicitPick: true,
+  };
 }
 
 function defaultPluginIdForChip(chipId: string | null): string | null {
