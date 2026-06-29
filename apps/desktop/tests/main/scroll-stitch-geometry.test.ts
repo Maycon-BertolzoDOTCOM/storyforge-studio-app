@@ -11,6 +11,7 @@ import {
   measureAuthoredSlideBox,
   paginateViewportBand,
   readDomToPptxBundleFile,
+  runDomToPptx,
   scrollStitchGeometry,
   scrollStitchRowOffset,
   shouldCapturePageAsJpeg,
@@ -111,6 +112,14 @@ describe('readDomToPptxBundleFile', () => {
     } finally {
       await rm(root, { force: true, recursive: true });
     }
+  });
+});
+
+describe('runDomToPptx background stabilization', () => {
+  test('keeps gradient or image-backed slide backgrounds on the injected layer', () => {
+    const source = runDomToPptx.toString();
+    expect(source).toContain('bg.style.setProperty("background-image", background.image');
+    expect(source).not.toContain('bg.style.setProperty("background-image", "none"');
   });
 });
 

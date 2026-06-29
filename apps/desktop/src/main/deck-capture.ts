@@ -924,7 +924,7 @@ function showAllSlides(slideSelector: string): number {
 // Serialized into the page: runs the injected dom-to-pptx engine over every real
 // slide and returns the .pptx bytes as base64 (or an error). Fonts are
 // auto-detected + embedded; SVGs stay vector (editable in PowerPoint).
-async function runDomToPptx(slideSelector: string): Promise<{ b64?: string; error?: string }> {
+export async function runDomToPptx(slideSelector: string): Promise<{ b64?: string; error?: string }> {
   function isTransparentColor(input: string): boolean {
     const value = input.trim().toLowerCase();
     return value === "" || value === "transparent" || value === "rgba(0, 0, 0, 0)";
@@ -989,7 +989,7 @@ async function runDomToPptx(slideSelector: string): Promise<{ b64?: string; erro
       bg.style.setProperty("z-index", "0", "important");
       bg.style.setProperty("pointer-events", "none", "important");
       bg.style.setProperty("background-color", background.color, "important");
-      bg.style.setProperty("background-image", "none", "important");
+      bg.style.setProperty("background-image", background.image, "important");
       bg.style.setProperty("background-position", background.position, "important");
       bg.style.setProperty("background-size", background.size, "important");
       bg.style.setProperty("background-repeat", background.repeat, "important");
