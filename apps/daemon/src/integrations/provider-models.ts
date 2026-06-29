@@ -18,6 +18,14 @@ type ProviderModelsInput = ProviderModelsRequest & {
 };
 
 const PROVIDER_MODELS_TIMEOUT_MS = 12_000;
+const BEDROCK_MODEL_OPTIONS: ProviderModelOption[] = [
+  { id: 'anthropic.claude-3-5-sonnet-20241022-v2:0', label: 'Claude 3.5 Sonnet v2' },
+  { id: 'anthropic.claude-3-5-haiku-20241022-v1:0', label: 'Claude 3.5 Haiku' },
+  { id: 'anthropic.claude-3-haiku-20240307-v1:0', label: 'Claude 3 Haiku' },
+  { id: 'amazon.nova-pro-v1:0', label: 'Amazon Nova Pro' },
+  { id: 'amazon.nova-lite-v1:0', label: 'Amazon Nova Lite' },
+  { id: 'amazon.nova-micro-v1:0', label: 'Amazon Nova Micro' },
+];
 
 function appendVersionedApiPath(baseUrl: string, suffix: string): string {
   const url = new URL(baseUrl);
@@ -212,6 +220,15 @@ export async function listProviderModels(
   input: ProviderModelsInput,
 ): Promise<ProviderModelsResponse> {
   const start = Date.now();
+  if (input.protocol === 'bedrock') {
+    return {
+      ok: true,
+      kind: 'success',
+      latencyMs: Date.now() - start,
+      models: BEDROCK_MODEL_OPTIONS,
+      detail: 'AWS Bedrock uses a static seed until AWS credential-backed discovery is available.',
+    };
+  }
   if (input.protocol === 'azure') {
     return {
       ok: false,

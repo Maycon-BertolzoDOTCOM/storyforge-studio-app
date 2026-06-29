@@ -73,7 +73,6 @@ import type { KnownProvider } from '../state/config';
 import { navigate as navigateRoute, useRoute } from '../router';
 import {
   API_PROTOCOL_LABELS,
-  API_PROTOCOL_TABS,
   isFixedOriginGateway,
   resolveFixedOriginBaseUrl,
   SUGGESTED_MODELS_BY_PROTOCOL,
@@ -195,6 +194,15 @@ export type SettingsSection =
   // navigate() call so openSettings only owns dialog-bound sections.
   | 'library'
   | 'about';
+
+interface ByokProviderPreset {
+  id: string;
+  title: string;
+  protocol: ApiProtocol;
+  baseUrl: string;
+  model: string;
+  custom?: boolean;
+}
 
 // One-shot focus hint when opening the dialog. `'amr'` scrolls the AMR agent
 // card into view on the execution section and plays a highlight (plus a
@@ -344,12 +352,6 @@ type TestState =
   | { status: 'running' }
   | { status: 'done'; result: ConnectionTestResponse };
 
-const GATEWAY_API_PROTOCOLS = new Set<ApiProtocol>([
-  'ollama',
-  'senseaudio',
-  'aihubmix',
-]);
-
 // Providers whose live model fetch IS their full account catalogue, so the
 // per-option "from your account" badge and the "Loaded N from your account"
 // hint are noise — every option carries the same badge and distinguishes
@@ -357,6 +359,7 @@ const GATEWAY_API_PROTOCOLS = new Set<ApiProtocol>([
 // Add a protocol here when the same applies to another provider.
 const ACCOUNT_MODEL_SOURCE_LABEL_HIDDEN = new Set<ApiProtocol>([
   'aihubmix',
+  'bedrock',
 ]);
 
 function hidesAccountModelSourceLabel(protocol: ApiProtocol): boolean {
@@ -442,7 +445,7 @@ export function canFetchProviderModels(
   return (
     protocol !== 'azure' &&
     protocol !== 'ollama' &&
-    Boolean(config.apiKey.trim()) &&
+    (protocol === 'bedrock' || Boolean(config.apiKey.trim())) &&
     Boolean(config.baseUrl.trim()) &&
     isValidApiBaseUrl(config.baseUrl)
   );
@@ -467,8 +470,9 @@ function missingByokModelFetchFields(
   const missing: ByokRequiredField[] = [];
   // AIHubMix publishes its catalogue on a public endpoint, so its model list
   // loads without a key (the user shouldn't need to paste a key just to browse
-  // models). Every other protocol fetches /v1/models behind the key.
-  if (protocol !== 'aihubmix' && !config.apiKey.trim()) missing.push('api_key');
+  // models). Bedrock uses a static model seed until AWS auth lands in BYOK.
+  // Every other protocol fetches /v1/models behind the key.
+  if (protocol !== 'aihubmix' && protocol !== 'bedrock' && !config.apiKey.trim()) missing.push('api_key');
   if (!config.baseUrl.trim()) missing.push('base_url');
   return missing;
 }
@@ -583,6 +587,10 @@ const API_KEY_CONSOLE_LINKS: Record<ApiProtocol, { host: string; url: string }> 
   aihubmix: {
     host: 'aihubmix.com',
     url: 'https://aihubmix.com/?aff=JA1e',
+  },
+  bedrock: {
+    host: 'aws.amazon.com',
+    url: 'https://aws.amazon.com/bedrock/',
   },
 };
 
@@ -1640,11 +1648,23 @@ export function SettingsDialog({
       return { ...c, mode };
     });
   };
-  const setApiProtocol = (protocol: ApiProtocol) => {
+  const setByokProvider = (provider: ByokProviderPreset) => {
     setApiModelCustomEditing(false);
     apiModelUserSelectedRef.current = false;
-    focusByokRequiredFieldAfterProtocolSwitchRef.current = true;
-    setCfg((c) => switchApiProtocolConfig(c, protocol));
+    focusByokRequiredFieldAfterProtocolSwitchRef.current = !provider.custom;
+    setCfg((current) => {
+      const switched = switchApiProtocolConfig(current, provider.protocol);
+      if (provider.custom) {
+        return updateCurrentApiProtocolConfig(switched, {
+          apiProviderBaseUrl: null,
+        });
+      }
+      return updateCurrentApiProtocolConfig(switched, {
+        baseUrl: provider.baseUrl,
+        model: provider.model,
+        apiProviderBaseUrl: provider.baseUrl,
+      });
+    });
   };
   const updateApiConfig = (patch: Partial<ApiProtocolConfig>) =>
     setCfg((c) => updateCurrentApiProtocolConfig(c, patch));
@@ -2299,18 +2319,187 @@ export function SettingsDialog({
 
   const apiProtocol = cfg.apiProtocol ?? 'anthropic';
   const apiKeyConsoleLink = API_KEY_CONSOLE_LINKS[apiProtocol];
-  const apiProtocolTabGroups = [
+  const byokProviderPresets: ReadonlyArray<ByokProviderPreset> = [
     {
-      id: 'protocols',
-      label: t('settings.protocolGroupProtocols'),
-      tabs: API_PROTOCOL_TABS.filter((tab) => !GATEWAY_API_PROTOCOLS.has(tab.id)),
+      id: 'anthropic',
+      title: 'Anthropic',
+      protocol: 'anthropic',
+      baseUrl: 'https://api.anthropic.com',
+      model: 'claude-sonnet-4-5',
     },
     {
-      id: 'gateways',
-      label: t('settings.protocolGroupGateways'),
-      tabs: API_PROTOCOL_TABS.filter((tab) => GATEWAY_API_PROTOCOLS.has(tab.id)),
+      id: 'openai',
+      title: 'OpenAI',
+      protocol: 'openai',
+      baseUrl: 'https://api.openai.com/v1',
+      model: 'gpt-4o',
+    },
+    {
+      id: 'google-ai-studio',
+      title: 'Google AI Studio',
+      protocol: 'google',
+      baseUrl: 'https://generativelanguage.googleapis.com',
+      model: 'gemini-3.5-flash',
+    },
+    {
+      id: 'ollama',
+      title: 'Ollama',
+      protocol: 'ollama',
+      baseUrl: 'http://localhost:11434',
+      model: 'gemma3:4b',
+    },
+    {
+      id: 'siliconflow',
+      title: '硅基流动',
+      protocol: 'openai',
+      baseUrl: 'https://api.siliconflow.cn/v1',
+      model: 'deepseek-ai/DeepSeek-V3.1',
+    },
+    {
+      id: 'ppio',
+      title: 'PPIO',
+      protocol: 'openai',
+      baseUrl: 'https://api.ppinfra.com/v3/openai',
+      model: 'deepseek/deepseek-v3.1',
+    },
+    {
+      id: 'nvidia',
+      title: 'NVIDIA',
+      protocol: 'openai',
+      baseUrl: 'https://integrate.api.nvidia.com/v1',
+      model: 'openai/gpt-oss-120b',
+    },
+    {
+      id: 'stepfun',
+      title: 'StepFun',
+      protocol: 'openai',
+      baseUrl: 'https://api.stepfun.ai/v1',
+      model: 'step-2-mini',
+    },
+    {
+      id: 'bedrock',
+      title: 'AWS Bedrock',
+      protocol: 'bedrock',
+      baseUrl: 'https://bedrock-runtime.us-east-1.amazonaws.com',
+      model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+    },
+    {
+      id: 'deepseek',
+      title: 'DeepSeek',
+      protocol: 'openai',
+      baseUrl: 'https://api.deepseek.com',
+      model: 'deepseek-chat',
+    },
+    {
+      id: 'openrouter',
+      title: 'OpenRouter',
+      protocol: 'openai',
+      baseUrl: 'https://openrouter.ai/api/v1',
+      model: 'anthropic/claude-3.7-sonnet',
+    },
+    {
+      id: 'mistral',
+      title: 'Mistral AI',
+      protocol: 'openai',
+      baseUrl: 'https://api.mistral.ai/v1',
+      model: 'mistral-large-latest',
+    },
+    {
+      id: 'xai',
+      title: 'xAI',
+      protocol: 'openai',
+      baseUrl: 'https://api.x.ai/v1',
+      model: 'grok-4',
+    },
+    {
+      id: 'together',
+      title: 'Together AI',
+      protocol: 'openai',
+      baseUrl: 'https://api.together.xyz/v1',
+      model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+    },
+    {
+      id: 'huggingface',
+      title: 'Hugging Face',
+      protocol: 'openai',
+      baseUrl: 'https://router.huggingface.co/v1',
+      model: 'openai/gpt-oss-120b',
+    },
+    {
+      id: 'qwen',
+      title: '千问',
+      protocol: 'openai',
+      baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+      model: 'qwen-plus',
+    },
+    {
+      id: 'volcengine',
+      title: '火山引擎',
+      protocol: 'openai',
+      baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+      model: 'doubao-seed-1-6',
+    },
+    {
+      id: 'qianfan',
+      title: '百度千帆',
+      protocol: 'openai',
+      baseUrl: 'https://qianfan.baidubce.com/v2',
+      model: 'ernie-4.5-turbo-128k',
+    },
+    {
+      id: 'vllm',
+      title: 'vLLM',
+      protocol: 'openai',
+      baseUrl: 'http://127.0.0.1:8000/v1',
+      model: 'model',
+    },
+    {
+      id: 'mimo',
+      title: '小米 MiMo',
+      protocol: 'openai',
+      baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+      model: 'mimo-v2.5-pro',
+    },
+    {
+      id: 'minimax',
+      title: 'MiniMax',
+      protocol: 'anthropic',
+      baseUrl: 'https://api.minimaxi.com/anthropic',
+      model: 'MiniMax-M2.7-highspeed',
+    },
+    {
+      id: 'moonshot',
+      title: 'Moonshot',
+      protocol: 'openai',
+      baseUrl: 'https://api.moonshot.cn/v1',
+      model: 'kimi-k2-0711-preview',
+    },
+    {
+      id: 'zhipu',
+      title: '智谱',
+      protocol: 'openai',
+      baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+      model: 'glm-4.6',
+    },
+    {
+      id: 'custom',
+      title: t('settings.customProvider'),
+      protocol: apiProtocol,
+      baseUrl: cfg.baseUrl,
+      model: cfg.model,
+      custom: true,
     },
   ];
+  const customByokProvider = byokProviderPresets[byokProviderPresets.length - 1];
+  const selectedByokProvider =
+    cfg.apiProviderBaseUrl === null
+      ? customByokProvider
+      : byokProviderPresets.find(
+        (provider) =>
+          !provider.custom &&
+          provider.protocol === apiProtocol &&
+          provider.baseUrl === cfg.apiProviderBaseUrl,
+      ) ?? customByokProvider;
   const baseUrlValid = isValidApiBaseUrl(cfg.baseUrl);
   const baseUrlInvalid = Boolean(cfg.baseUrl.trim() && !baseUrlValid);
   const byokRequiredLabel = (field: ByokRequiredField): string => {
@@ -2598,6 +2787,25 @@ export function SettingsDialog({
     selectedProvider,
     cfg.baseUrl,
   );
+  const byokProviderConfigured = (provider: ByokProviderPreset): boolean => {
+    if (provider.custom) {
+      return canRunProviderConnectionTest(currentApiProtocolConfig(cfg), {
+        requiresApiKey: byokRequiresApiKey,
+      }) && isValidApiBaseUrl(cfg.baseUrl);
+    }
+    const entry = provider.protocol === apiProtocol
+      ? currentApiProtocolConfig(cfg)
+      : cfg.apiProtocolConfigs?.[provider.protocol];
+    if (!entry || entry.baseUrl !== provider.baseUrl) return false;
+    const knownProvider = KNOWN_PROVIDERS.find((item) => item.baseUrl === provider.baseUrl);
+    return canRunProviderConnectionTest(entry, {
+      requiresApiKey: byokProviderRequiresApiKey(
+        provider.protocol,
+        knownProvider,
+        entry.baseUrl,
+      ),
+    }) && isValidApiBaseUrl(entry.baseUrl);
+  };
   const byokFirstPartyBaseUrl = useMemo(
     () => byokFirstPartyBaseUrlHint(
       apiProtocol,
@@ -3536,25 +3744,28 @@ export function SettingsDialog({
               </div>
               {cfg.mode === 'api' ? (
                 <div
-                  className="protocol-chips"
+                  className="protocol-chips protocol-chips--providers"
                   role="tablist"
-                  aria-label={t('settings.protocolAria')}
+                  aria-label={t('settings.quickFillProvider')}
                 >
-                  {apiProtocolTabGroups.map((group) => (
-                    <div className="protocol-chip-group" key={group.id}>
-                      <span className="protocol-chip-group-label">
-                        {group.label}
-                      </span>
-                      <div className="protocol-chip-group-options">
-                        {group.tabs.map((tab) => (
+                  <div className="protocol-chip-group protocol-chip-group--providers">
+                    <div className="protocol-chip-group-options">
+                      {byokProviderPresets.map((provider) => {
+                        const active = selectedByokProvider?.id === provider.id;
+                        const configured = byokProviderConfigured(provider);
+                        const statusLabel = configured
+                          ? t('settings.mediaProviderConfigured')
+                          : t('settings.mediaProviderUnset');
+                        return (
                           <button
-                            key={tab.id}
+                            key={provider.id}
                             type="button"
                             role="tab"
-                            aria-selected={apiProtocol === tab.id}
-                            className={'protocol-chip' + (apiProtocol === tab.id ? ' active' : '')}
+                            aria-selected={active}
+                            className={'protocol-chip protocol-chip--provider' + (active ? ' active' : '')}
+                            title={`${provider.title} - ${statusLabel}`}
                             onClick={() => {
-                              const byokProviderId = byokProtocolToTracking(tab.id);
+                              const byokProviderId = byokProtocolToTracking(provider.protocol);
                               if (byokProviderId) {
                                 trackSettingsByokProviderOptionClick(analytics.track, {
                                   page_name: 'settings',
@@ -3562,18 +3773,25 @@ export function SettingsDialog({
                                   element: 'byok_provider_option',
                                   action: 'select_byok_provider',
                                   provider_id: byokProviderId,
-                                  is_selected: apiProtocol === tab.id,
+                                  is_selected: active,
                                 });
                               }
-                              setApiProtocol(tab.id);
+                              if (!active) {
+                                setByokProvider(provider);
+                              }
                             }}
                           >
-                            {tab.title}
+                            <span
+                              className={`protocol-chip-status${configured ? ' is-configured' : ' is-unset'}`}
+                              aria-hidden
+                            />
+                            <span>{provider.title}</span>
+                            <VisuallyHidden>{statusLabel}</VisuallyHidden>
                           </button>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  </div>
                 </div>
               ) : null}
           {cfg.mode === 'daemon' ? (
