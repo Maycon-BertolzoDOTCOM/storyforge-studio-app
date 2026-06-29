@@ -413,8 +413,10 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
     buildProjectArchive,
     buildBatchArchive,
     buildDesktopPdfExportInput,
+    buildDesktopArtifactExportInput,
     desktopPdfExporter,
     desktopSlideRenderer,
+    desktopArtifactExporter,
     daemonUrlRef,
     sanitizeArchiveFilename,
   } = ctx.exports;
@@ -460,19 +462,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
     projectId: string,
     body: any,
   ) {
-    if (typeof desktopSlideRenderer !== 'function') {
-      return sendApiError(
-        res,
-        501,
-        'UPSTREAM_UNAVAILABLE',
-        'screenshot export is only available in the desktop runtime',
-      );
-    }
-    // Scratch dir under the daemon data root: the desktop renderer writes the
-    // rendered images here and returns their file paths, so large images never
-    // cross the JSON IPC channel as base64. The daemon owns it and deletes it in
-    // the finally below. Derived from RUNTIME_DATA_DIR per the data-dir contract.
-    const renderOutputDir = path.join(RUNTIME_DATA_DIR_CANONICAL, 'export-render', randomId());
+    let renderOutputDir: string | null = null;
     try {
       const { fileName, title, index, imageFormat, width, height } = body || {};
       if (typeof fileName !== 'string' || fileName.length === 0) {
@@ -487,6 +477,85 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
       if (height != null && (typeof height !== 'number' || !Number.isFinite(height) || height <= 0)) {
         return sendApiError(res, 400, 'BAD_REQUEST', 'height must be a positive number');
       }
+      if (typeof desktopSlideRenderer !== 'function') {
+        if ((format === 'pdf' || format === 'image') && typeof desktopArtifactExporter === 'function') {
+          const input = await buildDesktopArtifactExportInput({
+            daemonUrl: daemonUrlRef.current,
+            fileName,
+            format,
+            metadata: getProject(db, projectId)?.metadata ?? null,
+            projectId,
+            projectsRoot: PROJECTS_DIR,
+            ...(typeof title === 'string' ? { title } : {}),
+            ...(typeof body?.deck === 'boolean' ? { deck: body.deck } : {}),
+            ...(format === 'image' && imageFormat === 'jpeg' ? { imageFormat: 'jpeg' } : {}),
+            ...(typeof width === 'number' ? { width } : {}),
+            ...(typeof height === 'number' ? { height } : {}),
+          });
+          let result;
+          try {
+            result = await desktopArtifactExporter(input);
+          } catch (err: any) {
+            return sendApiError(
+              res,
+              502,
+              'UPSTREAM_UNAVAILABLE',
+              `desktop renderer unavailable: ${err?.message || String(err)}`,
+            );
+          }
+          if (!result.ok || typeof result.path !== 'string') {
+            return sendApiError(
+              res,
+              502,
+              'UPSTREAM_UNAVAILABLE',
+              result.error || 'desktop renderer returned no artifact',
+            );
+          }
+          try {
+            const buffer = await fs.promises.readFile(result.path);
+            const contentType =
+              result.mime ||
+              (format === 'pdf'
+                ? 'application/pdf'
+                : imageFormat === 'jpeg'
+                  ? 'image/jpeg'
+                  : 'image/png');
+            const ext =
+              format === 'pdf'
+                ? 'pdf'
+                : contentType.includes('jpeg') || contentType.includes('jpg')
+                  ? 'jpg'
+                  : 'png';
+            const titleBase =
+              typeof title === 'string' && title.trim().length > 0
+                ? title.trim()
+                : path.basename(fileName, path.extname(fileName)) || 'artifact';
+            const filename = `${sanitizeArchiveFilename(titleBase) || 'artifact'}.${ext}`;
+            const asciiFallback =
+              filename.replace(/[^\x20-\x7e]/g, '_').replace(/"/g, '_') || `artifact.${ext}`;
+            res.setHeader('Content-Type', contentType);
+            res.setHeader(
+              'Content-Disposition',
+              `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+            );
+            return res.send(buffer);
+          } finally {
+            await fs.promises.rm(result.path, { force: true }).catch(() => {});
+          }
+        }
+        return sendApiError(
+          res,
+          501,
+          'UPSTREAM_UNAVAILABLE',
+          'screenshot export is only available in the desktop runtime',
+        );
+      }
+      // Scratch dir under the daemon data root: the desktop renderer writes the
+      // rendered images here and returns their file paths, so large images never
+      // cross the JSON IPC channel as base64. The daemon owns it and deletes it in
+      // the finally below. Derived from RUNTIME_DATA_DIR per the data-dir contract.
+      const outputDir = path.join(RUNTIME_DATA_DIR_CANONICAL, 'export-render', randomId());
+      renderOutputDir = outputDir;
       const renderOptions: BuildDeckRenderInputOptions = {
         daemonUrl: daemonUrlRef.current,
         fileName,
@@ -494,7 +563,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         // thread it through so readProjectFile resolves the real file instead of
         // 404ing on <data>/projects/:id.
         metadata: getProject(db, projectId)?.metadata ?? null,
-        outputDir: renderOutputDir,
+        outputDir,
         projectId,
         projectsRoot: PROJECTS_DIR,
       };
@@ -724,7 +793,9 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
     } finally {
       // Remove the scratch render dir regardless of success — these files are
       // pure transient handoff, never served or persisted.
-      await fs.promises.rm(renderOutputDir, { recursive: true, force: true }).catch(() => {});
+      if (renderOutputDir) {
+        await fs.promises.rm(renderOutputDir, { recursive: true, force: true }).catch(() => {});
+      }
     }
   }
   // Streams a ZIP of the project's on-disk tree so the "Download as .zip"

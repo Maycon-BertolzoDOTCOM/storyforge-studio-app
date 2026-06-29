@@ -50,6 +50,7 @@ export function buildExportCliResultEnvelope(options: {
   return {
     ok: true,
     path: options.path,
+    out: options.path,
     bytes: options.bytes,
     format: options.format,
   };

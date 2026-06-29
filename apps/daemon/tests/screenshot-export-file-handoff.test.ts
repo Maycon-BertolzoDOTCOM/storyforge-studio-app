@@ -5,7 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import type { DesktopRenderSlidesInput, DesktopRenderSlidesResult } from '@open-design/sidecar-proto';
+import type {
+  DesktopExportArtifactInput,
+  DesktopExportArtifactResult,
+  DesktopRenderSlidesInput,
+  DesktopRenderSlidesResult,
+} from '@open-design/sidecar-proto';
 import { startServer } from '../src/server.js';
 
 // ---------------------------------------------------------------------------
@@ -304,6 +309,44 @@ describe('screenshot export desktop renderer file handoff', () => {
     });
     expect(res.status).toBe(400);
     expect(seenDirs.length).toBe(before);
+  });
+
+  it('falls back to the legacy artifact exporter for image export when slide rendering is unavailable', async () => {
+    const seenLegacyInputs: DesktopExportArtifactInput[] = [];
+    const legacyExporter = async (
+      input: DesktopExportArtifactInput,
+    ): Promise<DesktopExportArtifactResult> => {
+      seenLegacyInputs.push(input);
+      const dir = path.join(os.tmpdir(), `od-legacy-image-export-${Date.now()}`);
+      await mkdir(dir, { recursive: true });
+      const file = path.join(dir, 'artifact.png');
+      await writeFile(file, PNG);
+      return { ok: true, path: file, mime: 'image/png', bytes: PNG.length };
+    };
+    const srv = (await startServer({
+      port: 0,
+      returnServer: true,
+      desktopSlideRenderer: null,
+      desktopArtifactExporter: legacyExporter,
+    })) as { url: string; server: http.Server };
+    try {
+      const res = await fetch(`${srv.url}/api/projects/${projectId}/export/image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: 'index.html', deck: false }),
+      });
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toContain('image/png');
+      const bytes = Buffer.from(await res.arrayBuffer());
+      expect(bytes.subarray(0, 4).toString('hex')).toBe('89504e47');
+      expect(seenLegacyInputs.at(-1)).toMatchObject({
+        deck: false,
+        format: 'image',
+        title: 'index',
+      });
+    } finally {
+      await new Promise<void>((resolve) => srv.server.close(() => resolve()));
+    }
   });
 
   it('deletes the scratch render dir after the export completes', async () => {

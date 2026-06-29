@@ -66,7 +66,7 @@ import type {
 
 const execFileAsync = promisify(execFile);
 const WIN_ARCHIVE_CACHE_VERSION = 3;
-const WIN_ELECTRON_BUILDER_DIR_CACHE_VERSION = 6;
+const WIN_ELECTRON_BUILDER_DIR_CACHE_VERSION = 7;
 const WIN_NSIS_BASE_PAYLOAD_INPUT_HASH_CACHE_VERSION = 2;
 
 async function hashWinNsisInstallerImplementation(config: ToolPackConfig): Promise<string> {
@@ -508,10 +508,12 @@ export async function runElectronBuilder(
       }
     : {};
   const afterPackHook = config.webOutputMode === "standalone" ? await hashPath(winResources.webStandaloneAfterPackHook) : null;
+  const domToPptxBundle = await hashPath(domToPptxBundleResource(config).from);
   const winIcon = await hashPath(winResources.icon);
   const electronBuilderKeyInput = {
     afterPackHook,
     cacheVersion: WIN_ELECTRON_BUILDER_DIR_CACHE_VERSION,
+    domToPptxBundle,
     asar: ELECTRON_BUILDER_ASAR,
     buildDependenciesFromSource: ELECTRON_BUILDER_BUILD_DEPENDENCIES_FROM_SOURCE,
     electronBuilderCliPath: config.electronBuilderCliPath,

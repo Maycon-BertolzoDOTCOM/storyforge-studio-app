@@ -35,7 +35,7 @@ describe('exportRoutePath', () => {
 });
 
 describe('buildExportCliResultEnvelope', () => {
-  it('uses the shared ExportResult path field for JSON output', () => {
+  it('emits path plus the deprecated out alias for JSON output', () => {
     const result = buildExportCliResultEnvelope({
       path: '/tmp/deck.pptx',
       bytes: 123,
@@ -44,10 +44,10 @@ describe('buildExportCliResultEnvelope', () => {
     expect(result).toEqual({
       ok: true,
       path: '/tmp/deck.pptx',
+      out: '/tmp/deck.pptx',
       bytes: 123,
       format: 'pptx',
     });
-    expect(result).not.toHaveProperty('out');
   });
 });
 

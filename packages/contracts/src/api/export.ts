@@ -45,6 +45,8 @@ export interface ExportResult {
   format: ExportFormat;
   /** Absolute path the file was written to (CLI `--out` / desktop Save dialog). */
   path?: string;
+  /** Deprecated CLI JSON alias for `path`; kept for existing automation. */
+  out?: string;
   /** Byte size of the produced file when known. */
   bytes?: number;
   /** The user dismissed the desktop Save dialog — treated as a successful no-op. */
