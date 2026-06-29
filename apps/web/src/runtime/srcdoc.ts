@@ -2410,24 +2410,26 @@ function injectDeckBridge(doc: string, initialSlideIndex = 0): string {
     if (!data || data.type !== 'od:slide') return;
     var before = odSlideMessageBeforeIndex;
     odSlideMessageBeforeIndex = -1;
-    var current = activeIndex(slides());
-    if (data.action === 'go' && typeof data.index === 'number') {
-      if (current === data.index) {
+    setTimeout(function(){
+      var current = activeIndex(slides());
+      if (data.action === 'go' && typeof data.index === 'number') {
+        if (current === data.index) {
+          report();
+          return;
+        }
+        gotoIndex(data.index);
+        return;
+      }
+      // Some generated decks ship their own od:slide listener. Let every
+      // listener for this message event settle first; then, if the artifact
+      // already moved from the captured index, report instead of applying the
+      // same command again.
+      if (before >= 0 && current !== before) {
         report();
         return;
       }
-      gotoIndex(data.index);
-      return;
-    }
-    // Some generated decks ship their own od:slide listener. Because their
-    // listener is registered before this bridge, it may already have consumed
-    // the same host command by the time we run. In that case report the new
-    // state instead of applying the command again.
-    if (before >= 0 && current !== before) {
-      report();
-      return;
-    }
-    go(data.action);
+      go(data.action);
+    }, 0);
   });
   function ownDeckButton(id, action){
     var btn = document.getElementById(id);
