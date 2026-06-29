@@ -464,11 +464,10 @@ export function InlineModelSwitcher({
     ? amrStatus?.account?.plan?.trim() || null
     : null;
   const amrBalanceLabel = amrLoggedIn
-    ? (
-        amrWalletSnapshot?.status === 'available'
-          ? formatVelaBalanceUsd(amrWalletSnapshot.balanceUsd)
-          : null
-      ) ?? formatVelaBalanceUsd(amrStatus?.account?.balanceUsd)
+    ? formatVelaBalanceUsd(amrStatus?.account?.balanceUsd) ??
+      (amrWalletSnapshot?.status === 'available'
+        ? formatVelaBalanceUsd(amrWalletSnapshot.balanceUsd)
+        : null)
     : null;
   const amrBalanceDisplayLabel = amrLoggedIn
     ? amrBalanceLabel ??

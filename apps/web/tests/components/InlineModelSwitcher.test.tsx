@@ -366,6 +366,70 @@ describe('InlineModelSwitcher AMR row', () => {
     });
   });
 
+  it('prefers fresh signed-in status balance over an older wallet snapshot', async () => {
+    let statusCalls = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url === '/api/integrations/vela/status') {
+        statusCalls += 1;
+        return new Response(
+          JSON.stringify(
+            statusCalls === 1
+              ? {
+                  loggedIn: true,
+                  profile: 'test',
+                  user: null,
+                  configPath: '/Users/test/.amr/config.json',
+                }
+              : {
+                  loggedIn: true,
+                  profile: 'test',
+                  user: null,
+                  account: { plan: 'plus', balanceUsd: '42.0000' },
+                  configPath: '/Users/test/.amr/config.json',
+                },
+          ),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url === '/api/integrations/vela/wallet') {
+        return new Response(
+          JSON.stringify({
+            status: 'available',
+            profile: 'test',
+            user: null,
+            balanceUsd: '0.1000',
+            updatedAt: '2026-06-23T06:05:18.782Z',
+            fetchedAt: '2026-06-23T06:05:19.000Z',
+            stale: false,
+            source: 'daemon_cache',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderSwitcher();
+
+    fireEvent.click(screen.getByTestId('inline-model-switcher-chip'));
+    let popover = screen.getByTestId('inline-model-switcher-popover');
+    await waitFor(() => {
+      expect(within(popover).getByText('$0.10')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByTestId('inline-model-switcher-chip'));
+    expect(screen.queryByTestId('inline-model-switcher-popover')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('inline-model-switcher-chip'));
+    popover = screen.getByTestId('inline-model-switcher-popover');
+    await waitFor(() => {
+      expect(within(popover).getByText('$42.00')).toBeTruthy();
+    });
+    expect(within(popover).queryByText('$0.10')).toBeNull();
+  });
+
   it('filters fetched BYOK provider models in the Home switcher search box', async () => {
     renderSwitcher(
       {
