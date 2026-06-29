@@ -3,6 +3,7 @@ import { relative, resolve } from 'node:path';
 import {
   assert, chmodSync, claude, codex, deepseek, gemini, join, minimalAgentDef, mkdirSync, mkdtempSync, resolveAgentExecutable, rmSync, tmpdir, withEnvSnapshot, withPlatform, writeFileSync,
 } from './helpers/test-helpers.js';
+import { codexAppBundleCandidates } from '../../src/runtimes/executables.js';
 
 const fsTest = process.platform === 'win32' ? test.skip : test;
 
@@ -653,3 +654,57 @@ fsTest(
     }
   },
 );
+
+// The fixtures above all set OD_AGENT_HOME, which scopes the probe to the
+// override home and skips the system `/Applications` path. The PR's main
+// real-world case is the no-override `/Applications/Codex.app` install, so
+// assert the candidate list directly: `/Applications/...` must be present and
+// ranked first (a path typo or ordering regression here would silently miss
+// the common case while every OD_AGENT_HOME-scoped test still passes).
+fsTest(
+  'codexAppBundleCandidates probes /Applications first when no home override is set',
+  () => {
+    return withEnvSnapshot(
+      ['OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR'],
+      () =>
+        withPlatform('darwin', () => {
+          delete process.env.OD_AGENT_HOME;
+          delete process.env.OD_SANDBOX_MODE;
+          delete process.env.OD_DATA_DIR;
+
+          const candidates = codexAppBundleCandidates();
+          const bundleSuffix = join(
+            'Applications',
+            'Codex.app',
+            'Contents',
+            'Resources',
+            'codex',
+          );
+          const [system, userScoped] = candidates;
+
+          assert.equal(candidates.length, 2);
+          assert.equal(
+            system,
+            join('/', bundleSuffix),
+            `expected the system /Applications bundle first; got ${JSON.stringify(candidates)}`,
+          );
+          // The user-scoped (~/Applications) candidate must also be present, be
+          // a distinct absolute path, and not be the system one.
+          assert.ok(
+            userScoped !== undefined &&
+              userScoped !== system &&
+              userScoped.endsWith(`/${bundleSuffix}`),
+            `expected a distinct ~/Applications candidate; got ${JSON.stringify(candidates)}`,
+          );
+        }),
+    );
+  },
+);
+
+// On non-darwin platforms there is no app bundle to probe, so the candidate
+// list must be empty regardless of home override.
+fsTest('codexAppBundleCandidates is empty on non-darwin platforms', () => {
+  return withPlatform('linux', () => {
+    assert.deepEqual(codexAppBundleCandidates(), []);
+  });
+});

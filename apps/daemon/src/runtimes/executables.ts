@@ -286,7 +286,12 @@ function codexAppBundleExecutable(def: RuntimeAgentDef): string | null {
   return null;
 }
 
-function codexAppBundleCandidates(): string[] {
+// Exported for tests: the no-override `/Applications` branch can't be exercised
+// through `resolveAgentExecutable` deterministically (it would depend on the
+// host actually having `/Applications/Codex.app`), so tests assert the built
+// candidate list directly to catch a path typo or ordering regression in the
+// common real-world install case.
+export function codexAppBundleCandidates(): string[] {
   // The Codex app bundle is a macOS-only concept; other platforms have no
   // analogous standalone install of the `codex` CLI to probe for here.
   if (process.platform !== 'darwin') return [];
