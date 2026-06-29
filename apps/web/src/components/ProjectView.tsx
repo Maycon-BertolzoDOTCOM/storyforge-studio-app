@@ -4336,6 +4336,20 @@ export function ProjectView({
           model: config.model,
           reasoning: null,
           ...(byokOpenCodeProvider ? { byokProvider: byokOpenCodeProvider } : {}),
+          byokMediaDefaults: {
+            ...(byokImageModelOverride.trim()
+              ? { imageModel: byokImageModelOverride.trim() }
+              : {}),
+            ...(byokVideoModelOverride.trim()
+              ? { videoModel: byokVideoModelOverride.trim() }
+              : {}),
+            ...(byokSpeechModelOverride.trim()
+              ? { speechModel: byokSpeechModelOverride.trim() }
+              : {}),
+            ...(byokSpeechVoiceOverride.trim()
+              ? { speechVoice: byokSpeechVoiceOverride.trim() }
+              : {}),
+          },
           titleGeneration: isFirstTurn ? { enabled: true } : undefined,
           locale,
           analyticsHints: {

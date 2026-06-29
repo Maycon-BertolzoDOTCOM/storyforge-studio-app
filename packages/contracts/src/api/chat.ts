@@ -34,6 +34,13 @@ export interface ByokChatProviderConfig {
   apiVersion?: string;
 }
 
+export interface ByokMediaDefaults {
+  imageModel?: string;
+  videoModel?: string;
+  speechModel?: string;
+  speechVoice?: string;
+}
+
 export interface ChatRequest {
   agentId: string;
   message: string;
@@ -63,6 +70,11 @@ export interface ChatRequest {
    * child env + OPENCODE_CONFIG_CONTENT for the current run only.
    */
   byokProvider?: ByokChatProviderConfig;
+  /**
+   * Run-scoped BYOK media defaults selected in the chat UI. The daemon uses
+   * these to guide OpenCode-backed `od media generate` calls for this run only.
+   */
+  byokMediaDefaults?: ByokMediaDefaults;
   /** UI locale selected by the client, used by prompt composition for user-visible generated UI. */
   locale?: string;
   research?: ResearchOptions;

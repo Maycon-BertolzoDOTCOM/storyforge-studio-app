@@ -11,10 +11,10 @@ describe('assistantRoleLabel', () => {
       role: 'assistant',
       content: '',
       agentId: 'openai-api',
-      agentName: 'OpenAI API · google/gemma-4-e4b',
+      agentName: 'OpenAI API via OpenCode · google/gemma-4-e4b',
     };
 
-    expect(assistantRoleLabel(message, t)).toBe('OpenAI API · google/gemma-4-e4b');
+    expect(assistantRoleLabel(message, t)).toBe('OpenAI API via OpenCode · google/gemma-4-e4b');
   });
 
   it('maps API protocol ids to readable labels when no display name is saved', () => {

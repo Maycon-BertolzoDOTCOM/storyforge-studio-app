@@ -284,6 +284,7 @@ export interface DaemonStreamOptions {
   model?: string | null;
   reasoning?: string | null;
   byokProvider?: ByokChatProviderConfig;
+  byokMediaDefaults?: ChatRequest['byokMediaDefaults'];
   research?: ResearchOptions;
   context?: RunContextSelection;
   appliedPluginSnapshotId?: string | null;
@@ -579,6 +580,7 @@ export async function streamViaDaemon({
   model,
   reasoning,
   byokProvider,
+  byokMediaDefaults,
   research,
   context,
   appliedPluginSnapshotId,
@@ -616,6 +618,7 @@ export async function streamViaDaemon({
     model: model ?? null,
     reasoning: reasoning ?? null,
     ...(byokProvider ? { byokProvider } : {}),
+    ...(byokMediaDefaults ? { byokMediaDefaults } : {}),
     locale,
     ...(appliedPluginSnapshotId ? { appliedPluginSnapshotId } : {}),
     ...(context ? { context } : {}),
