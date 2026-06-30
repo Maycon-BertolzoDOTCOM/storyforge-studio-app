@@ -847,7 +847,10 @@ async function openDesignFile(page: Page, fileName: string) {
   }
 
   if (tabFound) {
-    await fileTabButton.click();
+    const isSelected = await fileTabButton.getAttribute('aria-selected');
+    if (isSelected !== 'true') {
+      await fileTabButton.click();
+    }
   } else {
     const fileButton = page.getByRole('button', { name: filePattern }).first();
     await fileButton.click();

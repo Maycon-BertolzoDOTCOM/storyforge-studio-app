@@ -25,12 +25,12 @@ export async function openNewProjectModal(page: Page): Promise<void> {
   await projectsNav.evaluate((element: HTMLElement) => element.click());
   const projectsView = page.getByTestId('entry-view-projects');
   await expect(projectsView).toBeVisible();
-  const toolbarButton = projectsView.getByTestId('designs-new-project');
-  if (await toolbarButton.isVisible().catch(() => false)) {
-    await toolbarButton.click();
-  } else {
-    await projectsView.getByTestId('designs-empty-new-project').click();
-  }
+  const createButton = projectsView
+    .getByTestId('designs-new-project')
+    .or(projectsView.getByTestId('designs-empty-new-project'))
+    .first();
+  await expect(createButton).toBeVisible();
+  await createButton.click();
   await expect(page.getByTestId('new-project-modal')).toBeVisible();
   await expect(page.getByTestId('new-project-panel')).toBeVisible();
 }
