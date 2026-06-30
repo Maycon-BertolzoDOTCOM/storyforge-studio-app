@@ -896,6 +896,31 @@ describe('loadConfig', () => {
     expect(loadConfig().baseUrl).toBe('https://api.example.com/v1');
   });
 
+  it('keeps custom proxy paths containing bedrock-runtime on their selected protocol', () => {
+    const persisted: Partial<AppConfig> = {
+      mode: 'api',
+      apiProtocol: 'openai',
+      apiKey: 'sk-proxy',
+      apiVersion: '2024-01-01',
+      baseUrl: 'https://proxy.example.com/bedrock-runtime/v1',
+      model: 'gpt-4o',
+      configMigrationVersion: 1,
+      agentId: null,
+      skillId: null,
+      designSystemId: null,
+    };
+    store.set('open-design:config', JSON.stringify(persisted));
+
+    const config = loadConfig();
+
+    expect(config.apiProtocol).toBe('openai');
+    expect(config.apiKey).toBe('sk-proxy');
+    expect(config.apiVersion).toBe('2024-01-01');
+    expect(config.baseUrl).toBe('https://proxy.example.com/bedrock-runtime/v1');
+    expect(config.model).toBe('gpt-4o');
+    expect(store.get('open-design:config')).toBe(JSON.stringify(persisted));
+  });
+
   it('migrates legacy Anthropic API configs to an explicit apiProtocol', () => {
     const legacyConfig: Partial<AppConfig> = {
       mode: 'api',

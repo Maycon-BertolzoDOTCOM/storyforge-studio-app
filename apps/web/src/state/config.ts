@@ -481,7 +481,15 @@ function isValidOrbitTime(time: string): boolean {
 }
 
 function isBedrockRuntimeBaseUrl(baseUrl: string): boolean {
-  return (baseUrl || '').toLowerCase().includes('bedrock-runtime');
+  try {
+    const hostname = new URL(baseUrl).hostname.toLowerCase();
+    return (
+      /^bedrock-runtime(?:-fips)?[.-].*\.amazonaws\.com(?:\.cn)?$/.test(hostname)
+      || /^bedrock-runtime(?:-fips)?[.-].*\.api\.aws$/.test(hostname)
+    );
+  } catch {
+    return false;
+  }
 }
 
 function downgradeUnsupportedChatProtocol(config: AppConfig): boolean {
