@@ -275,27 +275,39 @@ describe('agent-driven brand extraction engine', () => {
     expect(system.files['index.html']).not.toContain('--brand-color-bg-container: #141414;');
   });
 
-  it('detects dark-native from raw prefetch material (URL path)', () => {
+  it('detects dark-native from background evidence, not raw frequency', () => {
     // The URL path can't recover the canvas from the reconstructed brand (the
-    // seed clamps it to white), so dark-native is read from the prefetch's most
-    // used color instead.
-    const darkMaterial = {
+    // seed clamps it to white), so dark-native is read from the prefetch's
+    // background-declaration evidence — NOT the most-frequent color, since
+    // material.colors folds in heavily-weighted logo SVG fills.
+    const darkSite = {
       colors: [
-        { hex: '#000000', count: 240 },
-        { hex: '#ffffff', count: 30 },
-        { hex: '#0070f3', count: 12 },
+        { hex: '#000000', count: 200, sources: ['prop:background selector:body'] },
+        { hex: '#ffffff', count: 40, sources: ['prop:color'] },
+        { hex: '#0070f3', count: 12, sources: ['css-var:--accent'] },
       ],
     } as unknown as PrefetchResult;
-    const lightMaterial = {
+    const lightSite = {
       colors: [
-        { hex: '#ffffff', count: 240 },
-        { hex: '#111111', count: 28 },
-        { hex: '#006fff', count: 12 },
+        { hex: '#ffffff', count: 220, sources: ['prop:background selector:body'] },
+        { hex: '#111111', count: 28, sources: ['prop:color'] },
+        { hex: '#006fff', count: 12, sources: ['css-var:--accent'] },
+      ],
+    } as unknown as PrefetchResult;
+    // Regression: a light canvas with a dominant black wordmark. The logo's
+    // #000000 outranks the white background by raw count (logo fills are
+    // weighted ×18 in prefetch), but it is not background evidence.
+    const lightWithDarkLogo = {
+      colors: [
+        { hex: '#000000', count: 360, sources: ['logo-svg:mark.svg'] },
+        { hex: '#ffffff', count: 120, sources: ['prop:background-color selector:html'] },
+        { hex: '#111111', count: 90, sources: ['prop:color'] },
       ],
     } as unknown as PrefetchResult;
 
-    expect(isDarkNativeMaterial(darkMaterial)).toBe(true);
-    expect(isDarkNativeMaterial(lightMaterial)).toBe(false);
+    expect(isDarkNativeMaterial(darkSite)).toBe(true);
+    expect(isDarkNativeMaterial(lightSite)).toBe(false);
+    expect(isDarkNativeMaterial(lightWithDarkLogo)).toBe(false);
   });
 
   beforeEach(() => {

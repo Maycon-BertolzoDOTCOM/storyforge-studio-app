@@ -266,21 +266,48 @@ export function isDarkNativeBrand(brand: Brand): boolean {
  * Dark-native detection for the LLM-free URL path. `seedFromMaterial` keeps a
  * light baseline (it never copies the observed canvas into the seed), and
  * `brandFromMaterial` then rebuilds `brand.colors` from that clamped seed — so
- * `isDarkNativeBrand` can't see the real canvas on the URL path. Read it from
- * the raw prefetch instead: the most-used observed color is the page canvas, so
- * a near-black dominant color marks a dark-native site.
+ * `isDarkNativeBrand` can't see the real canvas on the URL path.
+ *
+ * `material.colors` is a mixed bag — raw CSS declarations folded together with
+ * logo SVG fills (which prefetch weights heavily), so the most-frequent entry
+ * is NOT reliably the page canvas (a black wordmark on a light site can outrank
+ * a white background). Use each candidate's `sources` evidence instead: take the
+ * canvas from `background` / `background-color` declarations (preferring
+ * root/body selectors) and compare it against the `color` (text) evidence, the
+ * same light-text-on-dark test `isDarkNativeBrand` uses.
  */
-export function isDarkNativeMaterial(material: PrefetchResult): boolean {
-  let canvasHex: string | null = null;
-  let bestCount = -Infinity;
+function pickByEvidence(material: PrefetchResult, propMatch: RegExp): string | null {
+  let hex: string | null = null;
+  let bestScore = -Infinity;
   for (const c of material.colors ?? []) {
-    const hex = normalizeHex(c.hex ?? "");
-    if (hex && c.count > bestCount) {
-      bestCount = c.count;
-      canvasHex = hex;
+    const norm = normalizeHex(c.hex ?? "");
+    if (!norm || !c.sources) continue;
+    let isMatch = false;
+    let rootish = false;
+    for (const s of c.sources) {
+      if (propMatch.test(s)) isMatch = true;
+      const sl = s.toLowerCase();
+      if (sl.includes("selector:") && (sl.includes(":root") || /\b(?:html|body)\b/.test(sl))) {
+        rootish = true;
+      }
+    }
+    if (!isMatch) continue;
+    const score = c.count + (rootish ? 1_000_000 : 0);
+    if (score > bestScore) {
+      bestScore = score;
+      hex = norm;
     }
   }
-  return canvasHex ? luminance(canvasHex) < 0.2 : false;
+  return hex;
+}
+
+export function isDarkNativeMaterial(material: PrefetchResult): boolean {
+  const canvas = pickByEvidence(material, /\bprop:background(?:-color)?\b/);
+  if (!canvas) return false;
+  const canvasLum = luminance(canvas);
+  const text = pickByEvidence(material, /\bprop:color\b/);
+  if (text) return canvasLum < luminance(text) && canvasLum < 0.5;
+  return canvasLum < 0.2;
 }
 
 // ─────────────────────────── Material → Seed ────────────────────────────────
