@@ -29,6 +29,24 @@ async function openSettingsDialogFromEntry(page: Page) {
   return openSettingsDialog(page);
 }
 
+async function closeSettingsDialogIfOpen(page: Page) {
+  const dialog = page.getByRole('dialog');
+  if ((await dialog.count()) === 0) return;
+  await page.keyboard.press('Escape');
+  try {
+    await expect(dialog).toHaveCount(0, { timeout: T.short });
+    return;
+  } catch {
+    // Fall back to the chrome button if focus is inside a nested popover or
+    // another transient surface swallowed Escape.
+  }
+  const closeButton = dialog.getByRole('button', { name: 'Close', exact: true });
+  if ((await closeButton.count()) > 0) {
+    await closeButton.click({ force: true, timeout: T.short });
+  }
+  await expect(dialog).toHaveCount(0);
+}
+
 async function openExecutionSettings(
   page: Page,
   config: Record<string, unknown>,
@@ -342,13 +360,7 @@ test('[P0] BYOK auto-loads provider models and reuses cached results for the sam
   await expect(modelPopover.getByRole('option', { name: 'ZZ Prerelease Model (zz-prerelease-model)' })).toHaveCount(1);
   await page.keyboard.press('Escape');
 
-  if ((await page.getByRole('dialog').count()) > 0) {
-    const closeButton = page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true });
-    if ((await closeButton.count()) > 0) {
-      await closeButton.click({ force: true });
-    }
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-  }
+  await closeSettingsDialogIfOpen(page);
 
   await openSettingsDialogFromEntry(page);
   const reopenedDialog = page.getByRole('dialog');

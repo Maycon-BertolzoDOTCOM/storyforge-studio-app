@@ -3247,8 +3247,6 @@ export function SettingsDialog({
     ),
     [fetchedApiModelOptions, suggestedApiModelIds],
   );
-  const loadedModelDropdownCount =
-    loadedAccountModelCount > 0 ? apiModelOptions.length : 0;
   // Shared hook: live AIHubMix catalogue for aihubmix, static registry for
   // other providers (same list the chat composer's image picker uses).
   const byokImageModelOptions = useByokImageModelOptions(apiProtocol);
@@ -4963,15 +4961,11 @@ export function SettingsDialog({
                 modelsLoadedFromAccountMessage={
                   loadedAccountModelCount > 0
                     ? t(
-                        hidesAccountModelSourceLabel(apiProtocol) ||
-                          loadedModelDropdownCount > loadedAccountModelCount
+                        hidesAccountModelSourceLabel(apiProtocol)
                           ? 'settings.modelsLoadedCount'
                           : 'settings.modelsLoadedFromAccount',
                         {
-                          count:
-                            loadedModelDropdownCount > loadedAccountModelCount
-                              ? loadedModelDropdownCount
-                              : loadedAccountModelCount,
+                          count: loadedAccountModelCount,
                         },
                       )
                     : null
