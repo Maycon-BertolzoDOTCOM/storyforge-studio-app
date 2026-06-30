@@ -57,6 +57,15 @@ describe('Toast', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  it('lets users dismiss non-code toasts manually', () => {
+    const onDismiss = vi.fn();
+    render(<Toast message="Browser opened" details="Use Download Page." onDismiss={onDismiss} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Dismiss/i }));
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
   it('shows a leading status glyph for the success tone', () => {
     const { container } = render(<Toast message="Screenshot copied to clipboard" tone="success" />);
     expect(container.querySelector('.od-toast.tone-success .od-toast-icon')).not.toBeNull();

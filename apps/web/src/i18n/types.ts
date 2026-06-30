@@ -81,6 +81,36 @@ export interface Dict {
   'common.hoursShort': string;
   'common.daysShort': string;
   'common.untitled': string;
+  'designBrowser.savePageBrief': string;
+  'designBrowser.menu': string;
+  'designBrowser.copyScreenshot': string;
+  'designBrowser.hardReload': string;
+  'designBrowser.copyUrl': string;
+  'designBrowser.openExternal': string;
+  'designBrowser.downloadPage': string;
+  'designBrowser.downloadPageBusy': string;
+  'designBrowser.clearHistory': string;
+  'designBrowser.clearCookies': string;
+  'designBrowser.clearAllData': string;
+  'designBrowser.status.noUrlToCopy': string;
+  'designBrowser.status.urlCopied': string;
+  'designBrowser.status.openHttpFirst': string;
+  'designBrowser.status.openBeforeScreenshot': string;
+  'designBrowser.status.screenshotSaved': string;
+  'designBrowser.status.screenshotFailed': string;
+  'designBrowser.status.openBeforeBrief': string;
+  'designBrowser.status.briefSaveFailed': string;
+  'designBrowser.status.openBeforeDownload': string;
+  'designBrowser.status.pageSnapshotStarted': string;
+  'designBrowser.status.pageSnapshotUnsupported': string;
+  'designBrowser.status.pageSnapshotFailed': string;
+  'designBrowser.status.pageSnapshotSaved': string;
+  'designBrowser.status.viewDesignFiles': string;
+  'designBrowser.status.downloadAssistHint': string;
+  'designBrowser.status.desktopDataUnavailable': string;
+  'designBrowser.status.browserDataCleared': string;
+  'designBrowser.status.browserDataClearFailed': string;
+  'designBrowser.status.historyCleared': string;
 
   // Plugin registry / details
   'plugins.availableDetails.provenance': string;
@@ -318,6 +348,9 @@ export interface Dict {
   'settings.amrCancelSignIn': string;
   'settings.amrAccountStatus': string;
   'settings.amrConsole': string;
+  'settings.amrBalance': string;
+  'settings.amrPlan': string;
+  'settings.amrUpgrade': string;
   'settings.amrLoginErrorCompact': string;
   'settings.apiSection': string;
   'settings.quickFillProvider': string;
@@ -1979,6 +2012,7 @@ export interface Dict {
   'designs.deleteAria': string;
   'designs.menuMore': string;
   'designs.menuRename': string;
+  'designs.menuDuplicate': string;
   'designs.menuDelete': string;
   'designs.renamePrompt': string;
   'designs.selectMode': string;
@@ -2287,6 +2321,12 @@ export interface Dict {
   'project.brandReadyEditManually': string;
   'project.brandReadyPreviewOpened': string;
   'project.metaFreeform': string;
+  'project.typePrototype': string;
+  'project.typeDeck': string;
+  'project.typeTemplate': string;
+  'project.typeImage': string;
+  'project.typeVideo': string;
+  'project.typeAudio': string;
   'project.customInstructions': string;
   'project.customInstructionsPlaceholder': string;
   'project.instructionsActive': string;
@@ -2393,6 +2433,11 @@ export interface Dict {
   'chat.brandBrowserAssistDesktopOnly': string;
   'chat.brandBrowserAssistReadFailed': string;
   'chat.brandBrowserAssistMessage': string;
+  'chat.brandBrowserLocalSnapshotMissing': string;
+  'chat.brandBrowserLocalSnapshotReadFailed': string;
+  'chat.brandBrowserSnapshotSaveFailed': string;
+  'chat.brandBrowserAssistDownloadGuideTitle': string;
+  'chat.brandBrowserAssistDownloadGuideDetails': string;
   'brandEnrichment.title': string;
   'brandEnrichment.body': string;
   'brandEnrichment.cta': string;
@@ -2485,8 +2530,6 @@ export interface Dict {
   'designBrowser.viewportAria': string;
   'designBrowser.addressPlaceholder': string;
   'designBrowser.addressAria': string;
-  'designBrowser.savePageBrief': string;
-  'designBrowser.menu': string;
   'designBrowser.suggestion.reference': string;
   'designBrowser.suggestion.history': string;
   'designBrowser.menu.copyScreenshot': string;
@@ -2497,19 +2540,10 @@ export interface Dict {
   'designBrowser.menu.clearBrowsingHistory': string;
   'designBrowser.menu.clearCookies': string;
   'designBrowser.menu.clearAllData': string;
-  'designBrowser.status.noUrlToCopy': string;
-  'designBrowser.status.urlCopied': string;
   'designBrowser.status.openHttpUrlFirst': string;
   'designBrowser.status.openPageBeforeScreenshot': string;
   'designBrowser.status.screenshotCopied': string;
-  'designBrowser.status.screenshotSaved': string;
-  'designBrowser.status.screenshotFailed': string;
   'designBrowser.status.openPageBeforeBrief': string;
-  'designBrowser.status.briefSaveFailed': string;
-  'designBrowser.status.desktopDataUnavailable': string;
-  'designBrowser.status.browserDataCleared': string;
-  'designBrowser.status.browserDataClearFailed': string;
-  'designBrowser.status.historyCleared': string;
   'designBrowser.status.openPageBeforeTools': string;
   'designBrowser.status.clickElementToComment': string;
   'designBrowser.status.clickElementToTune': string;
@@ -3029,6 +3063,11 @@ export interface Dict {
   'designFiles.documentTemplate.scenario.default': string;
   'designFiles.documentTemplate.nextHeading': string;
   'designFiles.documentTemplate.nextBody': string;
+
+  'designFiles.projectMenu': string;
+  'designFiles.createDesignSystemFromProject': string;
+  'designFiles.duplicateProject': string;
+
   'designFiles.previewOpen': string;
   'designFiles.previewClose': string;
   'designFiles.modified': string;
@@ -3560,6 +3599,9 @@ export interface Dict {
   'nextStep.more': string;
   'nextStep.share': string;
   'nextStep.download': string;
+  'nextStep.createDesignSystemTitle': string;
+  'nextStep.createDesignSystemBody': string;
+  'nextStep.createDesignSystemBusy': string;
   'nextStep.contribute': string;
   'nextStep.planGenerateTitle': string;
   'nextStep.planGenerateBody': string;
@@ -3573,10 +3615,24 @@ export interface Dict {
   'nextStep.planMergeTitle': string;
   'nextStep.planMergeBody': string;
   'nextStep.planMergePrompt': string;
+
+  'nextStep.projectContinueTitle': string;
+  'nextStep.projectGenerateArtifactTitle': string;
+  'nextStep.designSystemAiRefineTitle': string;
+  'nextStep.designSystemAuditKitTitle': string;
+
   'nextStep.brandAiOptimizeTitle': string;
   'nextStep.brandAiOptimizeBody': string;
   'nextStep.brandCreateDesignTitle': string;
   'nextStep.brandCreateDesignBody': string;
+  'nextStep.brandCreateDesignPrompt': string;
+  'nextStep.brandContinueExtractionTitle': string;
+  'nextStep.brandContinueExtractionBody': string;
+  'nextStep.brandContinueExtractionBusy': string;
+  'nextStep.brandContinueAiExtractionTitle': string;
+  'nextStep.brandContinueAiExtractionProgrammaticBody': string;
+  'nextStep.brandContinueAiExtractionAiBody': string;
+  'nextStep.brandContinueAiExtractionBusy': string;
   'nextStep.createDesignBusy': string;
   'assistant.thinking': string;
   'assistant.thought': string;

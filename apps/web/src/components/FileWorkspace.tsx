@@ -39,6 +39,8 @@ import {
   writeProjectTextFile,
 } from '../providers/registry';
 import type { Dict } from '../i18n/types';
+import { setPendingDesignSystemCreateEntry } from '../analytics/ds-create-entry';
+import { navigate } from '../router';
 import { downloadDesignSystemArchive, downloadProjectArchive } from '../runtime/exports';
 import { finalizeBrandProject } from '../runtime/brands';
 import { deriveFileOps, type FileOpEntry } from '../runtime/file-ops';
@@ -89,7 +91,13 @@ import type { ChatSessionMode, WorkspaceContextItem } from '@open-design/contrac
 import { createTerminal, killTerminal } from '../state/projects';
 import type { QuestionForm } from '../artifacts/question-form';
 import { DesignFilesPanel, type DesignFilesNavState } from './DesignFilesPanel';
-import { DesignBrowserPanel, labelFromUrl, type BrowserPageInfo } from './DesignBrowserPanel';
+import {
+  DesignBrowserPanel,
+  labelFromUrl,
+  normalizeBrowserAddress,
+  type BrowserPageSnapshotToastEvent,
+  type BrowserPageInfo,
+} from './DesignBrowserPanel';
 import type { PluginFolderAgentAction } from './design-files/pluginFolderActions';
 import { designSystemGithubEvidenceState, repoConnectCopy } from './design-system-github-evidence';
 import { APP_CHROME_FILE_ACTIONS_ID } from './AppChromeHeader';
@@ -141,6 +149,13 @@ interface Props {
   commentQueueOnSend?: boolean;
   commentSendDisabled?: boolean;
   openRequest?: { name: string; nonce: number } | null;
+  browserOpenRequest?: BrowserOpenRequest | null;
+  // Browser tab whose <webview> must stay mounted even while another workspace
+  // tab is active. Set for programmatic brand extraction: the chat "Continue
+  // extraction" handler reads the live, post-wall DOM out of this tab's webview,
+  // so tearing it down on a tab switch (or a refresh-driven remount) would
+  // silently drop the read back to a re-walled server fetch.
+  pinnedBrowserTabId?: string | null;
   // Open the named file AND surface its Share/Export menu. Drives the chat-side
   // "Share" next-step action without a dedicated share backend.
   shareRequest?: { name: string; nonce: number } | null;
@@ -161,6 +176,7 @@ interface Props {
   onSavePreviewComment?: (target: PreviewCommentTarget, note: string, attachAfterSave: boolean, images?: File[]) => Promise<PreviewComment | null>;
   onRemovePreviewComment?: (commentId: string) => Promise<void>;
   onSendBoardCommentAttachments?: (attachments: ChatCommentAttachment[], images?: File[]) => Promise<boolean | void> | boolean | void;
+  onBrandExtractionStopRequest?: () => void;
   onRequestBrowserUsePrompt?: (prompt: string) => void;
   onPluginFolderAgentAction?: (
     relativePath: string,
@@ -174,9 +190,15 @@ interface Props {
   onFocusModeChange?: (next: boolean) => void;
   designSystemProject?: DesignSystemSummary | null;
   designSystemBrandId?: string | null;
+  /** False while a brand-extraction design system is still running. */
+  designSystemEditable?: boolean;
   defaultDesignSystemId?: string | null;
   onSetDefaultDesignSystem?: (id: string | null) => Promise<void> | void;
   onDesignSystemsRefresh?: () => Promise<void> | void;
+  onCreateDesignSystemFromProject?: () => void;
+  createDesignSystemFromProjectBusy?: boolean;
+  onDuplicateProject?: () => void;
+  duplicateProjectBusy?: boolean;
   // Delete the backing project (and navigate away) for the design-system project
   // tab's "..." menu. Resolves to handleDeleteProject in App.
   onDeleteDesignSystemProject?: (id: string) => Promise<boolean> | boolean;
@@ -333,6 +355,21 @@ const SKETCH_AUTOSAVE_DELAY_MS = 800;
 const EMPTY_PROJECT_FOLDERS: ProjectFolder[] = [];
 type TabDropEdge = 'before' | 'after';
 type BrowserWorkspaceTab = ProjectBrowserWorkspaceTab;
+export interface BrowserOpenRequest {
+  tabId?: string;
+  url: string;
+  nonce: number;
+  /** Request a transient in-tab affordance after opening/focusing. */
+  attentionAction?: 'download-page';
+  /** Only foreground an EXISTING browser tab — do not navigate it. Used to wake
+   *  a background-throttled webview before reading its DOM (brand browser
+   *  assist) WITHOUT reloading the page and re-triggering an anti-bot wall. */
+  focusOnly?: boolean;
+}
+export interface BrowserAttentionRequest {
+  action: 'download-page';
+  nonce: number;
+}
 type WorkspaceOrderedTab =
   | { id: string; kind: 'browser'; browserTab: BrowserWorkspaceTab }
   | { id: string; kind: 'file'; name: string };
@@ -475,6 +512,19 @@ const DESIGN_SYSTEM_GUIDANCE_FILES = new Set([
 ]);
 const DESIGN_SYSTEM_IMAGE_OR_FONT_EXTENSIONS = /\.(svg|png|jpe?g|gif|webp|avif|ico|otf|ttf|woff2?)$/i;
 
+type WorkspaceToastTone = 'default' | 'success' | 'error' | 'loading';
+
+interface WorkspaceActionToast {
+  actionLabel?: string | null;
+  className?: string;
+  details?: string | null;
+  message: string;
+  onAction?: () => void;
+  role?: 'status' | 'alert';
+  tone?: WorkspaceToastTone;
+  ttlMs?: number;
+}
+
 export function FileWorkspace({
   projectId,
   projectKind,
@@ -490,6 +540,8 @@ export function FileWorkspace({
   commentQueueOnSend = false,
   commentSendDisabled = false,
   openRequest,
+  browserOpenRequest,
+  pinnedBrowserTabId,
   shareRequest,
   downloadRequest,
   slideNavRequest,
@@ -501,6 +553,7 @@ export function FileWorkspace({
   onSavePreviewComment,
   onRemovePreviewComment,
   onSendBoardCommentAttachments,
+  onBrandExtractionStopRequest,
   onRequestBrowserUsePrompt,
   onPluginFolderAgentAction,
   activePluginActionPaths,
@@ -511,9 +564,14 @@ export function FileWorkspace({
   onFocusModeChange,
   designSystemProject = null,
   designSystemBrandId = null,
+  designSystemEditable = true,
   defaultDesignSystemId = null,
   onSetDefaultDesignSystem,
   onDesignSystemsRefresh,
+  onCreateDesignSystemFromProject,
+  createDesignSystemFromProjectBusy = false,
+  onDuplicateProject,
+  duplicateProjectBusy = false,
   onDeleteDesignSystemProject,
   onDesignSystemNeedsWork,
   designSystemReview,
@@ -620,12 +678,19 @@ export function FileWorkspace({
   const [browserTabs, setBrowserTabs] = useState<BrowserWorkspaceTab[]>(
     () => browserTabsFromState(tabsState.browserTabs),
   );
+  const [browserNavigateRequests, setBrowserNavigateRequests] = useState<
+    Record<string, { url: string; nonce: number }>
+  >({});
+  const [browserAttentionRequests, setBrowserAttentionRequests] = useState<
+    Record<string, BrowserAttentionRequest>
+  >({});
   // "+" launcher (file search + registry-driven create-new actions:
   // Side Chat, Terminal, Browser).
   const [launcherOpen, setLauncherOpen] = useState(false);
   // Transient feedback when a launcher "create" action (e.g. New Terminal)
   // fails on the daemon side, so the click is never a silent no-op.
   const [launcherToast, setLauncherToast] = useState<string | null>(null);
+  const [browserSnapshotToast, setBrowserSnapshotToast] = useState<WorkspaceActionToast | null>(null);
   const [tabsOverflowing, setTabsOverflowing] = useState(false);
   const [draggedTabName, setDraggedTabName] = useState<string | null>(null);
   const [dragOverTab, setDragOverTab] = useState<{
@@ -637,6 +702,7 @@ export function FileWorkspace({
   const tabsBarRef = useRef<HTMLDivElement | null>(null);
   const draggedTabNameRef = useRef<string | null>(null);
   const browserTabSequenceRef = useRef(0);
+  const openFileRef = useRef<(name: string) => void>(() => {});
   const designFilesNavProjectIdRef = useRef(projectId);
   const designFilesNavRef = useRef<DesignFilesNavState>(createDefaultDesignFilesNavState());
   if (designFilesNavProjectIdRef.current !== projectId) {
@@ -665,6 +731,20 @@ export function FileWorkspace({
   // first). A browser tab is mounted only after it has been activated; we cap
   // the live set at BROWSER_KEEPALIVE_CAP and unmount the rest.
   const [liveBrowserTabIds, setLiveBrowserTabIds] = useState<string[]>([]);
+
+  // The set actually rendered. The activation LRU governs ad-hoc browser tabs,
+  // but a pinned brand-extraction tab must stay mounted even when it was never
+  // activated this session (a refresh can remount the workspace with brand.html
+  // active and the LRU empty). Keeping its <webview> alive is what lets the chat
+  // "Continue extraction" handler read the live, post-wall DOM instead of
+  // silently degrading to a re-walled server fetch.
+  const mountedBrowserTabIds = useMemo(() => {
+    const ids = new Set(liveBrowserTabIds);
+    if (pinnedBrowserTabId && browserTabs.some((tab) => tab.id === pinnedBrowserTabId)) {
+      ids.add(pinnedBrowserTabId);
+    }
+    return ids;
+  }, [liveBrowserTabIds, pinnedBrowserTabId, browserTabs]);
 
   const visibleFiles = useMemo(
     () => files.filter((file) => !isLiveArtifactImplementationPath(file.name)),
@@ -762,6 +842,7 @@ export function FileWorkspace({
 
   useEffect(() => {
     setBrowserTabs([]);
+    setBrowserNavigateRequests({});
     browserTabSequenceRef.current = 0;
     setLauncherOpen(false);
     sketchPreloadInFlightRef.current.clear();
@@ -824,6 +905,72 @@ export function FileWorkspace({
     const nextActive = name ?? defaultRootTab;
     setActiveTab(nextActive);
     commitTabsState(workspaceTabsState(persistedTabs, name));
+  }
+
+  function openRequestedBrowserTab(request: BrowserOpenRequest) {
+    const requestedTabId = request.tabId?.trim();
+    const normalizedUrl = normalizeBrowserAddress(request.url);
+    const tabId =
+      requestedTabId && isBrowserTabId(requestedTabId)
+        ? requestedTabId
+        : `${BROWSER_TAB_PREFIX}${browserTabSequenceRef.current + 1}`;
+    const requestedIndex = browserTabIndex(tabId);
+    if (requestedIndex > 0) {
+      browserTabSequenceRef.current = Math.max(browserTabSequenceRef.current, requestedIndex);
+    }
+    // Focus-only: the tab already exists and is parked on the (cleared) page —
+    // just foreground it so its webview un-throttles, without issuing a navigate
+    // request that would reload and re-trigger the anti-bot wall.
+    if (request.focusOnly && browserTabs.some((tab) => tab.id === tabId)) {
+      setUploadError(null);
+      setActiveTab(tabId);
+      const attentionAction = request.attentionAction;
+      if (attentionAction) {
+        setBrowserAttentionRequests((current) => ({
+          ...current,
+          [tabId]: { action: attentionAction, nonce: request.nonce },
+        }));
+      }
+      commitTabsState(workspaceTabsState(persistedTabs, tabId, browserTabs));
+      return;
+    }
+    const browserTitle = normalizedUrl && normalizedUrl !== 'about:blank'
+      ? labelFromUrl(normalizedUrl)
+      : undefined;
+    let found = false;
+    const nextTabs = browserTabs.map((tab) => {
+      if (tab.id !== tabId) return tab;
+      found = true;
+      return {
+        ...tab,
+        ...(browserTitle ? { title: browserTitle, url: normalizedUrl } : {}),
+      };
+    });
+    if (!found) {
+      const anchor = lastWorkspaceTabId(orderedWorkspaceTabs) ?? activeTab;
+      const label = requestedIndex > 1 ? `Browser ${requestedIndex}` : 'Browser';
+      nextTabs.push({
+        id: tabId,
+        insertAfter: anchor,
+        label,
+        ...(browserTitle ? { title: browserTitle, url: normalizedUrl } : {}),
+      });
+    }
+    setUploadError(null);
+    setBrowserTabs(nextTabs);
+    setBrowserNavigateRequests((current) => ({
+      ...current,
+      [tabId]: { url: normalizedUrl, nonce: request.nonce },
+    }));
+    const attentionAction = request.attentionAction;
+    if (attentionAction) {
+      setBrowserAttentionRequests((current) => ({
+        ...current,
+        [tabId]: { action: attentionAction, nonce: request.nonce },
+      }));
+    }
+    setActiveTab(tabId);
+    commitTabsState(workspaceTabsState(persistedTabs, tabId, nextTabs));
   }
 
   function openBrowserTab() {
@@ -982,6 +1129,12 @@ export function FileWorkspace({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openRequest]);
 
+  useEffect(() => {
+    if (!browserOpenRequest) return;
+    openRequestedBrowserTab(browserOpenRequest);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [browserOpenRequest]);
+
   // Share request: ensure the target file is open + active so the FileViewer
   // below receives the matching `shareRequest` and opens its Share menu.
   useEffect(() => {
@@ -1074,6 +1227,47 @@ export function FileWorkspace({
     commitTabsState(workspaceTabsState(nextTabs, name, nextBrowserTabs));
     setActiveTab(name);
   }
+  openFileRef.current = openFile;
+
+  const handleBrowserPageSnapshotToast = useCallback((event: BrowserPageSnapshotToastEvent) => {
+    const details = event.elapsedSeconds == null
+      ? null
+      : `${t('homeHero.footer.duration')}: ${formatWorkspaceSnapshotElapsed(event.elapsedSeconds)}`;
+    const tone: WorkspaceToastTone =
+      event.status === 'loading'
+        ? 'loading'
+        : event.status === 'success'
+          ? 'success'
+          : event.status === 'error'
+            ? 'error'
+            : 'default';
+    const actionLabel = event.status === 'loading'
+      ? t('common.cancel')
+      : event.actionLabel;
+    const onAction = event.status === 'loading'
+      ? event.onCancel
+      : event.actionTarget === 'design-files'
+        ? () => {
+            setPersistedActive(DESIGN_FILES_TAB);
+            setBrowserSnapshotToast(null);
+          }
+        : event.actionFileName
+          ? () => {
+              openFileRef.current(event.actionFileName!);
+              setBrowserSnapshotToast(null);
+            }
+          : undefined;
+    setBrowserSnapshotToast({
+      actionLabel,
+      details,
+      className: 'od-toast-browser-snapshot',
+      message: event.message,
+      onAction,
+      role: event.status === 'error' ? 'alert' : 'status',
+      tone,
+      ttlMs: event.ttlMs,
+    });
+  }, [t]);
 
   function focusWorkspaceTab(tabId: string) {
     setUploadError(null);
@@ -2476,7 +2670,19 @@ export function FileWorkspace({
           onClose={() => setLauncherOpen(false)}
         />
       ) : null}
-      {launcherToast ? (
+      {browserSnapshotToast ? (
+        <Toast
+          message={browserSnapshotToast.message}
+          details={browserSnapshotToast.details}
+          actionLabel={browserSnapshotToast.actionLabel}
+          className={browserSnapshotToast.className}
+          onAction={browserSnapshotToast.onAction}
+          role={browserSnapshotToast.role}
+          tone={browserSnapshotToast.tone}
+          ttlMs={browserSnapshotToast.ttlMs}
+          onDismiss={() => setBrowserSnapshotToast(null)}
+        />
+      ) : launcherToast ? (
         <Toast
           message={launcherToast}
           role="alert"
@@ -2503,7 +2709,7 @@ export function FileWorkspace({
             </button>
           </div>
         ) : null}
-        {browserTabs.filter((browserTab) => liveBrowserTabIds.includes(browserTab.id)).map((browserTab) => (
+        {browserTabs.filter((browserTab) => mountedBrowserTabIds.has(browserTab.id)).map((browserTab) => (
           <div
             key={`${projectId}:${browserTab.id}`}
             className={`ws-browser-panel ${activeTab === browserTab.id ? 'active' : ''}`}
@@ -2516,13 +2722,17 @@ export function FileWorkspace({
               initialIconUrl={browserTab.iconUrl}
               initialTitle={browserTab.title}
               initialUrl={browserTab.url}
+              navigateRequest={browserNavigateRequests[browserTab.id]}
+              attentionRequest={browserAttentionRequests[browserTab.id]}
               sendDisabled={Boolean(streaming)}
               previewComments={previewComments}
               onSavePreviewComment={onSavePreviewComment}
               onRemovePreviewComment={onRemovePreviewComment}
               onSendBoardCommentAttachments={onSendBoardCommentAttachments}
               onRequestBrowserUsePrompt={onRequestBrowserUsePrompt}
+              onPageSnapshotToast={handleBrowserPageSnapshotToast}
               onRefreshFiles={onRefreshFiles}
+              onOpenDesignFiles={() => setPersistedActive(DESIGN_FILES_TAB)}
               onOpenFile={openFile}
               onPageInfoChange={(info) => updateBrowserTabInfo(browserTab.id, info)}
             />
@@ -2545,6 +2755,7 @@ export function FileWorkspace({
             projectId={projectId}
             system={designSystemProject}
             brandId={designSystemBrandId}
+            editable={designSystemEditable}
             files={visibleFiles}
             streaming={Boolean(streaming)}
             activityEvents={designSystemActivityEvents}
@@ -2629,6 +2840,19 @@ export function FileWorkspace({
               });
               openBrowserTab();
             }}
+            onCreateDesignSystem={() => {
+              trackFileManagerClick(analytics.track, {
+                page_name: 'file_manager',
+                area: 'file_manager',
+                element: 'create_design_system',
+              });
+              setPendingDesignSystemCreateEntry('project_canvas');
+              navigate({ kind: 'design-system-create' });
+            }}
+            onCreateDesignSystemFromProject={onCreateDesignSystemFromProject}
+            createDesignSystemFromProjectBusy={createDesignSystemFromProjectBusy}
+            onDuplicateProject={onDuplicateProject}
+            duplicateProjectBusy={duplicateProjectBusy}
             onSelectFromLibrary={() => {
               trackFileManagerClick(analytics.track, {
                 page_name: 'file_manager',
@@ -2715,6 +2939,9 @@ export function FileWorkspace({
             onSavePreviewComment={onSavePreviewComment}
             onRemovePreviewComment={onRemovePreviewComment}
             onSendBoardCommentAttachments={onSendBoardCommentAttachments}
+            onBrandExtractionStopRequest={
+              activeFile.name === 'brand.html' ? onBrandExtractionStopRequest : undefined
+            }
             onFileSaved={onRefreshFiles}
             onOpenFileReplacing={openFileReplacing}
             commentPortalId={commentPortalId}
@@ -2810,6 +3037,7 @@ function DesignSystemProjectPanel({
   projectId,
   system,
   brandId,
+  editable,
   files,
   streaming,
   activityEvents,
@@ -2831,6 +3059,7 @@ function DesignSystemProjectPanel({
   projectId: string;
   system: DesignSystemSummary;
   brandId?: string | null;
+  editable: boolean;
   files: ProjectFile[];
   streaming: boolean;
   activityEvents: AgentEvent[];
@@ -2970,7 +3199,7 @@ function DesignSystemProjectPanel({
     projectId,
     swatches: system.swatches,
     body: designMdBody,
-    editable: true,
+    editable,
     host: kitHost,
     reloadKey: kitReloadKey,
   });
@@ -3227,7 +3456,7 @@ function DesignSystemProjectPanel({
       })),
     }))
     .filter((group) => group.items.length > 0);
-  const creatingInitialDraft = streaming && !published;
+  const creatingInitialDraft = streaming && !published && !brandId;
   const generationSteps = designSystemInitialGenerationSteps({
     files,
     sectionReviews,
@@ -3237,6 +3466,7 @@ function DesignSystemProjectPanel({
   const generationProgress = designSystemGenerationProgress(generationSteps);
 
   async function togglePublished(nextPublished: boolean) {
+    if (!editable) return;
     if (nextPublished && !githubEvidence.ready) return;
     setStatusBusy(true);
     notifyKitLoading(publishActionLabel);
@@ -3255,6 +3485,7 @@ function DesignSystemProjectPanel({
   }
 
   async function toggleDefault(nextDefault: boolean) {
+    if (!editable) return;
     if (!onSetDefaultDesignSystem) return;
     setDefaultBusy(true);
     notifyKitLoading(nextDefault ? t('dsManager.makeDefault') : t('dsManager.badgeDefault'));
@@ -3289,6 +3520,7 @@ function DesignSystemProjectPanel({
   }
 
   function openNeedsWorkFeedback(sectionTitle: string, expansionKey: string) {
+    if (!editable) return;
     setReviewDecisions((current) => ({ ...current, [sectionTitle]: 'needs-work' }));
     setExpandedSections((current) => ({ ...current, [expansionKey]: true }));
     setFeedbackSection(sectionTitle);
@@ -3528,6 +3760,7 @@ function DesignSystemProjectPanel({
   // header's "More" dropdown so the sticky row reads as one clear action.
   const repoCopy = repoConnectCopy(t, githubConnected);
   const publishActionLabel = published ? t('ds.unpublishDesignSystem') : t('ds.publishDesignSystem');
+  const extractionRunning = !editable || streaming;
   const actionsSlot = (
     <span
       className="ds-project-publish-trigger"
@@ -3543,7 +3776,7 @@ function DesignSystemProjectPanel({
         data-testid="design-system-publish"
         aria-label={publishActionLabel}
         title={publishActionLabel}
-        disabled={statusBusy || (!published && !githubEvidence.ready)}
+        disabled={!editable || statusBusy || (!published && !githubEvidence.ready)}
         aria-busy={statusBusy || undefined}
         onClick={() => void togglePublished(!published)}
       >
@@ -3562,7 +3795,7 @@ function DesignSystemProjectPanel({
         emitDesignSystemProjectEditClick('kit_refresh', 'kit');
         void refreshKit();
       },
-      disabled: Boolean(kitActionBusy) || statusBusy || defaultBusy,
+      disabled: !editable || Boolean(kitActionBusy) || statusBusy || defaultBusy,
       loading: kitActionBusy === 'refresh',
     },
     {
@@ -3573,7 +3806,7 @@ function DesignSystemProjectPanel({
         emitDesignSystemProjectEditClick('kit_download', 'kit');
         void downloadKit();
       },
-      disabled: Boolean(kitActionBusy) || statusBusy || defaultBusy,
+      disabled: !editable || Boolean(kitActionBusy) || statusBusy || defaultBusy,
       loading: kitActionBusy === 'download',
     },
     ...(published && onSetDefaultDesignSystem
@@ -3583,7 +3816,7 @@ function DesignSystemProjectPanel({
             label: isDefault ? t('dsManager.badgeDefault') : t('dsManager.makeDefault'),
             icon: (isDefault ? 'check' : 'star') as IconName,
             onClick: () => void toggleDefault(!isDefault),
-            disabled: statusBusy || defaultBusy || Boolean(kitActionBusy),
+            disabled: !editable || statusBusy || defaultBusy || Boolean(kitActionBusy),
             loading: defaultBusy,
             active: isDefault,
           } satisfies HeaderMenuAction,
@@ -3606,15 +3839,15 @@ function DesignSystemProjectPanel({
   const topSlot = (
     <>
       <div
-        className={`ds-project-extraction-status ${streaming ? 'is-running' : 'is-complete'}`}
+        className={`ds-project-extraction-status ${extractionRunning ? 'is-running' : 'is-complete'}`}
         role="status"
         data-testid="design-system-extraction-status"
       >
-        <Icon name={streaming ? 'sparkles' : 'check'} size={15} />
+        <Icon name={extractionRunning ? 'sparkles' : 'check'} size={15} />
         <span>
-          <strong>{streaming ? t('ds.extractionRunningTitle') : t('ds.extractionCompleteTitle')}</strong>
+          <strong>{extractionRunning ? t('ds.extractionRunningTitle') : t('ds.extractionCompleteTitle')}</strong>
           <small>
-            {streaming
+            {extractionRunning
               ? t('ds.extractionRunningBody')
               : t('ds.extractionCompleteBody')}
           </small>
@@ -3673,7 +3906,7 @@ function DesignSystemProjectPanel({
         </div>
       ) : null}
 
-      {fontFiles.length === 0 ? (
+      {editable && fontFiles.length === 0 ? (
         <MissingBrandFontsBanner projectId={projectId} onUploadAssets={onUploadAssets} />
       ) : null}
 
@@ -3719,18 +3952,22 @@ function DesignSystemProjectPanel({
           stickyHeader
           designMd={{
             body: designMdBody,
-            onSave: saveDesignMd,
-            onOpenFile: () => onOpenFile('DESIGN.md'),
             saving: savingDesignMd,
-            canEdit: true,
+            canEdit: editable,
+            ...(editable
+              ? {
+                  onSave: saveDesignMd,
+                  onOpenFile: () => onOpenFile('DESIGN.md'),
+                }
+              : {}),
           }}
-          onUploadModule={kitUploadModule}
-          onColorChange={(index, hex) => changeKitColor(index, hex)}
-          onColorReset={(index) => resetKitColor(index)}
-          onDeleteLogo={(index) => void removeKitLogo(index)}
-          onDeleteImage={(index) => void removeKitImage(index)}
-          onRefresh={() => void refreshKit()}
-          onDownload={() => void downloadKit()}
+          onUploadModule={editable ? kitUploadModule : undefined}
+          onColorChange={editable ? (index, hex) => changeKitColor(index, hex) : undefined}
+          onColorReset={editable ? (index) => resetKitColor(index) : undefined}
+          onDeleteLogo={editable ? (index) => void removeKitLogo(index) : undefined}
+          onDeleteImage={editable ? (index) => void removeKitImage(index) : undefined}
+          onRefresh={editable ? () => void refreshKit() : undefined}
+          onDownload={editable ? () => void downloadKit() : undefined}
           onEditClick={emitDesignSystemProjectEditClick}
           uploading={kitUploading}
           actionBusy={kitActionBusy}
@@ -3992,6 +4229,14 @@ function isDesignSystemRawAssetFile(path: string): boolean {
 
 function isDesignSystemReviewableAssetArtifact(path: string): boolean {
   return /\b(brand|logo|logos|mark|wordmark|icon)\b/u.test(path);
+}
+
+function formatWorkspaceSnapshotElapsed(seconds: number): string {
+  const safe = Math.max(0, Math.floor(seconds));
+  if (safe < 60) return `${safe}s`;
+  const minutes = Math.floor(safe / 60);
+  const remainder = safe % 60;
+  return remainder === 0 ? `${minutes}m` : `${minutes}m ${String(remainder).padStart(2, '0')}s`;
 }
 
 function designSystemReviewArtifactSort(first: string, second: string): number {
@@ -5325,6 +5570,12 @@ function kindIconName(
 
 function isBrowserTabId(tabId: string): boolean {
   return tabId.startsWith(BROWSER_TAB_PREFIX);
+}
+
+function browserTabIndex(tabId: string): number {
+  if (!isBrowserTabId(tabId)) return 0;
+  const value = Number.parseInt(tabId.slice(BROWSER_TAB_PREFIX.length), 10);
+  return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
 function browserTabsFromState(value: OpenTabsState['browserTabs']): BrowserWorkspaceTab[] {
