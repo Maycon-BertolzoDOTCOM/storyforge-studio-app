@@ -2,6 +2,8 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { OpenDesignHostUpdaterStatusSnapshot } from '@open-design/host';
+import { installMockOpenDesignHost } from '@open-design/host/testing';
 import { en } from '../../src/i18n/locales/en';
 
 const {
@@ -222,6 +224,30 @@ const sampleDesignSystems = [
   },
 ];
 
+let restoreOpenDesignHost: (() => void) | null = null;
+
+function updateStatus(
+  overrides: Partial<OpenDesignHostUpdaterStatusSnapshot> = {},
+): OpenDesignHostUpdaterStatusSnapshot {
+  return {
+    arch: 'arm64',
+    capabilities: {
+      canApplyInPlace: false,
+      canDownload: true,
+      canOpenInstaller: true,
+      requiresManualInstall: true,
+    },
+    channel: 'beta',
+    currentVersion: '1.2.3-beta.3',
+    enabled: true,
+    mode: 'package-launcher',
+    platform: 'darwin',
+    state: 'idle',
+    supported: true,
+    ...overrides,
+  };
+}
+
 function renderSettingsDialog(
   initial: Partial<AppConfig> = {},
   options: {
@@ -380,6 +406,11 @@ beforeEach(() => {
     latencyMs: 1,
     models: [],
   });
+});
+
+afterEach(() => {
+  restoreOpenDesignHost?.();
+  restoreOpenDesignHost = null;
 });
 
 describe('SettingsDialog execution settings BYOK interactions', () => {
@@ -4328,5 +4359,57 @@ describe('SettingsDialog about interactions', () => {
     fireEvent.click(screen.getByRole('button', { name: en['settings.updateViewReleases'] }));
 
     expect(openExternalUrlMock).toHaveBeenCalledWith('https://github.com/nexu-io/open-design/releases');
+  });
+
+  it('downloads an available packaged update from the about page', async () => {
+    const available = updateStatus({
+      availableVersion: '1.2.3-beta.4',
+      state: 'available',
+    });
+    const downloaded = updateStatus({
+      artifact: {
+        name: 'Open Design Beta.dmg',
+        platformKey: 'macAppleSilicon',
+        type: 'dmg',
+        url: 'https://fixture.test/Open Design Beta.dmg',
+      },
+      availableVersion: '1.2.3-beta.4',
+      downloadPath: '/tmp/open-design-updater/Open Design Beta.dmg',
+      state: 'downloaded',
+    });
+    const download = vi.fn(async () => downloaded);
+    restoreOpenDesignHost = installMockOpenDesignHost({
+      host: {
+        updater: {
+          download,
+          status: vi.fn(async () => available),
+        },
+      },
+    });
+
+    renderSettingsDialog(
+      { mode: 'daemon', agentId: 'codex' },
+      {
+        initialSection: 'about',
+        appVersionInfo: {
+          version: '1.2.3-beta.3',
+          channel: 'beta',
+          packaged: true,
+          platform: 'darwin',
+          arch: 'arm64',
+        },
+      },
+    );
+
+    expect(
+      await screen.findByText('New version 1.2.3-beta.4 found. Preparing download.'),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: en['updater.download'] }));
+
+    await waitFor(() => {
+      expect(download).toHaveBeenCalledWith({ payload: { source: 'settings-about' } });
+    });
+    expect(screen.getByText('Version 1.2.3-beta.4 is ready to install.')).toBeTruthy();
   });
 });

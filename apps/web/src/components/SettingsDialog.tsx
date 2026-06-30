@@ -275,8 +275,8 @@ export function deriveAboutUpdateControl(
       };
     case 'available':
       return {
-        primaryAction: null,
-        primaryLabelKey: null,
+        primaryAction: model.canDownload ? 'download' : null,
+        primaryLabelKey: model.canDownload ? 'updater.download' : null,
         showReleaseLink: true,
         statusKey: model.availableVersion
           ? 'settings.updateStatusAvailable'

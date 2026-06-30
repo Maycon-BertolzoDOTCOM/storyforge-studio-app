@@ -103,7 +103,7 @@ describe('SettingsDialog about update control', () => {
     });
   });
 
-  it('shows available updates as preparing to download without a primary action', () => {
+  it('offers download when an update is available', () => {
     const control = deriveAboutUpdateControl(
       deriveUpdaterModel(
         updateStatus({
@@ -116,8 +116,8 @@ describe('SettingsDialog about update control', () => {
     );
 
     expect(control).toMatchObject({
-      primaryAction: null,
-      primaryLabelKey: null,
+      primaryAction: 'download',
+      primaryLabelKey: 'updater.download',
       statusKey: 'settings.updateStatusAvailable',
       statusVars: { version: '1.2.3-beta.4' },
     });
