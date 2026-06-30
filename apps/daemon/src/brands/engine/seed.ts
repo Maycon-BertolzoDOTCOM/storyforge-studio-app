@@ -262,6 +262,27 @@ export function isDarkNativeBrand(brand: Brand): boolean {
   return bgLum < 0.2;
 }
 
+/**
+ * Dark-native detection for the LLM-free URL path. `seedFromMaterial` keeps a
+ * light baseline (it never copies the observed canvas into the seed), and
+ * `brandFromMaterial` then rebuilds `brand.colors` from that clamped seed — so
+ * `isDarkNativeBrand` can't see the real canvas on the URL path. Read it from
+ * the raw prefetch instead: the most-used observed color is the page canvas, so
+ * a near-black dominant color marks a dark-native site.
+ */
+export function isDarkNativeMaterial(material: PrefetchResult): boolean {
+  let canvasHex: string | null = null;
+  let bestCount = -Infinity;
+  for (const c of material.colors ?? []) {
+    const hex = normalizeHex(c.hex ?? "");
+    if (hex && c.count > bestCount) {
+      bestCount = c.count;
+      canvasHex = hex;
+    }
+  }
+  return canvasHex ? luminance(canvasHex) < 0.2 : false;
+}
+
 // ─────────────────────────── Material → Seed ────────────────────────────────
 
 /**

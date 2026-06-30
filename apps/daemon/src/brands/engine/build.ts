@@ -30,7 +30,7 @@ import { injectFontFaces, type FontFile } from "../fonts.js";
 import { prefetchBrand, type PrefetchResult } from "../prefetch.js";
 import type { BrandSystem, DesignTokens, SeedToken, ThemeAlgorithm } from "./types.js";
 import { deriveTokens } from "./derive.js";
-import { seedFromBrand, seedFromMaterial, isDarkNativeBrand } from "./seed.js";
+import { seedFromBrand, seedFromMaterial, isDarkNativeBrand, isDarkNativeMaterial } from "./seed.js";
 import { tokensToJson, tokensToCssVars, tokensToThemeJson } from "./export.js";
 import { renderKitPage } from "./kit.js";
 import { renderArtifact, renderArtifactGallery, brandFontAssets } from "./artifacts/index.js";
@@ -171,10 +171,16 @@ interface AssembleInput {
    *  the workspace layout (bundle written to <brandDir>/system/, fonts/ next
    *  to it) and `"./"` when fonts/ ships inside the bundle itself. */
   fontsBase?: string;
+  /** Whether the brand is dark-native (light text on a near-black canvas).
+   *  Each entry point computes this from its own source of truth — the Brand
+   *  kit, or the raw prefetch material on the LLM-free URL path, whose observed
+   *  canvas would otherwise be lost to the seed's light clamp. Falls back to
+   *  deriving from the brand when omitted. */
+  darkNative?: boolean;
 }
 
 /** Derive all three themes from one seed and lay out the complete file bundle. */
-function assemble({ slug, brand, seed, extraFiles, fontFiles, fontsBase = "../" }: AssembleInput): BrandSystem {
+function assemble({ slug, brand, seed, extraFiles, fontFiles, fontsBase = "../", darkNative }: AssembleInput): BrandSystem {
   const themes: Record<ThemeAlgorithm, DesignTokens> = {
     default: deriveTokens(seed, "default"),
     dark: deriveTokens(seed, "dark"),
@@ -185,8 +191,11 @@ function assemble({ slug, brand, seed, extraFiles, fontFiles, fontsBase = "../" 
   // products read as the brand actually looks. The light/dark token sets above
   // are untouched — only which one drives the brand-representative outputs
   // (component kit, artifacts, gallery, antd theme.json) changes. `kit.dark.html`
-  // stays the explicit dark reference regardless.
-  const primaryAlgorithm: ThemeAlgorithm = isDarkNativeBrand(brand) ? "dark" : "default";
+  // stays the explicit dark reference regardless. The caller passes `darkNative`
+  // from its source of truth (the URL path can't recover it from `brand` after
+  // the seed clamp); fall back to deriving from the brand kit.
+  const primaryAlgorithm: ThemeAlgorithm =
+    (darkNative ?? isDarkNativeBrand(brand)) ? "dark" : "default";
   const primary = themes[primaryAlgorithm];
 
   const files: Record<string, string> = {};
@@ -353,7 +362,13 @@ export function buildBrandSystem(
   const normalizedBrand = normalizeBrandForAssembly(brand);
   const slug = opts?.slug ? slugify(opts.slug) : slugify(normalizedBrand.name);
   const seed = seedFromBrand(normalizedBrand);
-  return assemble({ slug, brand: normalizedBrand, seed, fontFiles: opts?.fontFiles });
+  return assemble({
+    slug,
+    brand: normalizedBrand,
+    seed,
+    fontFiles: opts?.fontFiles,
+    darkNative: isDarkNativeBrand(normalizedBrand),
+  });
 }
 
 // ─────────────────────────── public: from a URL ─────────────────────────────
@@ -464,7 +479,17 @@ export async function buildFromUrl(url: string, opts?: { slug?: string }): Promi
     }
 
     // fonts/ ships inside this standalone bundle, so urls resolve from its root.
-    return assemble({ slug, brand, seed, extraFiles, fontFiles: material.fontFiles, fontsBase: "./" });
+    // The seed clamps a dark canvas to light, so read dark-native straight from
+    // the prefetch material rather than the reconstructed brand.
+    return assemble({
+      slug,
+      brand,
+      seed,
+      extraFiles,
+      fontFiles: material.fontFiles,
+      fontsBase: "./",
+      darkNative: isDarkNativeMaterial(material),
+    });
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

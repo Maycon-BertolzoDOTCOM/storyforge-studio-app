@@ -25,7 +25,7 @@ import { patchMeta } from '../src/brands/store.js';
 import { ensureLogoFallback } from '../src/brands/logo-fallback.js';
 import { brandFromMaterial } from '../src/brands/provisional.js';
 import { listDesignSystems } from '../src/design-systems/index.js';
-import { buildBrandSystem, deriveTokens, seedFromMaterial } from '../src/brands/engine/index.js';
+import { buildBrandSystem, deriveTokens, seedFromMaterial, isDarkNativeMaterial } from '../src/brands/engine/index.js';
 import {
   adoptExistingImagery,
   findImageRefs,
@@ -273,6 +273,29 @@ describe('agent-driven brand extraction engine', () => {
     const system = buildBrandSystem(VALID_BRAND);
     expect(system.files['artifacts/landing.html']).not.toContain('--brand-color-bg-container: #141414;');
     expect(system.files['index.html']).not.toContain('--brand-color-bg-container: #141414;');
+  });
+
+  it('detects dark-native from raw prefetch material (URL path)', () => {
+    // The URL path can't recover the canvas from the reconstructed brand (the
+    // seed clamps it to white), so dark-native is read from the prefetch's most
+    // used color instead.
+    const darkMaterial = {
+      colors: [
+        { hex: '#000000', count: 240 },
+        { hex: '#ffffff', count: 30 },
+        { hex: '#0070f3', count: 12 },
+      ],
+    } as unknown as PrefetchResult;
+    const lightMaterial = {
+      colors: [
+        { hex: '#ffffff', count: 240 },
+        { hex: '#111111', count: 28 },
+        { hex: '#006fff', count: 12 },
+      ],
+    } as unknown as PrefetchResult;
+
+    expect(isDarkNativeMaterial(darkMaterial)).toBe(true);
+    expect(isDarkNativeMaterial(lightMaterial)).toBe(false);
   });
 
   beforeEach(() => {
