@@ -35,7 +35,7 @@ import {
 import { isOrchestratorScratchWorkspace } from './workspace-contract.js';
 
 const FORBIDDEN_SEGMENT = /^$|^\.\.?$/;
-const RESERVED_PROJECT_FILE_SEGMENTS = new Set(['.live-artifacts']);
+const RESERVED_PROJECT_FILE_SEGMENTS = new Set(['.file-versions', '.live-artifacts']);
 const DESIGN_HANDOFF_FILENAME = 'DESIGN-HANDOFF.md';
 const DESIGN_MANIFEST_FILENAME = 'DESIGN-MANIFEST.json';
 export const RUN_ARTIFACT_RECONCILE_MTIME_GRACE_MS = 1000;
