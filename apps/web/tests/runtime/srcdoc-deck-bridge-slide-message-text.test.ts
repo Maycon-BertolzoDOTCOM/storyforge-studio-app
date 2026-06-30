@@ -151,6 +151,46 @@ function setupDeckWithConstantNativeSlideMessageHandler() {
   return { flushTimers, win, slides };
 }
 
+function setupDeckWithStoppingNativeSlideMessageHandler() {
+  const bodyHtml = `
+    <section class="slide" style="display:block">Slide One</section>
+    <section class="slide" style="display:none">Slide Two</section>
+    <nav><span id="deck-cur">01</span>/<span id="deck-total">02</span></nav>
+  `;
+  const srcdoc = buildSrcdoc(`<!doctype html><html><body>${bodyHtml}</body></html>`, {
+    deck: true,
+  });
+  const script = extractDeckBridgeScript(srcdoc);
+  const dom = new JSDOM(`<!doctype html><html><body>${bodyHtml}</body></html>`, {
+    runScripts: 'outside-only',
+    pretendToBeVisual: true,
+  });
+  const win = dom.window;
+  const postMessage = vi.fn();
+  Object.defineProperty(win, 'parent', {
+    configurable: true,
+    value: { postMessage },
+  });
+  const flushTimers = installQueuedTimers(win);
+
+  const slides = Array.from(win.document.querySelectorAll<HTMLElement>('.slide'));
+  win.addEventListener('message', (event) => {
+    if (!event.data || event.data.type !== 'od:slide') return;
+    event.stopImmediatePropagation();
+    if (event.data.action === 'next') {
+      slides[0]!.style.display = 'none';
+      slides[1]!.style.display = '';
+      win.document.getElementById('deck-cur')!.textContent = '02';
+    }
+  });
+
+  const evaluate = new win.Function(script);
+  evaluate.call(win);
+  flushTimers();
+
+  return { flushTimers, postMessage, win, slides };
+}
+
 describe('deck bridge - slide message text', () => {
   it('keeps host navigation active when content mentions the od:slide protocol without handling it', () => {
     const { flushTimers, win, slides } = setupDeckThatMentionsSlideMessages();
@@ -215,6 +255,26 @@ describe('deck bridge - slide message text', () => {
     expect(first.style.display).toBe('none');
     expect(second.style.display).toBe('');
     expect(third.style.display).toBe('none');
+    win.close();
+  });
+
+  it('reports native slide state when an earlier handler stops propagation', () => {
+    const { flushTimers, postMessage, win, slides } = setupDeckWithStoppingNativeSlideMessageHandler();
+    const [first, second] = slides;
+    if (!first || !second) throw new Error('expected two slides');
+
+    win.dispatchEvent(
+      new win.MessageEvent('message', { data: { type: 'od:slide', action: 'next' } }),
+    );
+    flushTimers();
+
+    expect(first.style.display).toBe('none');
+    expect(second.style.display).toBe('');
+    expect(win.document.getElementById('deck-cur')?.textContent).toBe('02');
+    expect(postMessage).toHaveBeenLastCalledWith(
+      { type: 'od:slide-state', active: 1, count: 2 },
+      '*',
+    );
     win.close();
   });
 });

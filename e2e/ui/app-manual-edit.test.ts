@@ -402,7 +402,7 @@ test('[P0] deck host navigation advances one slide when the deck also handles sl
     'keyboard-deck.html',
     'Keyboard Deck',
     ['Slide One', 'Slide Two', 'Slide Three'],
-    { selfHandlesSlideMessages: true },
+    { stopsSlideMessagePropagation: true },
   );
   await page.goto(`/projects/${projectId}/files/keyboard-deck.html`);
   await openDesignFile(page, 'keyboard-deck.html');
@@ -434,6 +434,37 @@ test('[P0] deck host navigation works when deck content only mentions slide mess
   await page.getByLabel('Next slide').click();
   await expect(frame.getByText('Slide Two')).toBeVisible();
   await expect(frame.getByText('Slide One')).toBeHidden();
+});
+
+test('[P0] deck host counter stays synced when a self-handling deck stops slide messages', async ({ page }) => {
+  await routeMockAgents(page);
+  const projectId = await createEmptyProject(page, 'Deck stopped message sync');
+  await seedDeckArtifact(
+    page,
+    projectId,
+    'stopped-message-deck.html',
+    'Stopped Message Deck',
+    ['Slide One', 'Slide Two', 'Slide Three'],
+    { stopsSlideMessagePropagation: true },
+  );
+  await page.goto(`/projects/${projectId}/files/stopped-message-deck.html`);
+  await openDesignFile(page, 'stopped-message-deck.html');
+
+  const frame = artifactPreviewFrame(page);
+  const hostCounter = page.locator('.deck-nav-counter');
+  await expect(frame.getByText('Slide One')).toBeVisible();
+  await expect(hostCounter).toHaveText('1 / 3');
+  await expect(frame.locator('#deck-cur')).toHaveText('01');
+
+  await page.getByLabel('Next slide').click();
+  await expect(frame.getByText('Slide Two')).toBeVisible();
+  await expect(hostCounter).toHaveText('2 / 3');
+  await expect(frame.locator('#deck-cur')).toHaveText('02');
+
+  await page.getByLabel('Previous slide').click();
+  await expect(frame.getByText('Slide One')).toBeVisible();
+  await expect(hostCounter).toHaveText('1 / 3');
+  await expect(frame.locator('#deck-cur')).toHaveText('01');
 });
 
 
@@ -691,19 +722,36 @@ async function seedDeckArtifact(
   fileName: string,
   title: string,
   slides: string[],
-  options: { selfHandlesSlideMessages?: boolean; mentionsSlideMessageProtocol?: boolean } = {},
+  options: {
+    selfHandlesSlideMessages?: boolean;
+    mentionsSlideMessageProtocol?: boolean;
+    stopsSlideMessagePropagation?: boolean;
+  } = {},
 ) {
   const slideHtml = slides
     .map((slide, index) => `<section class="slide" data-od-id="slide-${index + 1}"${index === 0 ? '' : ' hidden'}><h1>${slide}</h1></section>`)
     .join('\n');
-  const slideScript = options.selfHandlesSlideMessages
+  const deckChrome = options.stopsSlideMessagePropagation
+    ? '<nav><span id="deck-cur">01</span> / <span id="deck-total">03</span></nav>'
+    : '';
+  const slideScript = options.selfHandlesSlideMessages || options.stopsSlideMessagePropagation
     ? `<script>
     (() => {
       let active = 0;
       const slides = Array.from(document.querySelectorAll('.slide'));
-      function render() { slides.forEach((slide, index) => { slide.style.display = index === active ? '' : 'none'; }); }
+      function render() {
+        slides.forEach((slide, index) => {
+          slide.style.display = index === active ? '' : 'none';
+          slide.toggleAttribute('hidden', index !== active);
+        });
+        const cur = document.getElementById('deck-cur');
+        const total = document.getElementById('deck-total');
+        if (cur) cur.textContent = String(active + 1).padStart(2, '0');
+        if (total) total.textContent = String(slides.length).padStart(2, '0');
+      }
       window.addEventListener('message', (event) => {
         if (!event.data || event.data.type !== 'od:slide') return;
+        ${options.stopsSlideMessagePropagation ? 'event.stopImmediatePropagation();' : ''}
         if (event.data.action === 'next') active = Math.min(slides.length - 1, active + 1);
         if (event.data.action === 'prev') active = Math.max(0, active - 1);
         if (event.data.action === 'first') active = 0;
@@ -712,10 +760,10 @@ async function seedDeckArtifact(
           active = Math.max(0, Math.min(slides.length - 1, event.data.index));
         }
         render();
-        window.parent.postMessage({ type: 'od:slide-state', active, count: slides.length }, '*');
+        ${options.stopsSlideMessagePropagation ? '' : "window.parent.postMessage({ type: 'od:slide-state', active, count: slides.length }, '*');"}
       });
       render();
-      window.parent.postMessage({ type: 'od:slide-state', active, count: slides.length }, '*');
+      ${options.stopsSlideMessagePropagation ? '' : "window.parent.postMessage({ type: 'od:slide-state', active, count: slides.length }, '*');"}
     })();
     </script>`
     : '';
@@ -727,7 +775,7 @@ async function seedDeckArtifact(
     {
       data: {
         name: fileName,
-        content: `<!doctype html><html><body>${slideHtml}${protocolText}${slideScript}</body></html>`,
+        content: `<!doctype html><html><body>${deckChrome}${slideHtml}${protocolText}${slideScript}</body></html>`,
         artifactManifest: {
           version: 1,
           kind: 'deck',

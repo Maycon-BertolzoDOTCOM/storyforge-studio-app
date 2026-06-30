@@ -2026,6 +2026,8 @@ function injectDeckBridge(doc: string, initialSlideIndex = 0): string {
   const safeInitialSlideIndex = Number.isFinite(initialSlideIndex)
     ? Math.max(0, Math.floor(initialSlideIndex))
     : 0;
+  const hasInlineSlideMessageListener =
+    /addEventListener\s*\(\s*['"]message['"]/i.test(doc) && /\bod:slide\b/.test(doc);
   const isFrameworkDeck = /\bid\s*=\s*["']deck-stage["']/i.test(doc);
   const styleFix = isFrameworkDeck
     ? ''
@@ -2365,6 +2367,7 @@ function injectDeckBridge(doc: string, initialSlideIndex = 0): string {
       var i = activeIndex(list);
       var count = list.length;
       var progressWidth = count ? ((i + 1) / count * 100) + '%' : '0';
+      updateDeckChrome(i, count);
       window.parent.postMessage({
         type: 'od:slide-state',
         active: i,
@@ -2401,7 +2404,7 @@ function injectDeckBridge(doc: string, initialSlideIndex = 0): string {
   }
   var odSlideMessageBeforeIndex = -1;
   var odDeckBridgeInstallingMessageListener = false;
-  var odHasExternalSlideMessageListener = false;
+  var odHasExternalSlideMessageListener = ${JSON.stringify(hasInlineSlideMessageListener)};
   function odMaybeHandlesSlideMessages(listener) {
     try {
       var source = '';
@@ -2434,7 +2437,11 @@ function injectDeckBridge(doc: string, initialSlideIndex = 0): string {
   addOdSlideMessageListener(function(ev){
     var data = ev && ev.data;
     if (!data || data.type !== 'od:slide') return;
-    odSlideMessageBeforeIndex = activeIndex(slides());
+    var before = activeIndex(slides());
+    odSlideMessageBeforeIndex = before;
+    setTimeout(function(){
+      if (activeIndex(slides()) !== before) report();
+    }, 0);
   }, true);
   addOdSlideMessageListener(function(ev){
     var data = ev && ev.data;
