@@ -304,6 +304,27 @@ describe('app-config', () => {
       expect(cfg.agentModels).toBeUndefined();
     });
 
+    it('clears retired Gemini agent preferences from stored config', async () => {
+      await writeFile(path.join(dataDir, 'app-config.json'), JSON.stringify({
+        agentId: 'gemini',
+        agentModels: {
+          gemini: { model: 'gemini-2.5-pro' },
+          codex: { model: 'gpt-5-codex' },
+        },
+        agentCliEnv: {
+          gemini: { GEMINI_BIN: '~/bin/gemini' },
+        },
+      }));
+
+      const cfg = await readAppConfig(dataDir);
+
+      expect(cfg.agentId).toBeUndefined();
+      expect(cfg.agentModels).toEqual({
+        codex: { model: 'gpt-5-codex' },
+      });
+      expect(cfg.agentCliEnv).toBeUndefined();
+    });
+
     it('persists supported per-agent CLI env keys and drops everything else', async () => {
       await writeAppConfig(dataDir, {
         agentCliEnv: {
