@@ -542,6 +542,25 @@ function promotedAmrRetryStatusPayload(update: JsonObject) {
   };
 }
 
+function promotedAmrStderrPayload(chunk: string) {
+  if (!/opencode_event_stream_failure|session\.status/i.test(chunk)) return null;
+  if (!/\bretry\b/i.test(chunk)) return null;
+  const failure = classifyAmrAccountFailure(chunk);
+  if (!failure) return null;
+  return {
+    message: failure.message,
+    error: {
+      code: failure.code,
+      message: failure.message,
+      retryable: false,
+      details: {
+        ...amrAccountFailureDetails(failure),
+        promoted_by: 'open_design_acp_stderr_retry_status',
+      },
+    },
+  };
+}
+
 function acpToolCallId(update: JsonObject): string | null {
   return typeof update.toolCallId === 'string' && update.toolCallId.trim()
     ? update.toolCallId.trim()
@@ -1649,6 +1668,12 @@ export function attachAcpSession({
   });
 
   stdout.on('data', (chunk: string) => parser.feed(chunk));
+  child.stderr?.setEncoding('utf8');
+  child.stderr?.on('data', (chunk: string) => {
+    if (!modelUnavailableErrorCode) return;
+    const promotedPayload = promotedAmrStderrPayload(String(chunk));
+    if (promotedPayload) failWithPayload(promotedPayload);
+  });
   child.on('close', (code, signal) => {
     clearStageTimer();
     parser.flush();
