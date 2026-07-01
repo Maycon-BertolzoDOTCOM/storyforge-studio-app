@@ -203,8 +203,65 @@ const cobeEnhancerUrl = `/enhancers/cobe.js?v=${
   </head>
   <body>
     <Fragment set:html={pageHtml} />
-    <PreciseLazyload />
+    {/*
+     * Tighter than the catalog default (1500px): the homepage's heavy
+     * below-the-fold art — full-bleed section backdrops, product shots — must
+     * not join the initial request burst and starve the hero LCP of bandwidth.
+     * 600px still pre-loads roughly one viewport ahead so scrolling stays warm.
+     */}
+    <PreciseLazyload imgRootMargin="600px 0px" />
     <LocaleSwitcherScript />
+    {/*
+     * Enhancement infrastructure — defined before any enhancer runs so the
+     * below-the-fold defer helpers are available to every script that follows.
+     */}
+    <script is:inline define:vars={{ matterEnhancerUrl, cobeEnhancerUrl }}>
+      window.__enhancerUrls = { matter: matterEnhancerUrl, cobe: cobeEnhancerUrl };
+      // Run `cb` once any element matching `selector` nears the viewport (one
+      // shot). Used to defer below-the-fold enhancers whose init eagerly pulls
+      // heavy art — the Labs dock preloads its ~500KB of preview stills, the
+      // contributor orbit builds ~350KB of avatars — so that art no longer
+      // competes with the hero LCP for bandwidth on first load.
+      window.__whenNear = (selector, cb, rootMargin) => {
+        const els = document.querySelectorAll(selector);
+        if (!els.length) return;
+        if (!('IntersectionObserver' in window)) {
+          cb();
+          return;
+        }
+        const io = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              io.disconnect();
+              cb();
+            }
+          },
+          { rootMargin: rootMargin || '0px 0px 150% 0px' },
+        );
+        els.forEach((el) => io.observe(el));
+      };
+      // On-demand loader for the vendored enhancement runtimes (matter-js /
+      // cobe). Injects each classic script at most once and resolves once it
+      // has attached its global (`window.Matter` / `window.__cobe`). The script
+      // element is created at runtime (never authored as static markup), so the
+      // built HTML carries no external-script tag and the `Verify zero external
+      // JavaScript` gate stays green while ~96KB of decorative runtime leaves
+      // the critical document.
+      window.__loadEnhancer = (src) => {
+        const cache = (window.__enhancerCache = window.__enhancerCache || {});
+        return (
+          cache[src] ||
+          (cache[src] = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.async = true;
+            s.onload = () => resolve();
+            s.onerror = reject;
+            document.head.appendChild(s);
+          }))
+        );
+      };
+    </script>
     <script is:inline>
       (() => {
         const formatStars = (count) => {
@@ -1434,7 +1491,9 @@ const cobeEnhancerUrl = `/enhancers/cobe.js?v=${
         enhanceLabAutoCycle();
         enhanceCountups();
         enhanceDownloadCta();
-        enhanceLabSwitch();
+        // Deferred: its init preloads ~500KB of Labs preview stills. The dock
+        // is far below the fold, so hold that burst until it nears the viewport.
+        window.__whenNear('.lab-stage', enhanceLabSwitch);
         enhanceCapScrolly();
         enhanceAboutScrolly();
         enhanceFaqHover();
@@ -1460,30 +1519,6 @@ const cobeEnhancerUrl = `/enhancers/cobe.js?v=${
 
         for (const el of elements) observer.observe(el);
       })();
-    </script>
-    <script is:inline define:vars={{ matterEnhancerUrl, cobeEnhancerUrl }}>
-      // On-demand loader for the vendored enhancement runtimes (matter-js /
-      // cobe). Injects each classic script at most once and resolves once it
-      // has attached its global (`window.Matter` / `window.__cobe`). The script
-      // element is created at runtime (never authored as static markup), so the
-      // built HTML carries no external-script tag and the `Verify zero external
-      // JavaScript` gate stays green while ~96KB of decorative runtime leaves
-      // the critical document.
-      window.__enhancerUrls = { matter: matterEnhancerUrl, cobe: cobeEnhancerUrl };
-      window.__loadEnhancer = (src) => {
-        const cache = (window.__enhancerCache = window.__enhancerCache || {});
-        return (
-          cache[src] ||
-          (cache[src] = new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = src;
-            s.async = true;
-            s.onload = () => resolve();
-            s.onerror = reject;
-            document.head.appendChild(s);
-          }))
-        );
-      };
     </script>
     <script is:inline>
       const initContributorGlobes = () => {
@@ -1707,7 +1742,9 @@ const cobeEnhancerUrl = `/enhancers/cobe.js?v=${
           .catch(() => buildFromGitHub());
       };
 
-      enhanceContributorOrbit();
+      // Deferred: builds ~350KB of contributor avatars. The orbit sits well
+      // below the fold, so hold that burst until it nears the viewport.
+      window.__whenNear('[data-contributor-orbit]', enhanceContributorOrbit);
     </script>
     <script is:inline>
       // FallingText (React Bits) ported to vanilla matter-js. The agent-name
