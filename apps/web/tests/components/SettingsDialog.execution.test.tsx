@@ -2921,6 +2921,53 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     expect(screen.queryByText(/^vela$/i)).toBeNull();
   });
 
+  it('keeps the AMR plan badge outside the clipped benefits row', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url === '/api/memory') {
+        return new Response(
+          JSON.stringify({ enabled: true, memories: [], extraction: null }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url === '/api/integrations/vela/status') {
+        return new Response(
+          JSON.stringify({
+            loggedIn: true,
+            profile: 'local',
+            user: {
+              id: 'user-1',
+              email: 'signed-in@example.com',
+              name: 'Signed In User',
+            },
+            account: { plan: 'pro' },
+            configPath: '/Users/test/.amr/config.json',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderSettingsDialog(
+      { mode: 'daemon', agentId: 'amr' },
+      { agents: [amrAgent] },
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
+
+    const amrCardButton = await screen.findByRole('button', { name: /Plan pro/ });
+    const planBadge = within(amrCardButton).getByText('pro');
+    const benefits = amrCardButton.querySelector('.agent-card-benefits');
+    const planSlot = planBadge.closest('.agent-card-plan-badge-slot');
+
+    expect(benefits).toBeTruthy();
+    expect(planSlot).toBeTruthy();
+    expect(planSlot?.getAttribute('aria-hidden')).toBe('true');
+    expect(benefits?.contains(planBadge)).toBe(false);
+  });
+
   it('loads the Settings AMR wallet fallback balance without a manual card refresh button', async () => {
     let walletCalls = 0;
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {

@@ -1440,6 +1440,14 @@
   max-width: 100%;
   overflow: hidden;
 }
+.agent-card-plan-badge-slot {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+.agent-card-plan-badge {
+  flex: 0 0 auto;
+}
 .agent-card-benefit {
   display: inline-flex;
   align-items: center;

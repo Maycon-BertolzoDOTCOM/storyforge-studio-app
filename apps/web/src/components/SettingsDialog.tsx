@@ -4405,15 +4405,6 @@ export function SettingsDialog({
                                                 {benefit}
                                               </span>
                                             ))}
-                                            <PlanBadge
-                                              plan={amrCardPlanLabel}
-                                              size="sm"
-                                              title={
-                                                amrCardPlanLabel
-                                                  ? `${t('settings.amrPlan')} ${amrCardPlanLabel}`
-                                                  : undefined
-                                              }
-                                            />
                                           </span>
                                         ) : description ? (
                                           <>
@@ -4427,6 +4418,23 @@ export function SettingsDialog({
                                               {description}
                                             </span>
                                           </>
+                                        ) : null}
+                                        {isAmrAgent ? (
+                                          <span
+                                            className="agent-card-plan-badge-slot"
+                                            aria-hidden="true"
+                                          >
+                                            <PlanBadge
+                                              plan={amrCardPlanLabel}
+                                              size="sm"
+                                              className="agent-card-plan-badge"
+                                              title={
+                                                amrCardPlanLabel
+                                                  ? `${t('settings.amrPlan')} ${amrCardPlanLabel}`
+                                                  : undefined
+                                              }
+                                            />
+                                          </span>
                                         ) : null}
                                         {isAmrAgent && amrCardPlanLabel ? (
                                           <VisuallyHidden>
