@@ -79,8 +79,12 @@
     transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.primary:hover {
+.primary:hover:not(:disabled) {
+  /* :not(:disabled) matches the global `button:hover:not(:disabled)` rule in
+     primitives.css — without it that rule repaints the background to
+     --bg-subtle and washes the white label away. */
   background: var(--accent-strong);
+  border-color: var(--accent-strong);
 }
 
 .primary:active {
@@ -100,14 +104,18 @@
   transition: color 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.change:hover {
+.change:hover:not(:disabled) {
+  /* Specificity-matches the global button:hover rule (see .primary above);
+     a soft white wash instead of its gray --bg-subtle fill. */
   color: var(--accent-strong);
+  background: color-mix(in srgb, #fff 55%, transparent);
+  border-radius: 999px;
 }
 
 /* "Browse all types" — quietest action, trailing edge. */
 .tertiary {
   flex: 0 0 auto;
-  padding: 6px 4px;
+  padding: 6px 10px;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-muted);
@@ -117,7 +125,8 @@
   transition: color 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.tertiary:hover {
+.tertiary:hover:not(:disabled) {
   color: var(--text);
-  text-decoration: underline;
+  background: color-mix(in srgb, #fff 55%, transparent);
+  border-radius: 999px;
 }

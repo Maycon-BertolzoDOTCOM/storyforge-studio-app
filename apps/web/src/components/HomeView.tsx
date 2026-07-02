@@ -2103,7 +2103,13 @@ export function HomeView({
         <RecommendedStartRegion
           recommendation={recommendation}
           onStart={onRecommendationStart}
-          onDismiss={onRecommendationDismiss}
+          onDismiss={() => {
+            onRecommendationDismiss();
+            // "浏览全部类型" must land the user somewhere concrete — open the
+            // template picker (the "all types" catalogue) instead of the strip
+            // silently vanishing (spec §7.4: 放弃推荐, 进入通用选择).
+            onOpenNewProject?.('template');
+          }}
         />
       ) : null}
 
