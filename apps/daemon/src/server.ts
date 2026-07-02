@@ -4971,6 +4971,39 @@ export async function startServer({
               skillName = local.name;
               activeSkillDir = local.dir;
               registerSkillDir(local.dir);
+            } else {
+              // The plugin references a shared global skill by id
+              // (`od.context.skills[{ ref: '<skill-id>' }]`) instead of
+              // shipping its own SKILL.md — resolve it from the global
+              // registry so the pinned plugin still gets the skill body AND
+              // its companion dir staged into the project cwd (scripts, etc).
+              // Lets many example plugins share one skill without each
+              // duplicating the SKILL.md and its scripts.
+              const skillRef = plugin.manifest?.od?.context?.skills?.find(
+                (ref): ref is { ref: string } =>
+                  typeof (ref as { ref?: unknown })?.ref === 'string'
+                  && (ref as { ref: string }).ref.trim().length > 0,
+              )?.ref?.trim();
+              if (skillRef) {
+                const allSkills = await loadAllSkills();
+                const refSkill = findSkillById(allSkills, skillRef);
+                if (refSkill) {
+                  skillBody = refSkill.body + composedSkillBlocks;
+                  skillName = refSkill.name;
+                  activeSkillDir = refSkill.dir;
+                  registerPrimarySkillMode(refSkill.mode);
+                  registerSkillDir(refSkill.dir);
+                  skillCritiquePolicy = mergeSkillCritiquePolicy(
+                    skillCritiquePolicy,
+                    refSkill.critiquePolicy,
+                  );
+                  if (Array.isArray(refSkill.craftRequires)) {
+                    for (const craft of refSkill.craftRequires) {
+                      if (!skillCraftRequires.includes(craft)) skillCraftRequires.push(craft);
+                    }
+                  }
+                }
+              }
             }
           }
         }

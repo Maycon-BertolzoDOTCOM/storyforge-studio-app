@@ -151,9 +151,9 @@ const residualAllowedPathPrefixes = [
   // Vendored upstream html-ppt runtime assets (lewislulu/html-ppt-skill, design template).
   "design-templates/html-ppt/assets/",
   // Vendored upstream website-clone recon/mirror/audit helpers
-  // (Jane-xiaoer/claude-skill-web-clone). Plugin assets staged into the
+  // (Jane-xiaoer/claude-skill-web-clone). Global skill assets staged into the
   // project cwd for direct `node scripts/...` execution by the agent.
-  "plugins/_official/examples/web-clone/scripts/",
+  "skills/web-clone/scripts/",
   // Replay-based mock CLIs that impersonate the agent CLIs OD spawns
   // (opencode/claude/codex/gemini/cursor-agent + ACP family). Need to
   // be directly executable via Node so `child_process.spawn` from test

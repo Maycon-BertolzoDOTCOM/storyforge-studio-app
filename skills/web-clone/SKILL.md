@@ -22,9 +22,6 @@ od:
   mode: prototype
   scenario: web-clone
   surface: web
-  preview:
-    type: html
-    entry: index.html
   design_system:
     requires: false
 ---

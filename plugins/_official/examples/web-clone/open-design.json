@@ -33,13 +33,6 @@
     "reproduce-site",
     "visual-clone"
   ],
-  "compat": {
-    "agentSkills": [
-      {
-        "path": "./SKILL.md"
-      }
-    ]
-  },
   "od": {
     "kind": "scenario",
     "taskKind": "new-generation",
@@ -68,33 +61,8 @@
     "context": {
       "skills": [
         {
-          "path": "./SKILL.md"
+          "ref": "web-clone"
         }
-      ],
-      "assets": [
-        "./LICENSE",
-        "./references/assessment.md",
-        "./references/complex-playbooks.md",
-        "./references/deliverables.md",
-        "./references/design-dna.md",
-        "./references/effect-extraction.md",
-        "./references/marbles-case.md",
-        "./references/reverse-engineering.md",
-        "./references/static-mirror.md",
-        "./scripts/asset-harvest.mjs",
-        "./scripts/audit-clone.mjs",
-        "./scripts/compare-recon.mjs",
-        "./scripts/dna-scaffold.mjs",
-        "./scripts/init-clone.mjs",
-        "./scripts/interaction-probe.mjs",
-        "./scripts/lib/playwright-loader.mjs",
-        "./scripts/mirror-site.mjs",
-        "./scripts/network-capture.mjs",
-        "./scripts/od-preview-rewrite.mjs",
-        "./scripts/recon-site.mjs",
-        "./scripts/route-crawl.mjs",
-        "./scripts/sourcemap-hunt.mjs",
-        "./scripts/visual-diff.mjs"
       ]
     },
     "pipeline": {
