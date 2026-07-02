@@ -2481,6 +2481,7 @@ export interface Dict {
   'chat.contextUsage.modelWindow': string;
   'chat.contextUsage.estimatedWindow': string;
   'chat.contextUsage.systemPrompt': string;
+  'chat.contextUsage.agentRuntime': string;
   'chat.contextUsage.toolDefinitions': string;
   'chat.contextUsage.rules': string;
   'chat.contextUsage.skills': string;

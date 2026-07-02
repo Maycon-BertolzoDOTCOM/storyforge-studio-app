@@ -81,9 +81,10 @@ export function AdvisorBanner({
     const { agentId, currentModel, agentModels } = resolveAdvisorModel(config, agentsById);
     const nudges = evaluateAdvisorNudges({
       sessionMode,
-      contextRatio: contextUsage.usedRatio,
-      // ChatPane already mounts ContextUsageWarning for the ≥90% critical
-      // tier, so this banner only serves the 75% tier here.
+      // ChatPane owns the dedicated context warning for both warning and
+      // critical tiers. Keep Advisor focused on non-context nudges here so the
+      // composer never shows duplicate "start a new session" prompts.
+      contextRatio: contextUsage.warningLevel ? 0 : contextUsage.usedRatio,
       criticalContextCoveredElsewhere: true,
       agentId,
       currentModel,

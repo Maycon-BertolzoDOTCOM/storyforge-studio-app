@@ -23,6 +23,7 @@ interface ContextUsageWarningProps {
 const SEGMENT_COLORS: Record<ContextUsageSegmentId, string> = {
   system: '#a8a8a8',
   cache: '#6f9f5f',
+  agentRuntime: '#718096',
   tools: '#a66be8',
   rules: '#4bb26d',
   skills: '#efb457',
@@ -37,6 +38,7 @@ const SEGMENT_COLORS: Record<ContextUsageSegmentId, string> = {
 const SEGMENT_LABEL_KEYS: Record<ContextUsageSegmentId, keyof Dict> = {
   system: 'chat.contextUsage.systemPrompt',
   cache: 'settings.amrWalletCached',
+  agentRuntime: 'chat.contextUsage.agentRuntime',
   tools: 'chat.contextUsage.toolDefinitions',
   rules: 'chat.contextUsage.rules',
   skills: 'chat.contextUsage.skills',

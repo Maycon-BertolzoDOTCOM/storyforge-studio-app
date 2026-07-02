@@ -8,6 +8,7 @@ import {
 export type ContextUsageSegmentId =
   | 'system'
   | 'cache'
+  | 'agentRuntime'
   | 'tools'
   | 'rules'
   | 'skills'
@@ -406,11 +407,12 @@ function inputSegmentsForProviderUsage(
   const cacheTokens = Math.min(providerContextInputTokens, cacheReadTokens ?? 0);
   const nonCacheBudget = Math.max(0, providerContextInputTokens - cacheTokens);
   const fittedKnownSegments = fitSegmentsToBudget(knownInputSegments, nonCacheBudget);
-  const otherTokens = Math.max(0, nonCacheBudget - sumTokens(fittedKnownSegments));
+  const residualTokens = Math.max(0, nonCacheBudget - sumTokens(fittedKnownSegments));
+  const residualSegmentId = cacheTokens > 0 ? 'other' : 'agentRuntime';
   return [
     ...(cacheTokens > 0 ? [{ id: 'cache' as const, tokens: cacheTokens }] : []),
     ...fittedKnownSegments,
-    ...(otherTokens > 0 ? [{ id: 'other' as const, tokens: otherTokens }] : []),
+    ...(residualTokens > 0 ? [{ id: residualSegmentId, tokens: residualTokens }] : []),
   ];
 }
 
