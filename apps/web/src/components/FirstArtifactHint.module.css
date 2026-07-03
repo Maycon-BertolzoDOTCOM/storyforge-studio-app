@@ -7,8 +7,13 @@
 .root {
   position: fixed;
   right: 24px;
+  /* top is set inline by the component: measured below the viewer toolbar. */
   top: 78px;
   z-index: 40;
+  /* Belt-and-braces: the card never intercepts clicks meant for controls it
+     might momentarily overlap during layout shifts — only the dismiss button
+     is interactive. */
+  pointer-events: none;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -64,6 +69,7 @@
 }
 
 .dismiss {
+  pointer-events: auto;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;

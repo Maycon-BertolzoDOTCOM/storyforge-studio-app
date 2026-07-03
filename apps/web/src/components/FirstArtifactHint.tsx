@@ -36,6 +36,38 @@ export function FirstArtifactHint() {
     const timer = window.setTimeout(() => setSettled(true), 600);
     return () => window.clearTimeout(timer);
   }, []);
+  // Anchor below the preview's action toolbar wherever it currently sits —
+  // tab strips above it vary per layout, so a hardcoded offset can land ON
+  // the toolbar and occlude its controls (caught by the Playwright critical
+  // suite). Re-measured on resize; falls back to the chrome-height estimate
+  // when no viewer toolbar is mounted.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!settled) return;
+    const measure = () => {
+      const el = rootRef.current;
+      if (!el) return;
+      // Multiple viewers can be mounted (one per open tab); anchor below the
+      // lowest visible toolbar so the card clears the active one. Written
+      // straight to the element — a state update would re-render mid-flight
+      // and restart (or freeze) the motion keyframes.
+      let bottom = 0;
+      for (const bar of document.querySelectorAll('.viewer-toolbar')) {
+        const rect = bar.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) bottom = Math.max(bottom, rect.bottom);
+      }
+      if (bottom > 0) el.style.top = `${Math.round(bottom + 10)}px`;
+    };
+    measure();
+    // Tab strips / toolbars settle over the first seconds of a project load;
+    // re-measure a few times instead of trusting the first layout pass.
+    const timers = [400, 1200, 2600].map((ms) => window.setTimeout(measure, ms));
+    window.addEventListener('resize', measure);
+    return () => {
+      timers.forEach((id) => window.clearTimeout(id));
+      window.removeEventListener('resize', measure);
+    };
+  }, [settled]);
   const firedRef = useRef(false);
 
   useEffect(() => {
@@ -69,6 +101,7 @@ export function FirstArtifactHint() {
     // gives two equal 4px knocks with a pause between them (easeInOut).
     // Skipped entirely under prefers-reduced-motion.
     <motion.div
+      ref={rootRef}
       className={styles.root}
       role="status"
       data-testid="first-artifact-hint"
