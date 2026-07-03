@@ -93,6 +93,22 @@ const targetDefs: TargetDef[] = [
 // (override the path with RELEASE_WHATS_NEW_PATH). A missing file is the
 // normal quiet case; a present-but-malformed file fails the publish loudly so
 // broken highlights never ship silently.
+// Publish-time mirror of the daemon's readHttpsUrl (apps/daemon/src/services/
+// whats-new.ts): the daemon trims, runs new URL(...), and requires https:,
+// silently dropping anything that fails. A value the daemon would drop must
+// therefore fail here loudly, not just carry an "https://" prefix.
+function assertHttpsUrl(value: unknown, label: string, path: string): void {
+  const message = `whats-new ${label} must be an HTTPS URL: ${path}`;
+  if (typeof value !== "string") throw new Error(message);
+  let parsed: URL;
+  try {
+    parsed = new URL(value.trim());
+  } catch {
+    throw new Error(message);
+  }
+  if (parsed.protocol !== "https:") throw new Error(message);
+}
+
 function readWhatsNewBlock(baseVersion: string): Record<string, unknown> | null {
   const path = optional("RELEASE_WHATS_NEW_PATH", join(process.cwd(), "tools", "release", "whats-new", `${baseVersion}.json`));
   if (!existsSync(path)) return null;
@@ -108,9 +124,7 @@ function readWhatsNewBlock(baseVersion: string): Record<string, unknown> | null 
     }
   }
   for (const field of ["imageUrl", "linkUrl"] as const) {
-    if (block[field] != null && !String(block[field]).startsWith("https://")) {
-      throw new Error(`whats-new "${field}" must be an HTTPS URL: ${path}`);
-    }
+    if (block[field] != null) assertHttpsUrl(block[field], `"${field}"`, path);
   }
   // Locale overrides ship into metadata.json for the daemon's
   // parseLocaleOverrides, which silently drops malformed values — so a bad
@@ -129,8 +143,8 @@ function readWhatsNewBlock(baseVersion: string): Record<string, unknown> | null 
           throw new Error(`whats-new locale "${locale}" requires a non-empty string "${field}": ${path}`);
         }
       }
-      if (override.linkUrl != null && !String(override.linkUrl).startsWith("https://")) {
-        throw new Error(`whats-new locale "${locale}" "linkUrl" must be an HTTPS URL: ${path}`);
+      if (override.linkUrl != null) {
+        assertHttpsUrl(override.linkUrl, `locale "${locale}" "linkUrl"`, path);
       }
     }
   }
