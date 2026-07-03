@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { isVisualStabilityMode } from '../utils/visualStability';
 
 export type DemoScenario =
   | 'home'
@@ -83,7 +84,9 @@ const ROLE_CHIPS: Array<{ id: DemoScenario; label: string; invite?: boolean }> =
 
 const VIEW_CHIPS: Array<{ id: DemoScenario; label: string }> = [
   { id: 'owner', label: 'Owner' },
-  { id: 'manager', label: 'Manager' },
+  // Label aligned to the PRD role matrix (Owner/Admin/Editor/Viewer); the
+  // scenario id stays 'manager' so existing gating logic is untouched.
+  { id: 'manager', label: 'Admin' },
   { id: 'editor', label: 'Editor' },
   { id: 'viewer', label: 'Viewer' },
 ];
@@ -315,6 +318,12 @@ function Bar({ page, onPage, scenario, onScenario, plan, onPlan, useMode, onUseM
 }
 
 export function DemoControlBar(props: Props) {
+  // The demo scenario switcher is scaffolding, not a captured product surface.
+  // In visual-stability mode its fixed portal overlaps and intercepts pointer
+  // events on menu/dialog affordances (e.g. entry-settings), so keep it out of
+  // the DOM entirely there. Hooks stay unconditional to satisfy the rules of
+  // hooks; only the body-append and the portal render are gated.
+  const visualStability = isVisualStabilityMode();
   const containerRef = useRef<HTMLDivElement | null>(null);
   if (!containerRef.current) {
     const div = document.createElement('div');
@@ -323,10 +332,12 @@ export function DemoControlBar(props: Props) {
   }
 
   useEffect(() => {
+    if (visualStability) return;
     const el = containerRef.current!;
     document.body.appendChild(el);
     return () => { document.body.removeChild(el); };
-  }, []);
+  }, [visualStability]);
 
+  if (visualStability) return null;
   return createPortal(<Bar {...props} />, containerRef.current);
 }
