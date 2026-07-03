@@ -1,4 +1,4 @@
-import { projectKindToTracking } from '@open-design/contracts/analytics';
+import { projectKindFromMetadataToTracking } from '@open-design/contracts/analytics';
 import {
   countDesignSystemPreviewModules,
   countNewArtifacts,
@@ -13,8 +13,12 @@ export interface RunEventRecordLike {
 }
 
 export interface ProjectMetadataForAnalytics {
-  kind?: unknown;
-  videoModel?: unknown;
+  kind?: string | null;
+  videoModel?: string | null;
+  fidelity?: string | null;
+  intent?: string | null;
+  platform?: string | null;
+  platformTargets?: readonly string[] | null;
   importedFrom?: unknown;
 }
 
@@ -38,11 +42,17 @@ export function resolveRunProjectKindForAnalytics({
 }): string | null {
   if (typeof hintProjectKind === 'string') return hintProjectKind;
   if (projectMetadata?.importedFrom === 'design-system') return 'design_system';
-  const kind = typeof projectMetadata?.kind === 'string' ? projectMetadata.kind : null;
-  const videoModel = typeof projectMetadata?.videoModel === 'string'
-    ? projectMetadata.videoModel
-    : null;
-  return projectKindToTracking(kind, videoModel);
+  // Brand-extraction backing projects (kind:'brand', importedFrom:
+  // 'brand-extraction') ARE design systems — a brand is one source for a DS,
+  // not a separate object. Report them as design_system so DS-project runs
+  // (creation + later edits) drill down cleanly. See design-system tracking spec §1.
+  if (projectMetadata?.importedFrom === 'brand-extraction') return 'design_system';
+  // Derive straight from the persisted metadata: videoModel splits HyperFrames
+  // (kind=video) out of generic video, and the prototype/other subtype fields
+  // (fidelity / intent / platform) split wireframe/mobile/live_artifact/document
+  // out so the run's project_kind matches the Home card the user picked. The
+  // web-supplied `hintProjectKind` already encodes all of this when set.
+  return projectKindFromMetadataToTracking(projectMetadata);
 }
 
 // Scans run.events newest→oldest to extract usage token counts and the

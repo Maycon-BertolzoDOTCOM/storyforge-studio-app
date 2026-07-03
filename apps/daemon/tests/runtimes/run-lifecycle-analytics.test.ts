@@ -45,6 +45,15 @@ describe('run lifecycle analytics', () => {
     ).toBe('design_system');
   });
 
+  it('classifies brand-extraction backing projects as design-system runs', () => {
+    expect(
+      resolveRunProjectKindForAnalytics({
+        hintProjectKind: null,
+        projectMetadata: { kind: 'brand', importedFrom: 'brand-extraction' },
+      }),
+    ).toBe('design_system');
+  });
+
   it('splits HyperFrames out of generic video via videoModel', () => {
     expect(
       resolveRunProjectKindForAnalytics({

@@ -140,6 +140,26 @@ export function daemonAgentPayloadToPersistedAgentEvent(data: unknown): Persiste
       ...(typeof data.durationMs === 'number' ? { durationMs: data.durationMs } : {}),
     };
   }
+  if (type === 'diagnostic' && typeof data.name === 'string') {
+    return {
+      kind: 'diagnostic',
+      name: data.name,
+      ...(typeof data.source === 'string' ? { source: data.source } : {}),
+      ...(typeof data.elapsedMs === 'number' ? { elapsedMs: data.elapsedMs } : {}),
+      ...(typeof data.reason === 'string' ? { reason: data.reason } : {}),
+      ...(typeof data.suppressedChars === 'number' ? { suppressedChars: data.suppressedChars } : {}),
+      ...(typeof data.suppressedChunks === 'number' ? { suppressedChunks: data.suppressedChunks } : {}),
+      ...(typeof data.openedBlocks === 'number' ? { openedBlocks: data.openedBlocks } : {}),
+      ...(typeof data.closedBlocks === 'number' ? { closedBlocks: data.closedBlocks } : {}),
+      ...(typeof data.fileCount === 'number' ? { fileCount: data.fileCount } : {}),
+      ...(Array.isArray(data.files) ? { files: data.files.filter((file) => typeof file === 'string').slice(0, 8) } : {}),
+      ...(typeof data.pendingCandidateChars === 'number'
+        ? { pendingCandidateChars: data.pendingCandidateChars }
+        : {}),
+      ...(typeof data.suppressing === 'boolean' ? { suppressing: data.suppressing } : {}),
+      ...(isRecord(data.shape) ? { shape: data.shape } : {}),
+    };
+  }
   if (type === 'fabricated_role_marker' && typeof data.marker === 'string') {
     return {
       kind: 'status',
