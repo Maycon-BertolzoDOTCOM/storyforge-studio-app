@@ -650,6 +650,52 @@ describe('GET /api/projects/:id resolvedDir', () => {
     expect(assistant?.runContext).toEqual(workspaceContext);
   });
 
+  it('inherits conversation session mode when pinning a run without explicit session mode', async () => {
+    const projectId = `proj-run-context-inherited-${Date.now()}`;
+    const createResp = await fetch(`${baseUrl}/api/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: projectId,
+        name: 'Run context inherited mode fixture',
+        sessionMode: 'plan',
+      }),
+    });
+    expect(createResp.status).toBe(200);
+    const { conversationId } = (await createResp.json()) as { conversationId: string };
+    const assistantMessageId = `assistant-inherited-run-mode-${Date.now()}`;
+
+    const runResp = await fetch(`${baseUrl}/api/runs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectId,
+        conversationId,
+        assistantMessageId,
+        agentId: 'codex',
+        message: 'Inherit the conversation mode.',
+      }),
+    });
+    expect(runResp.status).toBe(202);
+
+    const messagesResp = await fetch(`${baseUrl}/api/projects/${projectId}/conversations/${conversationId}/messages`);
+    expect(messagesResp.status).toBe(200);
+    const messages = ((await messagesResp.json()) as {
+      messages: Array<{
+        id: string;
+        role: string;
+        runId?: string;
+        sessionMode?: string;
+      }>;
+    }).messages;
+    const assistant = messages.find((message) => message.id === assistantMessageId);
+    expect(assistant).toMatchObject({
+      role: 'assistant',
+      sessionMode: 'plan',
+    });
+    expect(assistant?.runId).toBeTruthy();
+  });
+
   it('overwrites stale run session mode and workspace context when pinning a preexisting assistant message', async () => {
     const projectId = `proj-run-context-existing-${Date.now()}`;
     const createResp = await fetch(`${baseUrl}/api/projects`, {

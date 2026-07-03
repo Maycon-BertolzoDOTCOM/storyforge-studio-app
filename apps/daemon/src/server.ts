@@ -5455,6 +5455,12 @@ export async function startServer({
       sessionMode === 'chat' || sessionMode === 'design' || sessionMode === 'plan'
         ? normalizeConversationSessionMode(sessionMode)
         : normalizeConversationSessionMode(conversationSession?.sessionMode);
+    run.sessionMode = runSessionMode;
+    try {
+      pinAssistantMessageOnRunCreate(db, run);
+    } catch (err) {
+      console.warn('[runs] message session mode pin failed', err);
+    }
     const def = getAgentDef(agentId);
     if (!def)
       return design.runs.fail(
