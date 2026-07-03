@@ -2482,6 +2482,12 @@ body.entry-resizing { cursor: col-resize; user-select: none; }
 }
 .chat-conv-item-name {
   flex: 1;
+  /* This is a <button>, and the global `button` rule makes it an inline-flex
+     box with `justify-content: center` — which centers short titles like
+     "未命名对话". Left-align the content so all rows read flush-left (long
+     titles already fill the width so they looked left-aligned regardless). */
+  justify-content: flex-start;
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

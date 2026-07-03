@@ -2576,14 +2576,15 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
             {showStopButton ? (
               <button
                 type="button"
-                className="composer-send stop od-tooltip"
+                className="composer-send stop"
                 onClick={onStop}
-                title={t('chat.stop')}
-                data-tooltip={t('chat.stop')}
                 aria-label={t('chat.stop')}
               >
-                <Icon name="stop" size={13} />
-                <span>{t('chat.stop')}</span>
+                <ComposerRunIcon className="composer-run-glyph" />
+                <span className="composer-run-labels">
+                  <span className="composer-run-label">{t('assistant.thinking')}</span>
+                  <span className="composer-stop-label">{t('chat.stop')}</span>
+                </span>
               </button>
             ) : null}
             {showSendButton ? (
@@ -2867,6 +2868,48 @@ function workspaceContextIcon(item: WorkspaceContextItem): IconName {
   if (item.kind === 'side-chat') return 'comment';
   if (item.kind === 'design-system') return 'blocks';
   return 'file';
+}
+
+/* 5×5 dot-matrix "cross expand" glyph shown inside the black send button while
+   a run is executing: a plus shape blooms outward from the center in Manhattan
+   steps (delay = 220ms × Manhattan distance from the middle dot); the faint
+   base grid stays static. Dots use currentColor so the glyph adapts to the
+   button's light-on-dark (and dark-mode inverted) fill. */
+const COMPOSER_RUN_DOTS = Array.from({ length: 25 }, (_, i) => {
+  const row = Math.floor(i / 5);
+  const col = i % 5;
+  return {
+    x: 6 + col * 11,
+    y: 6 + row * 11,
+    delay: 220 * (Math.abs(row - 2) + Math.abs(col - 2)),
+  };
+});
+
+function ComposerRunIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 56 56"
+      width={20}
+      height={20}
+      aria-hidden
+      focusable="false"
+    >
+      {COMPOSER_RUN_DOTS.map((dot) => (
+        <g key={`${dot.x}-${dot.y}`}>
+          <circle cx={dot.x} cy={dot.y} r={2.4} fill="currentColor" opacity={0.07} />
+          <circle
+            className="composer-run-dot"
+            cx={dot.x}
+            cy={dot.y}
+            r={3.1}
+            fill="currentColor"
+            style={{ animationDelay: `${dot.delay}ms` }}
+          />
+        </g>
+      ))}
+    </svg>
+  );
 }
 
 function workspaceContextTitle(item: WorkspaceContextItem): string {

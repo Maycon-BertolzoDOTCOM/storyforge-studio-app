@@ -931,14 +931,20 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  width: 124px;
+  /* Auto width — hug the trigger's content instead of a fixed 124px box. */
+  width: auto;
 }
 .viewer-viewport-trigger {
-  width: 100%;
+  /* Auto width so the button hugs icon + label + chevron. */
+  width: auto;
   min-height: 26px;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: flex-start;
+  /* Icon ↔ label gap = 4px (the label flexes, so this gap is the visible
+     monitor-icon-to-text spacing; the chevron stays pushed to the right). */
+  gap: 4px;
   padding: 4px 8px 4px 10px;
+  /* Capsule button. */
+  border-radius: var(--radius-pill);
   border-color: var(--border);
   background-color: var(--bg-panel);
   color: var(--text);
@@ -950,10 +956,8 @@
   flex: 0 0 auto;
 }
 .viewer-viewport-trigger > span {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Size to the label text, don't stretch to fill the button. */
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 .viewer-viewport-trigger:hover:not(:disabled),

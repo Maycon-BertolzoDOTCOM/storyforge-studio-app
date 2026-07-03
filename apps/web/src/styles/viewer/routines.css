@@ -1663,15 +1663,18 @@
 }
 .app .composer-send.stop,
 .chat-composer-fixed-layer .composer-send.stop {
+  /* Executing state: same 36px capsule as Send — dot-matrix bloom + 思考中
+     label, width hugging the content. Geometry must match .app .composer-send
+     above; only the width goes auto for the label. */
   width: auto;
-  min-width: 58px;
-  height: 28px;
-  min-height: 28px;
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  min-width: 0;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 14px 0 10px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
   font-weight: 600;
-  box-shadow: none;
+  box-shadow: var(--shadow-xs);
 }
 /* The session-mode ("Design"/CLI) toggle and the agent avatar are authored in
    their own components and default to 32px. The composer now mounts under
@@ -1694,10 +1697,13 @@
   width: 22px;
   min-width: 22px;
   padding: 0;
-  display: inline-grid;
-  grid-template-columns: 1fr;
+  /* Flex-center the mark instead of grid: a single grid item + implicit-row
+     `align-content` could leave the mark a few px off the vertical center,
+     making it sit low next to the flex `.icon-btn` palette. Flex centers the
+     lone mark exactly on the row centerline. */
+  display: inline-flex;
   align-items: center;
-  justify-items: center;
+  justify-content: center;
   border-color: transparent;
   background: transparent;
   box-shadow: none;
@@ -1711,8 +1717,12 @@
   box-shadow: none;
   outline: none;
 }
-.app .composer-row .avatar-agent-trigger > svg:last-child,
-.chat-composer-fixed-layer .composer-row .avatar-agent-trigger > svg:last-child {
+/* Hide the dropdown chevron (a RemixIcon <i>, not an <svg>) so only the agent
+   mark shows. The old `svg:last-child` matched nothing — the leftover chevron
+   became a second grid item that wrapped to a second row under the single
+   `1fr` column, pushing the mark up out of vertical center. */
+.app .composer-row .avatar-agent-trigger > i:last-child,
+.chat-composer-fixed-layer .composer-row .avatar-agent-trigger > i:last-child {
   display: none;
 }
 .app .composer-send:disabled {
