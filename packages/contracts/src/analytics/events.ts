@@ -70,6 +70,7 @@ export type AnalyticsEventName =
   | 'onboarding_prompt_prefilled'
   | 'onboarding_first_prompt_sent'
   | 'onboarding_first_generation_completed'
+  | 'onboarding_completed'
   // Design-system lifecycle. Clicks + page_views inside DS surfaces
   // reuse `ui_click` / `page_view`; the five names below capture
   // ingest / create / review / status / picker-apply moments.
@@ -804,6 +805,25 @@ export interface OnboardingFirstGenerationCompletedProps {
   recommendation_id: string;
 }
 
+// The loop-closing steps of a recommendation-started first project. Recorded
+// session-side as the user reaches each moment; `onboarding_completed` fires
+// once, when the loop actually closes with a delivery (export / share).
+export type TrackingOnboardingFirstLoopStep =
+  | 'prompt_sent'
+  | 'generated'
+  | 'artifact_viewed'
+  | 'delivered';
+
+// Fired once when the first-generation loop closes (spec §11.1: 用户完成首次
+// 生成闭环时). `completed_steps` carries every loop step observed this
+// session, in the order they were first reached.
+export interface OnboardingCompletedProps {
+  entry_source: 'home_recommendation';
+  product_type: TrackingOnboardingProductType;
+  recommendation_id: string;
+  completed_steps: TrackingOnboardingFirstLoopStep[];
+}
+
 // --- Design systems page_view (multi-surface) ---
 //
 // Single shape covering the dedicated DS list / create / preview pages plus
@@ -1410,6 +1430,11 @@ export interface StudioOnboardingHintClickProps {
   area: 'onboarding_first_artifact_hint';
   element: 'open_artifact' | 'dismiss';
   hint_type: 'view_artifact';
+  // First-loop stage the hint belongs to and, for feature-specific hints
+  // (spec §8.7), the capability being surfaced. Optional so the current
+  // single view-stage hint stays source-compatible.
+  studio_stage?: TrackingOnboardingFirstLoopStep;
+  feature_id?: string;
 }
 
 export interface UpdateIndicatorClickProps {
@@ -2814,6 +2839,8 @@ export interface StudioOnboardingHintSurfaceViewProps {
   page_name: 'chat_panel';
   area: 'onboarding_first_artifact_hint';
   hint_type: 'view_artifact';
+  studio_stage?: TrackingOnboardingFirstLoopStep;
+  feature_id?: string;
 }
 
 export type SurfaceViewProps =
@@ -3501,6 +3528,7 @@ export type AnalyticsEventPayload =
       event: 'onboarding_first_generation_completed';
       props: OnboardingFirstGenerationCompletedProps;
     }
+  | { event: 'onboarding_completed'; props: OnboardingCompletedProps }
   | {
       event: 'design_system_source_ingest_result';
       props: DesignSystemSourceIngestResultProps;

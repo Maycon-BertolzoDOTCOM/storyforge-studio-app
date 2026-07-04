@@ -246,6 +246,7 @@ import {
   consumePendingOnboardingEntry,
   type OnboardingEntry,
 } from '../onboarding/onboarding-entry';
+import { beginFirstLoop, recordFirstLoopStep } from '../onboarding/first-loop';
 import { BrandReadyPrompt } from './BrandReadyPrompt';
 import { useDesignMdState } from '../hooks/useDesignMdState';
 import { useFinalizeProject } from '../hooks/useFinalizeProject';
@@ -1227,6 +1228,9 @@ export function ProjectView({
   if (!onboardingEntryInitRef.current) {
     onboardingEntryInitRef.current = true;
     onboardingEntryRef.current = consumePendingOnboardingEntry();
+    // Pin the loop ledger for the session so later delivery taps (share /
+    // export analytics helpers) can close the loop without prop plumbing.
+    if (onboardingEntryRef.current) beginFirstLoop(onboardingEntryRef.current);
   }
   const onboardingFirstPromptSentRef = useRef(false);
   const onboardingFirstGenDoneRef = useRef(false);
@@ -2466,6 +2470,15 @@ export function ProjectView({
     }
     return false;
   }, [projectFileNames]);
+  // First-loop ledger: the artifact reaching the preview is the 查看 step of
+  // the loop (spec §8.3). Recorded once; no-op for non-recommendation projects.
+  const firstLoopViewedRef = useRef(false);
+  useEffect(() => {
+    if (!hasPreviewableArtifact || firstLoopViewedRef.current) return;
+    if (!onboardingEntryRef.current) return;
+    firstLoopViewedRef.current = true;
+    recordFirstLoopStep(analytics.track, 'artifact_viewed');
+  }, [hasPreviewableArtifact, analytics.track]);
   const activeProjectFileName = useMemo(
     () => (
       openTabsState.active && projectFileNames.has(openTabsState.active)
@@ -4347,6 +4360,7 @@ export function ProjectView({
           recommendation_id: entry.recommendationId,
           has_prefilled_prompt: true,
         });
+        recordFirstLoopStep(analytics.track, 'prompt_sent');
       }
       const effectiveAttachments = mergeChatAttachments(
         attachments,
@@ -4883,6 +4897,7 @@ export function ProjectView({
               product_type: entry.productType,
               recommendation_id: entry.recommendationId,
             });
+            recordFirstLoopStep(analytics.track, 'generated');
           }
           // Refetch the file list directly (rather than just bumping the
           // refresh signal) so we can diff against the pre-turn snapshot

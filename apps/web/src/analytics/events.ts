@@ -139,6 +139,7 @@ import type {
   UpdatePromptSurfaceViewProps,
   UpdateInstallResultProps,
 } from '@open-design/contracts/analytics';
+import { recordFirstLoopStep } from '../onboarding/first-loop';
 
 type TrackOptions = { requestId?: string; insertId?: string };
 type Track = (
@@ -743,12 +744,16 @@ export function trackPresentPopoverClick(
   send(track, 'ui_click', props);
 }
 
+// Delivery taps for the first-generation loop (spec §8.3 交付): choosing a
+// share/export option — or an export finishing — closes the loop for a
+// recommendation-started session. No-op otherwise; see onboarding/first-loop.
 export function trackShareOptionPopoverClick(
   track: Track,
   props: ShareOptionPopoverClickProps,
   options?: { requestId: string },
 ): void {
   send(track, 'ui_click', props, options);
+  recordFirstLoopStep(track, 'delivered');
 }
 
 // ---- ui_click (feedback) -------------------------------------------------
@@ -924,6 +929,7 @@ export function trackArtifactExportResult(
   options?: { requestId?: string },
 ): void {
   send(track, 'artifact_export_result', props, options);
+  if (props.result === 'success') recordFirstLoopStep(track, 'delivered');
 }
 
 export function trackArtifactDeployResult(
