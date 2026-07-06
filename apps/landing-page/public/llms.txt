@@ -55,6 +55,7 @@ https://open-design.ai/ and developed at github.com/nexu-io/open-design.
 - Framer alternative: https://open-design.ai/alternatives/framer/
 - Google Stitch alternative: https://open-design.ai/alternatives/stitch/
 - Figma Make alternative: https://open-design.ai/alternatives/figma-make/
+- Genspark alternative: https://open-design.ai/alternatives/genspark/
 
 ## Solutions (AI generators & workflows)
 
@@ -63,6 +64,8 @@ https://open-design.ai/ and developed at github.com/nexu-io/open-design.
 - AI UI generator: https://open-design.ai/solutions/ai-ui-generator/
 - AI prototype generator: https://open-design.ai/solutions/ai-prototype-generator/
 - AI landing page generator: https://open-design.ai/solutions/ai-landing-page-generator/
+- Dashboard design: https://open-design.ai/solutions/dashboard/
+- Design system: https://open-design.ai/solutions/design-system/
 - Design-to-code: https://open-design.ai/solutions/design-to-code/
 - Figma-to-code: https://open-design.ai/solutions/figma-to-code/
 - Screenshot-to-code: https://open-design.ai/solutions/screenshot-to-code/
