@@ -569,6 +569,7 @@ import { registerSocialShareRoutes } from './routes/social-share.js';
 import { registerOpenDesignPublicMetadataRoutes } from './routes/open-design-public-metadata.js';
 import { registerMemoryRoutes } from './routes/memory.js';
 import { registerCollabPresenceRoutes } from './routes/collab-presence.js';
+import { registerCollabSyncRoutes } from './routes/collab-sync.js';
 import { createCollabRuntime } from './collab/runtime.js';
 import { registerTelemetryRoutes } from './routes/telemetry.js';
 import {
@@ -3799,6 +3800,7 @@ export async function startServer({
   // stub adapter until E's client ships.
   const collab = createCollabRuntime();
   registerCollabPresenceRoutes(app, { collab });
+  registerCollabSyncRoutes(app, { collab });
 
   registerMemoryRoutes(app, {
     http: { createSseResponse, requireLocalDaemonRequest },

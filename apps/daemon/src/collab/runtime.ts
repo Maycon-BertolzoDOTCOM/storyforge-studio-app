@@ -18,6 +18,8 @@ import { createStubResourcePublishAdapter } from './stub-resource-adapter.js';
 export interface CollabRuntime {
   presence: CollabPresenceTracker;
   scheduler: CollabPublishScheduler;
+  /** Last published version for a project (members poll this to know what to pull). */
+  publishedVersion(projectId: string): number | null;
   dispose(): void;
 }
 
@@ -33,10 +35,17 @@ export interface CreateCollabRuntimeOptions {
 
 export function createCollabRuntime(options: CreateCollabRuntimeOptions = {}): CollabRuntime {
   const adapter = options.adapter ?? createStubResourcePublishAdapter();
-  // Build options conditionally — exactOptionalPropertyTypes forbids assigning an
-  // explicit `undefined` to an optional callback property.
-  const schedulerOptions: CollabPublishSchedulerOptions = { adapter };
-  if (options.onPublished) schedulerOptions.onPublished = options.onPublished;
+  const published = new Map<string, number>();
+  // Always track the published head so members can poll it; also forward to any
+  // caller-supplied onPublished. (exactOptionalPropertyTypes forbids assigning an
+  // explicit `undefined` to an optional property, hence the conditional onError.)
+  const schedulerOptions: CollabPublishSchedulerOptions = {
+    adapter,
+    onPublished: (result) => {
+      published.set(result.projectId, result.version);
+      options.onPublished?.(result);
+    },
+  };
   if (options.onError) schedulerOptions.onError = options.onError;
   const scheduler = new CollabPublishScheduler(schedulerOptions);
   const presenceOptions: CollabPresenceTrackerOptions = {};
@@ -45,6 +54,7 @@ export function createCollabRuntime(options: CreateCollabRuntimeOptions = {}): C
   return {
     presence,
     scheduler,
+    publishedVersion: (projectId) => published.get(projectId) ?? null,
     dispose() {
       scheduler.dispose();
       presence.dispose();
