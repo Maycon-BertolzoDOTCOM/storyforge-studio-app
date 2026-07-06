@@ -65,6 +65,7 @@ import {
   type VelaLoginStatus,
 } from './providers/daemon';
 import { AMR_LOGIN_STATUS_EVENT } from './components/amrLoginPolling';
+import { CollabDemoView } from './collab/CollabDemoView';
 import { goBack, navigate, useRoute } from './router';
 import {
   fetchDaemonConfig,
@@ -2228,6 +2229,8 @@ function AppInner() {
     appMain = <MarketplaceView />;
   } else if (route.kind === 'marketplace-detail') {
     appMain = <PluginDetailView pluginId={route.pluginId} />;
+  } else if (route.kind === 'collab-demo') {
+    appMain = <CollabDemoView projectId={route.projectId} />;
   } else if (route.kind === 'design-system-create') {
     appMain = (
       <DesignSystemCreationFlow

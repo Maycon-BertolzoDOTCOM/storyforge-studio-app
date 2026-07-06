@@ -1,0 +1,117 @@
+.view {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.banner {
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text, #1f2937);
+  background: color-mix(in srgb, #f59e0b 14%, transparent);
+  border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
+}
+
+.picker,
+.session {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-surface, #fff);
+}
+
+.picker {
+  flex-direction: row;
+  align-items: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  font-size: 12px;
+  color: var(--color-muted, #6b7280);
+}
+
+.row,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.label {
+  min-width: 108px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted, #6b7280);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--color-code-bg, #f3f4f6);
+}
+
+.count {
+  font-size: 12px;
+  color: var(--color-muted, #6b7280);
+}
+
+.nameInput,
+.field input,
+select {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  font-size: 13px;
+}
+
+button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-surface, #fff);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.14s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+button:hover:not(:disabled) {
+  background: var(--color-code-bg, #f3f4f6);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pull {
+  border-color: #2563eb;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.leave,
+.actions button {
+  margin-left: auto;
+}
+
+.actions button {
+  margin-left: 0;
+}
+
+.actions .label {
+  margin-right: auto;
+}
