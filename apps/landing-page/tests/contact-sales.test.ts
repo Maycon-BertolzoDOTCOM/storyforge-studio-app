@@ -102,19 +102,22 @@ describe("contact-sales validation", () => {
   });
 
   it("holds pricing_team to the same full contract (the old relaxed name+email path is gone)", async () => {
+    // The full shared contract is accepted.
     const { status, body } = await call(PRICING_TEAM_OK);
     assert.equal(status, 200);
     assert.equal(body.ok, true);
-    const relaxed = await call({
-      name: "Ada",
-      email: "ada@acme.com",
-      source: "pricing_team",
-      teamSize: "11-50",
-      budget: "usd_1k_5k",
-      location: "中国大陆",
-      seats: "20",
-    });
-    assert.equal(relaxed.status, 400);
-    assert.equal(relaxed.body.error, "missing_fields");
+
+    // Each relaxation the retired lightweight pricing modal relied on now fails
+    // on its own — mutate exactly one rule per assertion from the otherwise
+    // valid PRICING_TEAM_OK so no single check leans on another field also
+    // being wrong.
+    // Free-form numeric seats (the old modal sent e.g. "20", not a range code):
+    assert.equal((await call({ ...PRICING_TEAM_OK, seats: "20" })).body.error, "missing_fields");
+    // Legacy pricing-only budget buckets that are no longer in the enum:
+    assert.equal((await call({ ...PRICING_TEAM_OK, budget: "lt_1k" })).body.error, "missing_fields");
+    assert.equal((await call({ ...PRICING_TEAM_OK, budget: "usd_20k_plus" })).body.error, "missing_fields");
+    // The old modal collected neither a use case nor an industry:
+    assert.equal((await call({ ...PRICING_TEAM_OK, useCases: [] })).body.error, "missing_fields");
+    assert.equal((await call({ ...PRICING_TEAM_OK, industry: "" })).body.error, "missing_fields");
   });
 });
