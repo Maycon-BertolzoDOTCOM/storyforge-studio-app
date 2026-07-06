@@ -153,7 +153,13 @@ export function parseDaemonLogTail(logText: string): {
 export function scrubUserPaths(value: string): string {
   return value
     .replace(/\/(Users|home)\/[^/\s]+/g, "/$1/<redacted>")
-    .replace(/([A-Za-z]:\\Users\\)[^\\\s]+/g, "$1<redacted>");
+    // Consume the WHOLE Windows profile segment up to the next backslash, not
+    // just up to the first whitespace: a profile dir can contain spaces
+    // ("C:\\Users\\John Doe\\..."), and stopping at the space would leak the
+    // rest of the segment ("<redacted> Doe\\..."). POSIX home segments cannot
+    // contain spaces, and file:// URLs percent-encode them, so only this
+    // backslash form needs the whitespace-tolerant boundary.
+    .replace(/([A-Za-z]:\\Users\\)[^\\]+/g, "$1<redacted>");
 }
 
 function osName(platform: NodeJS.Platform = process.platform): string {

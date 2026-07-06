@@ -103,6 +103,24 @@ describe('scrubUserPaths', () => {
       'C:\\Users\\<redacted>\\AppData\\Roaming',
     );
   });
+
+  it('redacts the FULL Windows profile segment even when it contains spaces', () => {
+    // A Windows profile dir can contain whitespace ("John Doe"). The redaction
+    // must consume the whole segment up to the next separator, not stop at the
+    // first space and leak the surname.
+    const scrubbed = scrubUserPaths('C:\\Users\\John Doe\\AppData\\Roaming');
+    expect(scrubbed).toBe('C:\\Users\\<redacted>\\AppData\\Roaming');
+    expect(scrubbed).not.toContain('Doe');
+  });
+
+  it('scrubs a spaced Windows profile embedded in a crash message/stack', () => {
+    const raw =
+      "Cannot find package 'better-sqlite3' imported from C:\\Users\\John Doe\\App\\Resources\\app\\daemon\\server.mjs";
+    const scrubbed = scrubUserPaths(raw);
+    expect(scrubbed).not.toContain('John Doe');
+    expect(scrubbed).not.toContain('Doe');
+    expect(scrubbed).toContain('C:\\Users\\<redacted>\\App\\Resources');
+  });
 });
 
 describe('resolveStartupDistinctId', () => {
