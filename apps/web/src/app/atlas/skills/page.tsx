@@ -27,39 +27,70 @@ const localSkills: Skill[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        product_name: { type: 'string' },
-        features: { type: 'array', items: { type: 'string' } },
-        images: { type: 'array', items: { type: 'string' } },
+        prompt: { type: 'string' },
+        style: { type: 'string', enum: ['modern', 'minimal', 'luxury', 'craft', 'bold'] },
+        colors: { type: 'array', items: { type: 'string' } },
       },
     },
-    outputSchema: { type: 'object', properties: { html_url: { type: 'string' } } },
+    outputSchema: { type: 'object', properties: { html: { type: 'string' }, provider: { type: 'string' } } },
   },
   {
-    name: 'scrape-product',
-    displayName: 'Scrape Product',
-    description: 'Extrai dados de um produto de um site de e-commerce',
+    name: 'generate-video-script',
+    displayName: 'Generate Video Script',
+    description: 'Gera um roteiro para vídeo marketing',
+    category: 'storyforge',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        product: { type: 'string' },
+        duration: { type: 'number', enum: [15, 30, 60, 120] },
+        style: { type: 'string', enum: ['promotional', 'educational', 'testimonial', 'storytelling'] },
+      },
+    },
+    outputSchema: { type: 'object', properties: { script: { type: 'string' }, scenes: { type: 'array' } } },
+  },
+  {
+    name: 'generate-social-content',
+    displayName: 'Generate Social Content',
+    description: 'Gera conteúdo para redes sociais (Instagram, LinkedIn, Twitter)',
+    category: 'storyforge',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        platform: { type: 'string', enum: ['instagram', 'linkedin', 'twitter', 'facebook', 'tiktok'] },
+        topic: { type: 'string' },
+        tone: { type: 'string', enum: ['professional', 'casual', 'luxurious', 'playful', 'educational'] },
+      },
+    },
+    outputSchema: { type: 'object', properties: { content: { type: 'string' }, hashtags: { type: 'array' } } },
+  },
+  {
+    name: 'generate-email-campaign',
+    displayName: 'Generate Email Campaign',
+    description: 'Gera conteúdo para campanhas de email marketing',
+    category: 'storyforge',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        campaign_type: { type: 'string', enum: ['welcome', 'promotional', 'newsletter', 'abandoned-cart', 'follow-up'] },
+        product: { type: 'string' },
+        offer: { type: 'string' },
+      },
+    },
+    outputSchema: { type: 'object', properties: { subject_line: { type: 'string' }, email_body: { type: 'string' } } },
+  },
+  {
+    name: 'ingest-youtube-video',
+    displayName: 'Ingest YouTube Video',
+    description: 'Transcreve e analisa um vídeo do YouTube',
     category: 'ingestion',
     inputSchema: {
       type: 'object',
       properties: {
-        url: { type: 'string' },
+        video_id: { type: 'string', pattern: '^[a-zA-Z0-9_-]{11}$' },
       },
     },
-    outputSchema: { type: 'object', properties: { product_data: { type: 'object' } } },
-  },
-  {
-    name: 'figma-to-code',
-    displayName: 'Figma to Code',
-    description: 'Converte um design do Figma em código React/HTML',
-    category: 'figma',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        file_key: { type: 'string' },
-        node_id: { type: 'string' },
-      },
-    },
-    outputSchema: { type: 'object', properties: { code: { type: 'string' } } },
+    outputSchema: { type: 'object', properties: { transcript: { type: 'string' }, design_insights: { type: 'object' } } },
   },
   {
     name: 'analyze-competitor',
@@ -71,24 +102,120 @@ const localSkills: Skill[] = [
       properties: {
         company_name: { type: 'string' },
         website_url: { type: 'string' },
+        analysis_depth: { type: 'string', enum: ['quick', 'detailed', 'comprehensive'] },
       },
     },
-    outputSchema: { type: 'object', properties: { analysis: { type: 'object' } } },
+    outputSchema: { type: 'object', properties: { summary: { type: 'string' }, strengths: { type: 'array' }, weaknesses: { type: 'array' } } },
   },
   {
-    name: 'generate-video-script',
-    displayName: 'Generate Video Script',
-    description: 'Gera um roteiro para vídeo marketing',
-    category: 'storyforge',
+    name: 'seo-optimize-content',
+    displayName: 'SEO Optimize Content',
+    description: 'Otimiza conteúdo para motores de busca',
+    category: 'data',
     inputSchema: {
       type: 'object',
       properties: {
-        product: { type: 'string' },
-        duration: { type: 'number' },
-        style: { type: 'string' },
+        content: { type: 'string' },
+        target_keywords: { type: 'array', items: { type: 'string' } },
+        content_type: { type: 'string', enum: ['landing-page', 'blog-post', 'product-description', 'social-media'] },
       },
     },
-    outputSchema: { type: 'object', properties: { script: { type: 'string' } } },
+    outputSchema: { type: 'object', properties: { optimized_content: { type: 'string' }, meta_title: { type: 'string' } } },
+  },
+  {
+    name: 'create-brand-identity',
+    displayName: 'Create Brand Identity',
+    description: 'Gera diretrizes de identidade visual da marca',
+    category: 'design',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        brand_name: { type: 'string' },
+        industry: { type: 'string' },
+        values: { type: 'array', items: { type: 'string' } },
+      },
+    },
+    outputSchema: { type: 'object', properties: { primary_colors: { type: 'array' }, typography: { type: 'object' } } },
+  },
+  {
+    name: 'analyze-design-tokens',
+    displayName: 'Analyze Design Tokens',
+    description: 'Extrai tokens de design (cores, tipografia, mood) de texto',
+    category: 'design',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string' },
+      },
+    },
+    outputSchema: { type: 'object', properties: { colors: { type: 'array' }, mood: { type: 'array' } } },
+  },
+  {
+    name: 'simulate-material',
+    displayName: 'Simulate Material',
+    description: 'Simula um material em uma superfície usando MaterialView',
+    category: 'materialview',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        image_base64: { type: 'string' },
+        material_type: { type: 'string', enum: ['marble', 'wood', 'ceramic', 'granite', 'metal', 'glass'] },
+        material_color: { type: 'string' },
+      },
+    },
+    outputSchema: { type: 'object', properties: { simulated_image: { type: 'string' }, fidelity_score: { type: 'number' } } },
+  },
+  {
+    name: 'search-web',
+    displayName: 'Search Web',
+    description: 'Busca informações na web usando Brave Search',
+    category: 'data',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string' },
+      },
+    },
+    outputSchema: { type: 'object', properties: { results: { type: 'array' } } },
+  },
+  {
+    name: 'figma-get-file',
+    displayName: 'Figma Get File',
+    description: 'Obtém dados de um arquivo do Figma',
+    category: 'figma',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        file_key: { type: 'string' },
+      },
+    },
+    outputSchema: { type: 'object', properties: { document: { type: 'object' } } },
+  },
+  {
+    name: 'figma-get-styles',
+    displayName: 'Figma Get Styles',
+    description: 'Obtém estilos de um arquivo do Figma',
+    category: 'figma',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        file_key: { type: 'string' },
+      },
+    },
+    outputSchema: { type: 'object', properties: { styles: { type: 'array' } } },
+  },
+  {
+    name: 'figma-export-tokens',
+    displayName: 'Figma Export Tokens',
+    description: 'Exporta design tokens do Figma',
+    category: 'figma',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        file_key: { type: 'string' },
+      },
+    },
+    outputSchema: { type: 'object', properties: { tokens: { type: 'object' } } },
   },
 ];
 
