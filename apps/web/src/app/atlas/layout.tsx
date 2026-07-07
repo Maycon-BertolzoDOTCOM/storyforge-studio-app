@@ -10,6 +10,7 @@ const navItems = [
   { href: '/atlas/api', label: 'API Playground', icon: '🔌' },
   { href: '/atlas/skills', label: 'Skill Registry', icon: '🤖' },
   { href: '/atlas/mcp', label: 'MCP Inspector', icon: '🔧' },
+  { href: '/atlas/metrics', label: 'Token Metrics', icon: '📊' },
 ];
 
 export default function AtlasLayout({ children }: { children: React.ReactNode }) {
