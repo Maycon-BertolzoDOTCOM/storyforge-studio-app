@@ -3,101 +3,24 @@
  * Shows savings from RTK, /compact, /clear, and Subagents
  */
 
-import React, { useState, useEffect } from 'react';
-
-interface OptimizationStats {
-  rtk: {
-    commands_processed: number;
-    tokens_saved: number;
-    savings_percent: number;
-  };
-  compact: {
-    auto_compacts: number;
-    estimated_tokens_saved: number;
-  };
-  sessions: {
-    clears: number;
-    active_sessions: number;
-  };
-  subagents: {
-    speedup: number;
-  };
-  total: {
-    tokens_saved: number;
-    cost_savings_usd: number;
-  };
-}
-
-interface BudgetStatus {
-  total_cost_usd: number;
-  monthly_budget_usd: number;
-  within_budget: boolean;
-  remaining_budget_usd: number;
-  cost_by_provider: Record<string, number>;
-}
+import React from 'react';
+import { useTokenOptimizer } from '@/hooks/engine/use-token-optimizer';
 
 export default function MetricsPage() {
-  const [stats, setStats] = useState<OptimizationStats | null>(null);
-  const [budget, setBudget] = useState<BudgetStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 30000); // Refresh every 30s
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchMetrics = async () => {
-    try {
-      // In production, these would be API calls to the engine
-      // For now, we show mock data
-      setStats({
-        rtk: {
-          commands_processed: 127,
-          tokens_saved: 89400,
-          savings_percent: 78.5
-        },
-        compact: {
-          auto_compacts: 23,
-          estimated_tokens_saved: 45000
-        },
-        sessions: {
-          clears: 45,
-          active_sessions: 3
-        },
-        subagents: {
-          speedup: 2.8
-        },
-        total: {
-          tokens_saved: 134400,
-          cost_savings_usd: 18.82
-        }
-      });
-
-      setBudget({
-        total_cost_usd: 2.18,
-        monthly_budget_usd: 10.0,
-        within_budget: true,
-        remaining_budget_usd: 7.82,
-        cost_by_provider: {
-          Ollama: 0,
-          'Google AI Studio': 0,
-          'Antigravity Bridge': 0,
-          DeepSeek: 2.18
-        }
-      });
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to fetch metrics:', error);
-      setLoading(false);
-    }
-  };
+  const { stats, budget, loading, error, compactContext, clearContext } = useTokenOptimizer();
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading metrics...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-red-600">Error: {error}</div>
       </div>
     );
   }
@@ -155,6 +78,12 @@ export default function MetricsPage() {
             <div className="text-sm text-gray-500">
               <p>{stats?.compact.estimated_tokens_saved.toLocaleString()} tokens saved</p>
             </div>
+            <button
+              onClick={() => compactContext('default', 'auto')}
+              className="mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded text-sm hover:bg-purple-200"
+            >
+              Manual Compact
+            </button>
           </div>
         </div>
 
@@ -172,6 +101,12 @@ export default function MetricsPage() {
             <div className="text-sm text-gray-500">
               <p>{stats?.sessions.active_sessions} active sessions</p>
             </div>
+            <button
+              onClick={() => clearContext('default')}
+              className="mt-2 px-3 py-1 bg-orange-100 text-orange-700 rounded text-sm hover:bg-orange-200"
+            >
+              Clear Context
+            </button>
           </div>
         </div>
 
