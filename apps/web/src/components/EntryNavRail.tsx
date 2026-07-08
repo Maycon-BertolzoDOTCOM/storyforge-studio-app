@@ -23,7 +23,8 @@ export type EntryView =
   | 'design-systems'
   | 'library'
   | 'brands'
-  | 'integrations';
+  | 'integrations'
+  | 'dashboard';
 
 interface Props {
   view: EntryView;
@@ -207,6 +208,15 @@ export function EntryNavRail({
           testId="entry-nav-integrations"
         >
           <Icon name="link" size={18} />
+        </NavButton>
+        <NavButton
+          active={view === 'dashboard'}
+          ariaLabel="Dashboard"
+          tooltip="Dashboard"
+          onClick={() => selectView('dashboard')}
+          testId="entry-nav-dashboard"
+        >
+          <Icon name="chart-bar" size={18} />
         </NavButton>
       </div>
       <div className="entry-nav-rail__footer">

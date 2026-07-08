@@ -28,8 +28,8 @@ import {
   type InstalledPluginRecord,
   type RunContextSelection,
   type UpsertMemoryRequest,
-} from '@open-design/contracts';
-import type { OpenDesignHostProjectImportSuccess } from '@open-design/host';
+} from '@storyforge-app/contracts';
+import type { OpenDesignHostProjectImportSuccess } from '@storyforge-app/host';
 import type { DesignSystemGenerateSnapshot } from './DesignSystemFlow';
 import { useAnalytics } from '../analytics/provider';
 import {
@@ -66,8 +66,8 @@ import type {
   TrackingOnboardingCompletionResult,
   TrackingOnboardingCompletionType,
   TrackingCliProviderId,
-} from '@open-design/contracts/analytics';
-import { agentIdToTracking } from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
+import { agentIdToTracking } from '@storyforge-app/contracts/analytics';
 import { useT, useI18n } from '../i18n';
 import { navigate, useRoute } from '../router';
 import { setPendingDesignSystemCreateEntry } from '../analytics/ds-create-entry';
@@ -113,6 +113,7 @@ import { Icon } from './Icon';
 import { AgentIcon } from './AgentIcon';
 import { LanguageMenu } from './LanguageMenu';
 import { IntegrationsView, type IntegrationTab } from './IntegrationsView';
+import { DashboardView } from './DashboardView';
 import { InlineModelSwitcher } from './InlineModelSwitcher';
 import { enterpriseUrl } from './enterpriseUrl';
 import {
@@ -185,7 +186,7 @@ function writeStoredRailOpen(open: boolean): void {
 
 const DISCORD_URL = 'https://discord.gg/mHAjSMV6gz';
 const X_URL = 'https://x.com/OpenDesignHQ';
-const ONBOARDING_DROPDOWN_OPEN_EVENT = 'open-design:onboarding-dropdown-open';
+const ONBOARDING_DROPDOWN_OPEN_EVENT = 'storyforge:onboarding-dropdown-open';
 
 // The topbar chips (GitHub star, model switcher, Use everywhere)
 // collapse into the settings dropdown when the viewport gets
@@ -195,7 +196,7 @@ const ONBOARDING_DROPDOWN_OPEN_EVENT = 'open-design:onboarding-dropdown-open';
 // `display` based on `--compact-topbar` breakpoint (900px).
 
 // Default scenario plugin for each project kind/intent. The mapping
-// lives in `@open-design/contracts` so the daemon's `/api/projects`
+// lives in `@storyforge-app/contracts` so the daemon's `/api/projects`
 // and `/api/runs` fallbacks resolve to the same plugin id when no
 // `pluginId` is on the request body — plan §3.3 of
 // `specs/current/plugin-driven-flow-plan.md`.
@@ -204,7 +205,7 @@ const ONBOARDING_DROPDOWN_OPEN_EVENT = 'open-design:onboarding-dropdown-open';
 // client. Overridable at build time via NEXT_PUBLIC_NEWSLETTER_URL — e.g. point
 // it at a local `wrangler pages dev` instance during development.
 const NEWSLETTER_SUBSCRIBE_URL =
-  process.env.NEXT_PUBLIC_NEWSLETTER_URL ?? 'https://open-design.ai/subscribe';
+  process.env.NEXT_PUBLIC_NEWSLETTER_URL ?? 'https://storyforge.ai/subscribe';
 const NEWSLETTER_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ONBOARDING_BYOK_AUTO_FETCH_DELAY_MS = 300;
 const ONBOARDING_BYOK_AUTO_TEST_DELAY_MS = 500;
@@ -408,6 +409,7 @@ function navElementForView(
   | 'plugins'
   | 'design_systems'
   | 'integrations'
+  | 'dashboard'
   | null {
   switch (next) {
     case 'home':
@@ -421,11 +423,11 @@ function navElementForView(
     case 'design-systems':
       return 'design_systems';
     case 'brands':
-      // No dedicated brands analytics element yet; reuse the design_systems
-      // slot since Brands replaces that nav destination.
       return 'design_systems';
     case 'integrations':
       return 'integrations';
+    case 'dashboard':
+      return 'dashboard';
     default:
       return null;
   }
@@ -1034,6 +1036,9 @@ export function EntryShell({
                 onSkillsRefresh={onSkillsRefresh}
                 onSkillsChanged={onSkillsChanged}
               />
+            ) : null}
+            {view === 'dashboard' ? (
+              <DashboardView />
             ) : null}
           </div>
         </main>
@@ -1802,7 +1807,7 @@ function OnboardingView({
   }
 
   // Cloud-landing primary CTA: pick the AMR cloud runtime and kick off the
-  // Open Design Cloud sign-in in one gesture. Mirrors the old AMR card's
+  // StoryForge Cloud sign-in in one gesture. Mirrors the old AMR card's
   // selection side effects (mode/agent) followed by the sign-in path, so a
   // successful login advances to the next onboarding step exactly the same way.
   async function handleCloudSignIn() {
@@ -2242,7 +2247,7 @@ function OnboardingView({
       ? t('settings.onboardingFinish')
       : t('settings.onboardingContinue');
 
-  // Connect step, default face: a minimal, centered Open Design Cloud sign-in
+  // Connect step, default face: a minimal, centered StoryForge Cloud sign-in
   // landing. No stepper, no runtime cards — just the cloud CTA, a secondary
   // link into the full runtime chooser, and a top-left language/theme bar.
   if (step === 0 && connectExpanded === null) {
@@ -2277,7 +2282,7 @@ function OnboardingView({
           <span
             className="onboarding-cloud__logo"
             role="img"
-            aria-label="Open Design"
+            aria-label="StoryForge"
           />
           <h1 className="onboarding-cloud__title">{t('settings.onboardingCloudTitle')}</h1>
           <p className="onboarding-cloud__body">{t('settings.onboardingCloudBody')}</p>
@@ -2371,7 +2376,7 @@ function OnboardingView({
           )}
         </div>
         <footer className="onboarding-cloud__footer">
-          © {new Date().getFullYear()} Open Design · {t('settings.onboardingCloudRights')}
+          © {new Date().getFullYear()} StoryForge · {t('settings.onboardingCloudRights')}
         </footer>
       </section>
     );

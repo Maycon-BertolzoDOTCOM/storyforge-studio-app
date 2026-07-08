@@ -60,8 +60,8 @@ interface Props {
   onboardingCompleted?: boolean;
 }
 
-const STORAGE_KEY = 'open-design:workspace-tabs:v1';
-const OPEN_WORKSPACE_TAB_EVENT = 'open-design:workspace-tabs:open';
+const STORAGE_KEY = 'storyforge:workspace-tabs:v1';
+const OPEN_WORKSPACE_TAB_EVENT = 'storyforge:workspace-tabs:open';
 const MAX_SEARCH_RESULTS = 80;
 const TAB_DRAG_HAPTIC_MS = 8;
 const TAB_DROP_HAPTIC_MS = 12;
@@ -1198,6 +1198,7 @@ function displayTabFor(
     library: 'Library',
     brands: t('entry.navBrands'),
     integrations: t('entry.navIntegrations'),
+    dashboard: 'Dashboard',
   };
   const entryIcon: Record<EntryHomeView, IconName> = {
     home: 'home',
@@ -1209,6 +1210,7 @@ function displayTabFor(
     library: 'image',
     brands: 'blocks',
     integrations: 'link',
+    dashboard: 'chart-bar',
   };
   return {
     id: tab.id,
