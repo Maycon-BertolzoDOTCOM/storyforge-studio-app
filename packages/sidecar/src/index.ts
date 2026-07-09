@@ -149,7 +149,7 @@ function summarizeJsonIpcMessage(message: unknown): Record<string, unknown> {
 
 function traceJsonIpc(event: string, details: Record<string, unknown>): void {
   if (!jsonIpcTraceEnabled()) return;
-  console.error("[open-design sidecar] json ipc trace", { event, ...details });
+  console.error("[storyforge sidecar] json ipc trace", { event, ...details });
 }
 
 export function isWindowsNamedPipePath(value: unknown): boolean {
@@ -239,7 +239,7 @@ export function resolveNamespaceRoot<TStamp extends SidecarStampShape>({
  *
  * Callers pass their contract's runtime-mode constant (e.g.
  * `SIDECAR_MODES.RUNTIME`) so this generic helper does not have to hardcode
- * Open Design's mode strings.
+ * StoryForge's mode strings.
  */
 export function resolveRuntimeNamespaceRoot<TStamp extends SidecarStampShape>({
   contract,

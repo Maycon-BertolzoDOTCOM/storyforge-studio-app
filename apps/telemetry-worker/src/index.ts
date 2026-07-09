@@ -832,7 +832,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   if (request.method === 'GET' && isHealthPath(request)) {
     return jsonResponse(200, {
       ok: true,
-      service: 'open-design-telemetry-relay',
+      service: 'storyforge-telemetry-relay',
       configured: hasLangfuseCredentials(env),
       objectRelayConfigured: hasObjectAuthorizeConfig(env),
       upstream: resolveLangfuseUrl(env),

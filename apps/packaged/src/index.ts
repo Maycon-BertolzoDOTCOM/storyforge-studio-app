@@ -4,15 +4,15 @@ import {
   SIDECAR_MODES,
   SIDECAR_SOURCES,
   type SidecarStamp,
-} from "@open-design/sidecar-proto";
-import { parseLauncherAfterQuitArgs } from "@open-design/launcher-proto";
+} from "@storyforge-app/sidecar-proto";
+import { parseLauncherAfterQuitArgs } from "@storyforge-app/launcher-proto";
 import {
   bootstrapSidecarRuntime,
   createSidecarLaunchEnv,
   resolveAppIpcPath,
-} from "@open-design/sidecar";
-import { applyOsLocaleSwitch, createSplashWindow, setSplashStage } from "@open-design/desktop/main";
-import { readProcessStamp } from "@open-design/platform";
+} from "@storyforge-app/sidecar";
+import { applyOsLocaleSwitch, createSplashWindow, setSplashStage } from "@storyforge-app/desktop/main";
+import { readProcessStamp } from "@storyforge-app/platform";
 import { join } from "node:path";
 import { app, dialog } from "electron";
 
@@ -218,7 +218,7 @@ async function main(): Promise<void> {
   setSplashStage(splash.window, "workspace");
   registerOdProtocol(sidecars.web.url ?? "http://127.0.0.1:0");
 
-  const { runDesktopMain } = await import("@open-design/desktop/main");
+  const { runDesktopMain } = await import("@storyforge-app/desktop/main");
   await runDesktopMain(runtime, {
     splashWindow: splash.window,
     splashStartedAt: splash.startedAt,

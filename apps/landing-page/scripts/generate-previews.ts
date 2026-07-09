@@ -9,7 +9,7 @@
  *   templates/live-artifacts/<slug>/index.html → /previews/templates/live-<slug>.webp
  *   templates/live-artifacts/<slug>/preview.png → reused verbatim where it exists
  *
- * Run with: `pnpm --filter @open-design/landing-page previews`
+ * Run with: `pnpm --filter @storyforge-app/landing-page previews`
  *
  * Outputs are intentionally NOT committed by this script — the caller
  * decides whether to commit (small, deterministic) or upload to R2
@@ -356,7 +356,7 @@ async function buildFallbackCardJobsFor(args: {
 }
 
 /**
- * Bundled plugins (`plugins/_official/<bucket>/<slug>/open-design.json`)
+ * Bundled plugins (`plugins/_official/<bucket>/<slug>/storyforge.json`)
  * are the daemon's canonical plugin registry, and the in-app Plugins
  * home reads from here. The marketing site's `/plugins/...` routes
  * mirror the same data, so every bundled entry that doesn't ship a
@@ -395,7 +395,7 @@ async function buildBundledPluginJobs(): Promise<Job[]> {
       if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue;
 
       const slugDir = path.join(bucketDir, entry.name);
-      const manifestPath = path.join(slugDir, 'open-design.json');
+      const manifestPath = path.join(slugDir, 'storyforge.json');
       if (!existsSync(manifestPath)) continue;
 
       let raw: Record<string, unknown>;

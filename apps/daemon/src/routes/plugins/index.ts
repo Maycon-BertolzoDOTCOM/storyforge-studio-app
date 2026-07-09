@@ -5,7 +5,7 @@ import type {
   PluginDuplicateProjectResponse,
   Project,
   ProjectMetadata,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import {
   duplicatePluginExampleIntoProject,
   PluginDuplicateProjectError,
@@ -284,7 +284,7 @@ export function registerProjectPluginRoutes(app: Express, deps: RegisterPluginRo
   app.post('/api/projects/:id/plugin-candidates/:candidateId/dismiss', (req, res) => { if (!helpers.isLocalSameOrigin(req, helpers.resolvedPortRef.current)) return res.status(403).json({ error: 'cross-origin request rejected' }); const candidate = plugins.dismissSkillPluginCandidate(db, req.params.id, req.params.candidateId); if (!candidate) return helpers.sendApiError(res, 404, 'NOT_FOUND', 'plugin candidate not found'); if (candidate.assistantMessageId) db.prepare(`DELETE FROM messages WHERE id = ?`).run(candidate.assistantMessageId); res.json({ ok: true, candidate }); });
   app.post('/api/projects/:id/plugin-candidates/:candidateId/draft', async (req, res) => helpers.handleCandidateDraft(req, res));
   app.post('/api/projects/:id/plugin-candidates/:candidateId/share-tasks', async (req, res) => helpers.handleCandidateShareTask(req, res));
-  app.post('/api/projects/:id/plugins/contribute-open-design', async (req, res) => helpers.handleProjectPluginCli(req, res, 'contribute-open-design'));
+  app.post('/api/projects/:id/plugins/contribute-storyforge', async (req, res) => helpers.handleProjectPluginCli(req, res, 'contribute-storyforge'));
   app.post('/api/projects/:id/plugins/share-tasks', async (req, res) => helpers.handleProjectShareTask(req, res));
   app.post('/api/plugins/share-tasks/:id/wait', (req, res) => {
     if (!helpers.isLocalSameOrigin(req, helpers.resolvedPortRef.current)) return res.status(403).json({ error: 'cross-origin request rejected' });

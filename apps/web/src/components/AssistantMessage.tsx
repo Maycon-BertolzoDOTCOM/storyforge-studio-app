@@ -26,7 +26,7 @@ import {
   type TrackingFeedbackReasonCode,
   type TrackingFeedbackRatingWithNone,
   type TrackingProjectKind,
-} from "@open-design/contracts/analytics";
+} from "@storyforge-app/contracts/analytics";
 import {
   splitOnQuestionForms,
   stripTrailingOpenQuestionForm,
@@ -39,7 +39,7 @@ import {
   type ChatSessionMode,
   type OdCard,
   type OdCardBrandBrowserAssist,
-} from "@open-design/contracts";
+} from "@storyforge-app/contracts";
 import { OdCardView, type BrandBrowserAssistConfirm } from "./OdCard";
 import { parseSubmittedAnswers } from "./QuestionForm";
 import { splitStreamingArtifact, stripArtifact, stripRecoveredHtmlFallbackForDisplay } from "../artifacts/strip";
@@ -225,14 +225,14 @@ function SkillPluginCandidateCard({
           setNotice({ message: install?.message ?? "Plugin draft created, but install failed." });
         } else {
           if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("open-design:plugins-changed"));
+            window.dispatchEvent(new CustomEvent("storyforge:plugins-changed"));
           }
           setNotice({ message: install?.message ?? "Plugin draft created and added to My plugins." });
         }
       } else {
         setNotice({ message: "Plugin draft created." });
       }
-      if (draftPath && onRequestOpenFile) onRequestOpenFile(`${draftPath}/open-design.json`);
+      if (draftPath && onRequestOpenFile) onRequestOpenFile(`${draftPath}/storyforge.json`);
     } catch (err) {
       setNotice({ message: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -240,7 +240,7 @@ function SkillPluginCandidateCard({
     }
   }
 
-  async function share(action: "contribute-open-design") {
+  async function share(action: "contribute-storyforge") {
     if (!projectId) return;
     setBusy("contribute");
     setNotice(null);
@@ -250,7 +250,7 @@ function SkillPluginCandidateCard({
         { action },
       );
       setNotice({
-        message: `Open Design contribution task started for ${data?.path ?? "the draft"}.`,
+        message: `StoryForge contribution task started for ${data?.path ?? "the draft"}.`,
       });
     } catch (err) {
       setNotice({ message: err instanceof Error ? err.message : String(err) });
@@ -275,7 +275,7 @@ function SkillPluginCandidateCard({
               type="button"
               className="plugin-action-button plugin-action-button--primary"
               disabled={disabled}
-              onClick={() => void share("contribute-open-design")}
+              onClick={() => void share("contribute-storyforge")}
             >
               <Icon name={busy === "contribute" ? "spinner" : "share"} size={13} />
               <span>{busy === "contribute" ? "Starting..." : t("skillPluginCandidate.contributeToMain")}</span>
@@ -334,7 +334,7 @@ interface Props {
   ) => Promise<{ message?: string; url?: string } | void> | { message?: string; url?: string } | void;
   activePluginActionPaths?: Set<string>;
   hiddenPluginActionPaths?: Set<string>;
-  // Click handler for the post-completion "Share to Open Design" submission
+  // Click handler for the post-completion "Share to StoryForge" submission
   // action. ProjectView wires this to handleSend with the bundled
   // `od-share-to-community` trigger prompt.
   onShareToOpenDesign?: () => void;
@@ -2216,7 +2216,7 @@ function PluginActionPanel({
                   <span>
                     {actionBusy && busyKey === `contribute:${folder.path}`
                       ? "Sending..."
-                      : "Open Design PR"}
+                      : "StoryForge PR"}
                   </span>
                 </button>
                 {onRequestOpenFile ? (
@@ -2312,7 +2312,7 @@ function pathMatchesFolderFileBasename(
 }
 
 function hasPluginFinalActionHint(content: string): boolean {
-  return /\b(Add to My plugins|Open Design PR|Publish repo|plugin publish|ready to publish|ready to add)\b/i.test(
+  return /\b(Add to My plugins|StoryForge PR|Publish repo|plugin publish|ready to publish|ready to add)\b/i.test(
     content,
   );
 }

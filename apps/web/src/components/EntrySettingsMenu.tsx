@@ -9,7 +9,7 @@ import {
   OPEN_DESIGN_GITHUB_REPO_URL,
   type SocialShareRequest,
   type SocialShareResponse,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import {
   LOCALE_LABEL,
   LOCALES,
@@ -34,7 +34,7 @@ const X_URL = 'https://x.com/OpenDesignHQ';
 const THREADS_URL = 'https://www.threads.com/@opendesign.ai';
 const YOUTUBE_URL = 'https://www.youtube.com/@Open-Design-ai';
 const INSTAGRAM_URL = 'https://www.instagram.com/opendesign.ai/';
-const LINKEDIN_URL = 'https://www.linkedin.com/company/open-design-ai/';
+const LINKEDIN_URL = 'https://www.linkedin.com/company/storyforge-ai/';
 const XIAOHONGSHU_URL =
   'https://www.xiaohongshu.com/user/profile/691effad000000003002978f';
 
@@ -105,7 +105,7 @@ export function EntrySettingsMenu({
   const openDesignShareRequest = useMemo<SocialShareRequest>(() => {
     const text = t('socialShare.openDesignText');
     return {
-      kind: 'open-design-repo',
+      kind: 'storyforge-repo',
       locale,
       title: t('socialShare.openDesignTitle'),
       text,

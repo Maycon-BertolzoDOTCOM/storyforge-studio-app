@@ -33,7 +33,7 @@ import {
   createCommandInvocation,
   mergeProxyAwareEnv,
   resolveSystemProxyEnv,
-} from '@open-design/platform';
+} from '@storyforge-app/platform';
 import { attachAcpSession } from './acp.js';
 import { attachPiRpcSession } from './pi-rpc.js';
 import { createClaudeStreamHandler } from './runtimes/claude-stream.js';
@@ -74,11 +74,11 @@ import {
   type ConnectionTestResponse,
   type ParsedBaseUrl,
   type ProviderTestRequest,
-} from '@open-design/contracts/api/connectionTest';
+} from '@storyforge-app/contracts/api/connectionTest';
 import { googleGenerateContentUrl } from './integrations/google-models.js';
 import { resolveAmrProfile } from './integrations/vela.js';
 
-export { validateBaseUrl } from '@open-design/contracts/api/connectionTest';
+export { validateBaseUrl } from '@storyforge-app/contracts/api/connectionTest';
 
 // DNS-aware companion to `validateBaseUrl`. The contracts-side check only
 // inspects the literal hostname string, so a public DNS name pointing at
@@ -650,7 +650,7 @@ function codexExecutableGuidance(
   ) {
     return '';
   }
-  return ` Configured Codex path failed: ${configuredOverridePath}. Open Design also detected a PATH Codex CLI at ${pathResolvedPath}. Update CODEX_BIN or clear the custom path to use the detected binary.`;
+  return ` Configured Codex path failed: ${configuredOverridePath}. StoryForge also detected a PATH Codex CLI at ${pathResolvedPath}. Update CODEX_BIN or clear the custom path to use the detected binary.`;
 }
 
 function codexExecutableFallbackSuccessDetail(
@@ -1195,7 +1195,7 @@ function buildProviderCall(input: ProviderTestRequest): ProviderCallShape {
           authorization: `Bearer ${apiKey}`,
           ...(new URL(baseUrl).hostname === 'openrouter.ai' ? {
             'HTTP-Referer': 'https://opendesign.dev',
-            'X-Title': 'Open Design',
+            'X-Title': 'StoryForge',
           } : {}),
         },
         body: {
@@ -1952,7 +1952,7 @@ function runQuietCommand(command: string, args: string[], cwd: string): Promise<
 async function prepareOpenCodeConnectionTestCwd(tempDir: string): Promise<void> {
   await fsp.writeFile(
     path.join(tempDir, 'README.md'),
-    'Open Design OpenCode connection test.\n',
+    'StoryForge OpenCode connection test.\n',
     'utf8',
   );
   try {

@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { SIDECAR_MESSAGES } from "@open-design/sidecar-proto";
+import { SIDECAR_MESSAGES } from "@storyforge-app/sidecar-proto";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ToolPackConfig } from "../src/config.js";
@@ -12,16 +12,16 @@ const listProcessSnapshots = vi.hoisted(() => vi.fn(async () => []));
 const spawnBackgroundProcess = vi.hoisted(() => vi.fn(async () => ({ pid: 12345 })));
 const stopProcesses = vi.hoisted(() => vi.fn(async () => undefined));
 
-vi.mock("@open-design/sidecar", async () => {
-  const actual = await vi.importActual<typeof import("@open-design/sidecar")>("@open-design/sidecar");
+vi.mock("@storyforge-app/sidecar", async () => {
+  const actual = await vi.importActual<typeof import("@storyforge-app/sidecar")>("@storyforge-app/sidecar");
   return {
     ...actual,
     requestJsonIpc,
   };
 });
 
-vi.mock("@open-design/platform", async () => {
-  const actual = await vi.importActual<typeof import("@open-design/platform")>("@open-design/platform");
+vi.mock("@storyforge-app/platform", async () => {
+  const actual = await vi.importActual<typeof import("@storyforge-app/platform")>("@storyforge-app/platform");
   return {
     ...actual,
     listProcessSnapshots,
@@ -79,7 +79,7 @@ async function writeFakeUnpackedExe(config: ToolPackConfig): Promise<void> {
 
 describe("inspectPackedWinApp", () => {
   it("returns status and diagnostics when eval IPC times out", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-lifecycle-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-lifecycle-"));
 
     try {
       requestJsonIpc.mockReset();
@@ -112,7 +112,7 @@ describe("inspectPackedWinApp", () => {
   });
 
   it("returns status errors with launcher diagnostics when status IPC fails", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-lifecycle-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-lifecycle-"));
 
     try {
       requestJsonIpc.mockReset();
@@ -139,7 +139,7 @@ describe("inspectPackedWinApp", () => {
   });
 
   it("polls status diagnostics when requested", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-lifecycle-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-lifecycle-"));
 
     try {
       requestJsonIpc.mockReset();
@@ -171,7 +171,7 @@ describe("inspectPackedWinApp", () => {
   });
 
   it("diagnoses Windows IPC by polling status during repeated fresh starts", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-lifecycle-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-lifecycle-"));
     const config = createConfig(root);
     const previousTrace = process.env.OD_JSON_IPC_TRACE;
 

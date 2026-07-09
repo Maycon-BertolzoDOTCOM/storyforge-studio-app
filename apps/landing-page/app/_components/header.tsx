@@ -19,12 +19,12 @@ import {
 import { getSolutionPageCopy } from '../solution-pages-i18n';
 import type { SolutionPageKey } from '../solution-pages-i18n/types';
 
-const REPO = 'https://github.com/nexu-io/open-design';
+const REPO = 'https://github.com/nexu-io/storyforge';
 const REPO_DISCUSSIONS = `${REPO}/discussions`;
 const DISCORD = 'https://discord.gg/mHAjSMV6gz';
 const X_PROFILE = 'https://x.com/OpenDesignHQ';
 
-// Open Design Cloud endpoints for the header sign-in module.
+// StoryForge Cloud endpoints for the header sign-in module.
 // Production defaults; overridable at build time via PUBLIC_* env so a
 // preview/staging build can point at a non-prod cloud. These are surfaced to
 // the runtime via `data-*` on `.nav-account` because the auth logic lives in
@@ -32,13 +32,13 @@ const X_PROFILE = 'https://x.com/OpenDesignHQ';
 // cannot read `import.meta.env` itself).
 const env = import.meta.env as Record<string, string | undefined>;
 const CLOUD_API_BASE =
-  env.PUBLIC_CLOUD_API_BASE ?? env.PUBLIC_AMR_API_BASE ?? 'https://amr-api.open-design.ai';
+  env.PUBLIC_CLOUD_API_BASE ?? env.PUBLIC_AMR_API_BASE ?? 'https://amr-api.storyforge.ai';
 const CLOUD_LOGIN_URL =
-  env.PUBLIC_CLOUD_LOGIN_URL ?? env.PUBLIC_AMR_LOGIN_URL ?? 'https://open-design.ai/cloud/login';
+  env.PUBLIC_CLOUD_LOGIN_URL ?? env.PUBLIC_AMR_LOGIN_URL ?? 'https://storyforge.ai/cloud/login';
 const CLOUD_CONSOLE_URL =
   env.PUBLIC_CLOUD_CONSOLE_URL ??
   env.PUBLIC_AMR_CONSOLE_URL ??
-  'https://open-design.ai/cloud/wallet?source=open_design';
+  'https://storyforge.ai/cloud/wallet?source=open_design';
 
 // Solution → Use cases / Roles. Hrefs mirror upstream main's header 1:1 and
 // pair positionally with the localized `useCaseItems` / `roleItems` tuples.
@@ -183,7 +183,7 @@ export function Header({
           <img
             className='brand-logo'
             src='/logo-lockup.svg'
-            alt='Open Design'
+            alt='StoryForge'
             width={225}
             height={83}
           />
@@ -207,7 +207,7 @@ export function Header({
         </button>
         <nav id='primary-nav' data-nav-primary>
           <ul className='nav-links'>
-            {/* Product — the Open Design products. The trigger lights up only
+            {/* Product — the StoryForge products. The trigger lights up only
                 for its own family; every other section maps to its own
                 trigger below, so a sub-page never marks Product by accident.
                 It is a <button> (not a link) so it never navigates — Product
@@ -565,7 +565,7 @@ export function Header({
             {headerCopy.download}
           </a>
           {/*
-            Open Design Cloud account entry. Renders BOTH states up front
+            StoryForge Cloud account entry. Renders BOTH states up front
             and lets `header-enhancer.astro` toggle them at runtime: the
             signed-out "Sign in" link is visible by default (so no-JS / pre-hydration
             shows a working login link), and the signed-in avatar menu stays

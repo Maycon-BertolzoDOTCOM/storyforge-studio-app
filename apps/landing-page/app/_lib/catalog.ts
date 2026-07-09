@@ -36,14 +36,14 @@ import {
 // ---------------------------------------------------------------------------
 // Preview imagery lookup
 //
-// Previews are produced offline by `pnpm --filter @open-design/landing-page
+// Previews are produced offline by `pnpm --filter @storyforge-app/landing-page
 // previews` and saved under `public/previews/<bucket>/<slug>.png`. We read
 // the directory listing once at build time so each catalog record can carry
 // a `previewUrl` (or `null` when the underlying skill has no `example.html`).
 // ---------------------------------------------------------------------------
 
 const PREVIEWS_ROOT_CANDIDATES = [
-  // `pnpm --filter @open-design/landing-page build` may keep cwd at the
+  // `pnpm --filter @storyforge-app/landing-page build` may keep cwd at the
   // workspace root, while direct package scripts run from the app root.
   path.resolve(process.cwd(), 'apps/landing-page/public/previews'),
   path.resolve(process.cwd(), 'public/previews'),
@@ -123,8 +123,8 @@ function listSkillExamples(): Set<string> {
   return out;
 }
 
-const REPO_TREE = 'https://github.com/nexu-io/open-design/tree/main';
-const REPO_BLOB = 'https://github.com/nexu-io/open-design/blob/main';
+const REPO_TREE = 'https://github.com/nexu-io/storyforge/tree/main';
+const REPO_BLOB = 'https://github.com/nexu-io/storyforge/blob/main';
 const SHOULD_CACHE_CATALOG = import.meta.env.PROD;
 
 // ---------------------------------------------------------------------------
@@ -728,7 +728,7 @@ export function shapeDesignTemplate(
     ) ||
     firstParagraph(explicitLocalizedString(data.description, DEFAULT_LOCALE)) ||
     extractFirstProseParagraph(body) ||
-    'Open Design renderable design template.';
+    'StoryForge renderable design template.';
   const localizedText = localizeTemplateText({ name, summary, locale });
 
   return {
@@ -775,7 +775,7 @@ export function shapeLiveArtifactTemplate(
     .replace(/\s*[·•]\s*live[\s-]artifact\s+template$/i, '')
     .trim();
 
-  const summary = extractFirstProseParagraph(body) || 'Open Design Live Artifact template.';
+  const summary = extractFirstProseParagraph(body) || 'StoryForge Live Artifact template.';
   const localizedText = localizeTemplateText({
     name: localized?.name ?? (cleanH1 || titleizeSlug(slug)),
     summary: localized?.summary ?? summary,

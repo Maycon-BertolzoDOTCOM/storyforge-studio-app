@@ -1,4 +1,4 @@
-import type { ApiError, ApiErrorCode, ApiErrorResponse } from '@open-design/contracts';
+import type { ApiError, ApiErrorCode, ApiErrorResponse } from '@storyforge-app/contracts';
 import type { Response } from 'express';
 
 export function createCompatApiError(

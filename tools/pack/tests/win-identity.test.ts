@@ -14,49 +14,49 @@ const execFileAsync = promisify(execFile);
 describe("resolveWinInstallIdentity", () => {
   it("keeps the default namespace on the canonical Windows display name", () => {
     expect(resolveWinInstallIdentity({ namespace: "default" })).toMatchObject({
-      displayName: "Open Design",
-      shortcutName: "Open Design.lnk",
-      uninstallerName: "Uninstall Open Design.exe",
+      displayName: "StoryForge",
+      shortcutName: "StoryForge.lnk",
+      uninstallerName: "Uninstall StoryForge.exe",
     });
   });
 
   it("uses the canonical Windows display name for stable release namespaces", () => {
     expect(resolveWinInstallIdentity({ namespace: "release-stable-win" })).toMatchObject({
-      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Open Design.exe",
-      displayName: "Open Design",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-release-stable-win",
-      shortcutName: "Open Design.lnk",
-      uninstallerName: "Uninstall Open Design.exe",
+      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\StoryForge.exe",
+      displayName: "StoryForge",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\StoryForge-release-stable-win",
+      shortcutName: "StoryForge.lnk",
+      uninstallerName: "Uninstall StoryForge.exe",
     });
   });
 
   it("uses first-class beta display identity for beta release namespaces", () => {
     expect(resolveWinInstallIdentity({ namespace: "release-beta-win" })).toMatchObject({
-      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Open Design Beta.exe",
-      displayName: "Open Design Beta",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-release-beta-win",
-      shortcutName: "Open Design Beta.lnk",
-      uninstallerName: "Uninstall Open Design Beta.exe",
+      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\StoryForge Beta.exe",
+      displayName: "StoryForge Beta",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\StoryForge-release-beta-win",
+      shortcutName: "StoryForge Beta.lnk",
+      uninstallerName: "Uninstall StoryForge Beta.exe",
     });
   });
 
   it("keeps non-release beta-like namespaces isolated from the real beta channel identity", () => {
     expect(resolveWinInstallIdentity({ namespace: "beta-local-flow" })).toMatchObject({
-      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Open Design beta-local-flow.exe",
-      displayName: "Open Design beta-local-flow",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-beta-local-flow",
-      shortcutName: "Open Design beta-local-flow.lnk",
-      uninstallerName: "Uninstall Open Design beta-local-flow.exe",
+      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\StoryForge beta-local-flow.exe",
+      displayName: "StoryForge beta-local-flow",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\StoryForge-beta-local-flow",
+      shortcutName: "StoryForge beta-local-flow.lnk",
+      uninstallerName: "Uninstall StoryForge beta-local-flow.exe",
     });
   });
 
   it("uses first-class preview display identity for preview release namespaces", () => {
     expect(resolveWinInstallIdentity({ namespace: "release-preview-win" })).toMatchObject({
-      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Open Design Preview.exe",
-      displayName: "Open Design Preview",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-release-preview-win",
-      shortcutName: "Open Design Preview.lnk",
-      uninstallerName: "Uninstall Open Design Preview.exe",
+      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\StoryForge Preview.exe",
+      displayName: "StoryForge Preview",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\StoryForge-release-preview-win",
+      shortcutName: "StoryForge Preview.lnk",
+      uninstallerName: "Uninstall StoryForge Preview.exe",
     });
   });
 
@@ -65,15 +65,15 @@ describe("resolveWinInstallIdentity", () => {
       appVersion: "0.8.0-prerelease.2",
       namespace: "release-stable-win",
     })).toMatchObject({
-      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Open Design Prerelease.exe",
-      displayName: "Open Design Prerelease",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-release-stable-win",
-      shortcutName: "Open Design Prerelease.lnk",
-      uninstallerName: "Uninstall Open Design Prerelease.exe",
+      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\StoryForge Prerelease.exe",
+      displayName: "StoryForge Prerelease",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\StoryForge-release-stable-win",
+      shortcutName: "StoryForge Prerelease.lnk",
+      uninstallerName: "Uninstall StoryForge Prerelease.exe",
     });
     expect(resolveWinInstallIdentity({ namespace: "release-prerelease-win" })).toMatchObject({
-      displayName: "Open Design Prerelease",
-      shortcutName: "Open Design Prerelease.lnk",
+      displayName: "StoryForge Prerelease",
+      shortcutName: "StoryForge Prerelease.lnk",
     });
   });
 

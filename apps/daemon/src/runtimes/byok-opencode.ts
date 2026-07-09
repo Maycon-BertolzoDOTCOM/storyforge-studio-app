@@ -1,7 +1,7 @@
-import type { ByokChatProviderConfig } from '@open-design/contracts';
+import type { ByokChatProviderConfig } from '@storyforge-app/contracts';
 
 export const BYOK_OPENCODE_AGENT_ID = 'byok-opencode';
-export const BYOK_OPENCODE_PROVIDER_ID = 'open-design-byok';
+export const BYOK_OPENCODE_PROVIDER_ID = 'storyforge-byok';
 export const BYOK_OPENCODE_API_KEY_ENV = 'OPEN_DESIGN_BYOK_API_KEY';
 const DEFAULT_CONTEXT_TOKEN_LIMIT = 128_000;
 const DEFAULT_OUTPUT_TOKEN_LIMIT = 16_384;
@@ -72,7 +72,7 @@ export function buildOpenCodeByokProviderConfig(
   const config = {
     provider: {
       [BYOK_OPENCODE_PROVIDER_ID]: {
-        name: 'Open Design BYOK',
+        name: 'StoryForge BYOK',
         ...providerEntry,
         models: {
           [rawModel]: {

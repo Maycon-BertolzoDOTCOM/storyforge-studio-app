@@ -1,5 +1,5 @@
 {
-  "name": "@open-design/sidecar",
+  "name": "@storyforge-app/sidecar",
   "version": "0.12.1",
   "private": true,
   "type": "module",

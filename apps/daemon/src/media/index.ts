@@ -1988,7 +1988,7 @@ async function renderOpenRouterImage(
       'authorization': `Bearer ${credentials.apiKey}`,
       'content-type': 'application/json',
       'HTTP-Referer': 'https://opendesign.dev',
-      'X-Title': 'Open Design',
+      'X-Title': 'StoryForge',
     },
     body: JSON.stringify(body),
   });
@@ -2147,7 +2147,7 @@ async function renderOpenRouterVideo(
       // OpenRouter attribution headers per
       // https://openrouter.ai/docs/app-attribution
       'HTTP-Referer': 'https://opendesign.dev',
-      'X-Title': 'Open Design',
+      'X-Title': 'StoryForge',
     },
     body: JSON.stringify(body),
   });
@@ -2196,7 +2196,7 @@ async function renderOpenRouterVideo(
       headers: {
         'authorization': `Bearer ${credentials.apiKey}`,
         'HTTP-Referer': 'https://opendesign.dev',
-        'X-Title': 'Open Design',
+        'X-Title': 'StoryForge',
       },
     });
     const pollText = await pollResp.text();
@@ -3848,7 +3848,7 @@ async function renderHyperFramesViaCli(ctx: MediaContext, projectDir: string, on
     'The agent must write index.html (with window.__timelines registration) before dispatch.',
   );
 
-  const tmpRoot = await mkdtemp(path.join(os.tmpdir(), 'open-design-hf-'));
+  const tmpRoot = await mkdtemp(path.join(os.tmpdir(), 'storyforge-hf-'));
   const tmpOutput = path.join(tmpRoot, 'render.mp4');
   try {
     // Pin --workers 1 to keep memory bounded (each worker is a Chrome

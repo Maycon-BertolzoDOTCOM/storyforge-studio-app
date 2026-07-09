@@ -8,11 +8,11 @@ import type {
   HostEditor,
   HostEditorId,
   HostEditorsResponse,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import {
   handoffTargetIdToTracking,
   type TrackingArtifactKind,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 import { fetchHostEditors, openProjectInEditor } from '../providers/registry';
 import { useAnalytics } from '../analytics/provider';
 import { getResolvedDeviceId } from '../analytics/client';
@@ -24,9 +24,9 @@ import { Icon } from './Icon';
 import { EditorIcon } from './EditorIcon';
 import { AgentIcon } from './AgentIcon';
 
-const PREFERRED_EDITOR_KEY = 'open-design:preferred-editor';
-const PREFERRED_FRAMEWORK_KEY = 'open-design:handoff-framework';
-const AMR_WEBSITE_URL = 'https://open-design.ai/amr';
+const PREFERRED_EDITOR_KEY = 'storyforge:preferred-editor';
+const PREFERRED_FRAMEWORK_KEY = 'storyforge:handoff-framework';
+const AMR_WEBSITE_URL = 'https://storyforge.ai/amr';
 const PROJECT_PATH_COPY_ID = 'project-path';
 
 type HandoffTab = 'editor' | 'cli';
@@ -83,7 +83,7 @@ const CLI_ORDER = [
 ];
 
 const FALLBACK_CLI_TARGETS: CliTarget[] = [
-  { id: 'amr', name: 'Open Design', bin: 'vela', available: false },
+  { id: 'amr', name: 'StoryForge', bin: 'vela', available: false },
   { id: 'claude', name: 'Claude Code', bin: 'claude', available: false },
   { id: 'codex', name: 'Codex CLI', bin: 'codex', available: false },
   { id: 'opencode', name: 'OpenCode', bin: 'opencode-cli', available: false },
@@ -161,7 +161,7 @@ function writePreferredFramework(id: string): void {
 }
 
 function cliDisplayName(agent: Pick<CliTarget, 'id' | 'name'>): string {
-  return agent.id === 'amr' ? 'Open Design' : agent.name;
+  return agent.id === 'amr' ? 'StoryForge' : agent.name;
 }
 
 function mergeCliTargets(agents: AgentInfo[] | undefined): CliTarget[] {

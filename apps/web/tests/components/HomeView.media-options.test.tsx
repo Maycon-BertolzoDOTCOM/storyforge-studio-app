@@ -28,7 +28,7 @@ const PROMPT_TEMPLATES: PromptTemplateSummary[] = [
     category: 'product',
     model: 'gpt-image-2',
     aspect: '16:9',
-    source: { repo: 'open-design/image-prompts', license: 'MIT' },
+    source: { repo: 'storyforge/image-prompts', license: 'MIT' },
   },
   {
     id: 'video-reveal',
@@ -38,7 +38,7 @@ const PROMPT_TEMPLATES: PromptTemplateSummary[] = [
     category: 'product',
     model: 'doubao-seedance-2-0-260128',
     aspect: '16:9',
-    source: { repo: 'open-design/video-prompts', license: 'MIT' },
+    source: { repo: 'storyforge/video-prompts', license: 'MIT' },
   },
   {
     id: 'hyperframes-caption',

@@ -7,9 +7,9 @@ export async function buildBlogRss(context: { site: URL }) {
   );
 
   return rss({
-    title: 'Open Design Blog',
+    title: 'StoryForge Blog',
     description:
-      'Editorial notes on Open Design, agent-native design workflows, BYOK, skills, systems, and community.',
+      'Editorial notes on StoryForge, agent-native design workflows, BYOK, skills, systems, and community.',
     site: context.site,
     items: posts.map((post) => ({
       title: post.data.title,

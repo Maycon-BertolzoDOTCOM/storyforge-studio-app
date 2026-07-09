@@ -23,7 +23,7 @@ import {
   IMAGE_MODELS,
   VIDEO_MODELS,
 } from '../media/models.js';
-import type { ByokMediaDefaults, MediaExecutionPolicy, MediaSurface } from '@open-design/contracts';
+import type { ByokMediaDefaults, MediaExecutionPolicy, MediaSurface } from '@storyforge-app/contracts';
 
 function fmtList(ids: string[]): string {
   return ids.map((id) => `\`${id}\``).join(', ');
@@ -50,7 +50,7 @@ export function renderMediaGenerationContract(
 
 ## Media generation policy (load-bearing — overrides softer wording above)
 
-Open Design-owned media execution is **disabled for this run**. Do not call
+StoryForge-owned media execution is **disabled for this run**. Do not call
 \`"$OD_NODE_BIN" "$OD_BIN" media generate\`, Codex built-in imagegen, OD media
 provider APIs, local renderers, or ad-hoc scripts that create media bytes on
 OD's behalf.

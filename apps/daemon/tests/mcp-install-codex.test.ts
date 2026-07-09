@@ -46,44 +46,44 @@ describe('codex-cli probe', () => {
     });
     setCodexRunner(runner);
 
-    const status = await probeCodexInstall('open-design');
+    const status = await probeCodexInstall('storyforge');
     expect(status).toEqual({ available: false, installed: false });
     expect(runner.calls).toHaveLength(1);
-    expect(runner.calls[0]?.args).toEqual(['mcp', 'get', 'open-design']);
+    expect(runner.calls[0]?.args).toEqual(['mcp', 'get', 'storyforge']);
   });
 
   it('reports available:true installed:false when `codex mcp get` says no such server', async () => {
     const runner = makeStubRunner(async () => ({
       exitCode: 1,
       stdout: '',
-      stderr: "Error: No MCP server named 'open-design' found.\n",
+      stderr: "Error: No MCP server named 'storyforge' found.\n",
     }));
     setCodexRunner(runner);
 
-    const status = await probeCodexInstall('open-design');
+    const status = await probeCodexInstall('storyforge');
     expect(status).toEqual({ available: true, installed: false });
   });
 
   it('reports available:true installed:true when `codex mcp get` returns the server entry', async () => {
     const runner = makeStubRunner(async () => ({
       exitCode: 0,
-      stdout: 'open-design\n  enabled: true\n  transport: stdio\n',
+      stdout: 'storyforge\n  enabled: true\n  transport: stdio\n',
       stderr: '',
     }));
     setCodexRunner(runner);
 
-    const status = await probeCodexInstall('open-design');
+    const status = await probeCodexInstall('storyforge');
     expect(status).toEqual({ available: true, installed: true });
   });
 });
 
 describe('codex-cli install', () => {
   it('shells out `codex mcp add` with --env pairs and -- before the command', async () => {
-    const runner = makeStubRunner(async () => ({ exitCode: 0, stdout: "Added global MCP server 'open-design'.\n", stderr: '' }));
+    const runner = makeStubRunner(async () => ({ exitCode: 0, stdout: "Added global MCP server 'storyforge'.\n", stderr: '' }));
     setCodexRunner(runner);
 
     await installCodexMcp({
-      name: 'open-design',
+      name: 'storyforge',
       command: '/path/to/node',
       args: ['/path/to/cli.js', 'mcp'],
       env: { OD_DATA_DIR: '/tmp/od', OD_SIDECAR_IPC_PATH: '/tmp/sock' },
@@ -93,7 +93,7 @@ describe('codex-cli install', () => {
     expect(runner.calls[0]?.args).toEqual([
       'mcp',
       'add',
-      'open-design',
+      'storyforge',
       '--env',
       'OD_DATA_DIR=/tmp/od',
       '--env',
@@ -106,11 +106,11 @@ describe('codex-cli install', () => {
   });
 
   it('rejects when codex exits non-zero, surfacing stderr', async () => {
-    const runner = makeStubRunner(async () => ({ exitCode: 1, stdout: '', stderr: "Error: 'open-design' already exists\n" }));
+    const runner = makeStubRunner(async () => ({ exitCode: 1, stdout: '', stderr: "Error: 'storyforge' already exists\n" }));
     setCodexRunner(runner);
 
     await expect(
-      installCodexMcp({ name: 'open-design', command: 'node', args: ['cli.js', 'mcp'], env: {} }),
+      installCodexMcp({ name: 'storyforge', command: 'node', args: ['cli.js', 'mcp'], env: {} }),
     ).rejects.toThrow(/already exists/);
   });
 
@@ -118,8 +118,8 @@ describe('codex-cli install', () => {
     const runner = makeStubRunner(async () => ({ exitCode: 0, stdout: '', stderr: '' }));
     setCodexRunner(runner);
 
-    await installCodexMcp({ name: 'open-design', command: '/n', args: ['cli'], env: {} });
-    expect(runner.calls[0]?.args).toEqual(['mcp', 'add', 'open-design', '--', '/n', 'cli']);
+    await installCodexMcp({ name: 'storyforge', command: '/n', args: ['cli'], env: {} });
+    expect(runner.calls[0]?.args).toEqual(['mcp', 'add', 'storyforge', '--', '/n', 'cli']);
   });
 });
 
@@ -128,13 +128,13 @@ describe('codex-cli uninstall', () => {
     const runner = makeStubRunner(async () => ({ exitCode: 0, stdout: '', stderr: '' }));
     setCodexRunner(runner);
 
-    await uninstallCodexMcp('open-design');
-    expect(runner.calls[0]?.args).toEqual(['mcp', 'remove', 'open-design']);
+    await uninstallCodexMcp('storyforge');
+    expect(runner.calls[0]?.args).toEqual(['mcp', 'remove', 'storyforge']);
   });
 
   it('rejects when codex exits non-zero', async () => {
     const runner = makeStubRunner(async () => ({ exitCode: 1, stdout: '', stderr: 'Error: not found\n' }));
     setCodexRunner(runner);
-    await expect(uninstallCodexMcp('open-design')).rejects.toThrow(/not found/);
+    await expect(uninstallCodexMcp('storyforge')).rejects.toThrow(/not found/);
   });
 });

@@ -167,7 +167,7 @@ async function runElectronBuilderRaw(
     )
     : null;
   const builderConfig = {
-    appId: "io.open-design.desktop",
+    appId: "io.storyforge.desktop",
     afterPack: webStandaloneHookConfigPath == null ? undefined : winResources.webStandaloneAfterPackHook,
     asar: ELECTRON_BUILDER_ASAR,
     buildDependenciesFromSource: ELECTRON_BUILDER_BUILD_DEPENDENCIES_FROM_SOURCE,
@@ -183,13 +183,13 @@ async function runElectronBuilderRaw(
     executableName: PRODUCT_NAME,
     extraMetadata: {
       main: "./main.cjs",
-      name: "open-design-packaged-app",
+      name: "storyforge-packaged-app",
       productName: PRODUCT_NAME,
       version: packageVersion,
     },
     extraResources: [
-      { from: paths.resourceRoot, to: "open-design" },
-      { from: paths.packagedConfigPath, to: "open-design-config.json" },
+      { from: paths.resourceRoot, to: "storyforge" },
+      { from: paths.packagedConfigPath, to: "storyforge-config.json" },
       // Vendored dom-to-pptx browser bundle for editable PPTX export (read from
       // process.resourcesPath by the desktop main at runtime).
       domToPptxBundleResource(config),
@@ -217,7 +217,7 @@ async function runElectronBuilderRaw(
       warningsAsErrors: false,
     },
     productName: PRODUCT_NAME,
-    publish: [{ provider: "generic", url: "https://updates.invalid/open-design" }],
+    publish: [{ provider: "generic", url: "https://updates.invalid/storyforge" }],
     win: {
       artifactName: `${PRODUCT_NAME}-${namespaceToken}.\${ext}`,
       icon: paths.winIconPath,
@@ -381,7 +381,7 @@ async function assertMaterializedUnpackedVersionConsistency(
     );
   }
 
-  const packagedConfigPath = join(unpackedRoot, "resources", "open-design-config.json");
+  const packagedConfigPath = join(unpackedRoot, "resources", "storyforge-config.json");
   const packagedConfig = JSON.parse(await readFile(packagedConfigPath, "utf8")) as { appVersion?: unknown };
   if (packagedConfig.appVersion !== packagedVersion) {
     throw new Error(
@@ -446,7 +446,7 @@ export async function materializeCachedUnpackedForInstaller(
   }
   await mkdir(join(paths.unpackedRoot, "resources"), { recursive: true });
   await writeFile(
-    join(paths.unpackedRoot, "resources", "open-design-config.json"),
+    join(paths.unpackedRoot, "resources", "storyforge-config.json"),
     await readFile(paths.packagedConfigPath),
   );
   if (packagedVersion != null) {
@@ -793,8 +793,8 @@ export async function runElectronBuilder(
           reuseRequiredPaths: [
             ...resolveWinNsisOverlayRequiredPaths(),
             [
-              "resources/open-design-web-standalone/apps/web/server.js",
-              "resources/open-design-web-standalone/server.js",
+              "resources/storyforge-web-standalone/apps/web/server.js",
+              "resources/storyforge-web-standalone/server.js",
             ],
           ],
           to: paths.unpackedRoot,

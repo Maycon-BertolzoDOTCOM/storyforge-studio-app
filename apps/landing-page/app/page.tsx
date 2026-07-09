@@ -1,7 +1,7 @@
 /*
- * Open Design — Atelier Zero landing page.
+ * StoryForge — Atelier Zero landing page.
  *
- * Mirrors `design-templates/open-design-landing/example.html` 1:1. When the canonical
+ * Mirrors `design-templates/storyforge-landing/example.html` 1:1. When the canonical
  * example.html changes, mirror the diff here and into `app/globals.css`.
  *
  * Static React component rendered by Astro. The Header component owns the
@@ -152,13 +152,13 @@ const capIcon = {
 
 const NBSP = '\u00A0';
 
-// Canonical project URLs. Keep in sync with design-templates/open-design-landing/example.html.
+// Canonical project URLs. Keep in sync with design-templates/storyforge-landing/example.html.
 //
 // `data-github-version` invariant: every wrapper must contain ONLY the version
 // string (e.g. `v0.3.0`), never any surrounding label or punctuation. The
 // inline enhancement script in `app/pages/index.astro` assigns `textContent`
 // on each slot, so any extra text inside the wrapper would be clobbered.
-const REPO = 'https://github.com/nexu-io/open-design';
+const REPO = 'https://github.com/nexu-io/storyforge';
 const REPO_RELEASES = `${REPO}/releases`;
 const REPO_ISSUES = `${REPO}/issues`;
 const REPO_DAEMON = `${REPO}/tree/main/apps/daemon`;
@@ -463,7 +463,7 @@ export default function Page({
                 <span className='hero-title-corner bl' aria-hidden='true' />
                 <span className='hero-title-corner br' aria-hidden='true' />
                 <span className='hero-title-brand'>
-                  <BlurText text='Open Design' by='words' start={0} />
+                  <BlurText text='StoryForge' by='words' start={0} />
                 </span>
                 {/* One-line category positioning (the product's own umbrella
                     term). Kept as the canonical English category label across
@@ -516,7 +516,7 @@ export default function Page({
                   sizes='(max-width: 768px) 100vw, 60vw'
                   width={2508}
                   height={1450}
-                  alt='Open Design desktop — design files & index.html preview'
+                  alt='StoryForge desktop — design files & index.html preview'
                   decoding='async'
                   fetchPriority='low'
                   className='hero-shot-img'
@@ -532,7 +532,7 @@ export default function Page({
             <div className='about-grid'>
               <div className='about-copy' data-reveal>
                 <p className='about-kicker'>
-                  {locale === 'zh' ? '为什么选择 Open Design？' : 'Why Open Design?'}
+                  {locale === 'zh' ? '为什么选择 StoryForge？' : 'Why StoryForge?'}
                 </p>
                 {/*
                   Text Scroll Reveal (Magic UI / Inspira port): a tall track
@@ -776,7 +776,7 @@ export default function Page({
               <div data-reveal>
                 <h2 className='display'>
                   {t.labsPre}
-                  <em>Open Design</em>
+                  <em>StoryForge</em>
                   {t.labsPost}
                 </h2>
                 {t.labsLead ? (
@@ -962,7 +962,7 @@ export default function Page({
               </div>
               <div className='testimonial-globe' data-reveal='right' data-testimonial-globe>
                 <canvas
-                  aria-label='Open Design global contributor map'
+                  aria-label='StoryForge global contributor map'
                   className='testimonial-globe-canvas'
                   height={720}
                   width={720}
@@ -1034,13 +1034,13 @@ export default function Page({
         </section>
 
         {/* ====== FAQ ====== */}
-        {/* Restored from the canonical open-design.ai/zh layout. Content comes
+        {/* Restored from the canonical storyforge.ai/zh layout. Content comes
             from `getHomeFaq` (index.astro), the same source as the FAQPage
             JSON-LD, so the visible answers match the structured data. */}
         <section className='cta' id='contact' data-od-id='cta'>
           <div className='container'>
             <div className='cta-dance' data-precise-bg>
-              {/* Open Design Home window floating over the mural — sits above the
+              {/* StoryForge Home window floating over the mural — sits above the
                   painting (::before) but below the CTA copy. Bottom is clipped by
                   the block's overflow:hidden, matching the reference comp.
                   `data-reveal` slides it up from below when the module enters view
@@ -1048,7 +1048,7 @@ export default function Page({
               <img
                 className='cta-window'
                 src='/cta-window.webp'
-                alt='Open Design 桌面端首页'
+                alt='StoryForge 桌面端首页'
                 width={2996}
                 height={1870}
                 decoding='async'
@@ -1182,7 +1182,7 @@ export default function Page({
               <div className='sub-footer-col'>
                 <h5>{menu.product}</h5>
                 <ul>
-                  <li><a href={href('/')}>Open Design</a></li>
+                  <li><a href={href('/')}>StoryForge</a></li>
                   <li><a href={href('/html-anything/')}>{ui.footer.htmlAnything}</a></li>
                   <li><a href={href('/html-video/')}>{ui.footer.htmlVideo}</a></li>
                 </ul>

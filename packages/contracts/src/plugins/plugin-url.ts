@@ -9,7 +9,7 @@
 // The detail route is single-segment — `/plugins/<slug>/` — where the slug is
 // the slugified LAST segment of the plugin id. Plugin ids are globally unique
 // on their last segment across the whole registry (verified), so a single
-// segment keeps the route collision-free and lets `open-design/foo` (registry
+// segment keeps the route collision-free and lets `storyforge/foo` (registry
 // catalog id) and `foo` (bundled manifest id) resolve to the same page.
 //
 // Keep this module pure (no env, no fs, no browser globals): a self-hosted
@@ -17,7 +17,7 @@
 // this file never reads env.
 
 // Canonical public site origin for shareable plugin links.
-export const OPEN_DESIGN_SITE_ORIGIN = 'https://open-design.ai';
+export const OPEN_DESIGN_SITE_ORIGIN = 'https://storyforge.ai';
 
 // Slugify one path segment: lower-cased, non-url-safe runs collapsed to `-`,
 // leading/trailing `-` trimmed. Must match the landing site byte-for-byte.
@@ -31,7 +31,7 @@ export function pluginSlugSegment(value: string): string {
 }
 
 // Single-segment detail slug = slugified last `/`-segment of the id, e.g.
-// `open-design/Hero Deck` -> `hero-deck`, `live-dashboard` -> `live-dashboard`.
+// `storyforge/Hero Deck` -> `hero-deck`, `live-dashboard` -> `live-dashboard`.
 // This is what the `/plugins/[slug]/` route uses.
 export function pluginDetailSlug(id: string): string {
   const last = id.split('/').filter(Boolean).at(-1) ?? id;
@@ -39,7 +39,7 @@ export function pluginDetailSlug(id: string): string {
 }
 
 // Multi-segment slug preserving the namespace as a path separator, e.g.
-// `open-design/Hero Deck` -> `open-design/hero-deck`. Used for the namespaced
+// `storyforge/Hero Deck` -> `storyforge/hero-deck`. Used for the namespaced
 // preview route and any list data attributes that want full provenance.
 export function pluginSlug(id: string): string {
   return id
@@ -55,7 +55,7 @@ export function pluginDetailPath(id: string): string {
 }
 
 // Site-relative namespaced live-HTML preview path, e.g.
-// `/plugins/previews/open-design/hero-deck/`.
+// `/plugins/previews/storyforge/hero-deck/`.
 export function pluginPreviewPath(id: string): string {
   return `/plugins/previews/${pluginSlug(id)}/`;
 }

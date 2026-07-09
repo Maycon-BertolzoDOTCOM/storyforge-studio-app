@@ -26,7 +26,7 @@ function ensureDaemonCliBuilt() {
   });
 }
 
-const TEST_DATA_DIR_SYMBOL = Symbol.for('open-design.daemon.vitestDataDir');
+const TEST_DATA_DIR_SYMBOL = Symbol.for('storyforge.daemon.vitestDataDir');
 
 const globalState = globalThis as typeof globalThis & {
   [TEST_DATA_DIR_SYMBOL]?: string;
@@ -47,6 +47,6 @@ process.env.OD_DATA_DIR = globalState[TEST_DATA_DIR_SYMBOL];
 
 // Publish/share endpoints shell out through OD_NODE_BIN + OD_BIN (dist/cli.js).
 // Build the CLI artifact once per vitest process so package tests do not depend
-// on a prior manual `pnpm --filter @open-design/daemon build`.
+// on a prior manual `pnpm --filter @storyforge-app/daemon build`.
 ensureDaemonCliBuilt();
 process.env.OD_DAEMON_CLI_PATH = daemonCliDist;

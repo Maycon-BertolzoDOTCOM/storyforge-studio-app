@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 
-import { LAUNCHER_SCHEMA_VERSION, resolveLauncherVersionPaths } from "@open-design/launcher-proto";
+import { LAUNCHER_SCHEMA_VERSION, resolveLauncherVersionPaths } from "@storyforge-app/launcher-proto";
 import { describe, expect, it } from "vitest";
 
 import type { PackagedConfig } from "../src/config.js";
@@ -20,7 +20,7 @@ function fakeConfig(root: string, appVersion = "1.2.3-beta.4"): PackagedConfig {
     nodeCommand: null,
     posthogHost: null,
     posthogKey: null,
-    resourceRoot: join(root, "installed", "resources", "open-design"),
+    resourceRoot: join(root, "installed", "resources", "storyforge"),
     telemetryRelayUrl: null,
     updateMetadataUrl: null,
     webOutputMode: "server",
@@ -74,19 +74,19 @@ describe("resolvePackagedLauncherRuntime", () => {
         root,
         version: "1.2.3-beta.5",
       });
-      const resourcesPath = join(versionPaths.payloadRoot, "Open Design Beta.app", "Contents", "Resources");
-      await mkdir(join(resourcesPath, "open-design", "bin"), { recursive: true });
+      const resourcesPath = join(versionPaths.payloadRoot, "StoryForge Beta.app", "Contents", "Resources");
+      await mkdir(join(resourcesPath, "storyforge", "bin"), { recursive: true });
       await mkdir(join(resourcesPath, "prebundled", "daemon"), { recursive: true });
       await mkdir(join(resourcesPath, "prebundled", "web"), { recursive: true });
-      await writeFile(join(resourcesPath, "open-design", "bin", "node"), "");
+      await writeFile(join(resourcesPath, "storyforge", "bin", "node"), "");
       await writeFile(join(resourcesPath, "prebundled", "daemon", "daemon-sidecar.mjs"), "");
       await writeFile(join(resourcesPath, "prebundled", "web", "web-sidecar.mjs"), "");
       await writeFile(
-        join(resourcesPath, "open-design-config.json"),
+        join(resourcesPath, "storyforge-config.json"),
         `${JSON.stringify({
           appVersion: "1.2.3-beta.5",
           daemonSidecarEntryRelative: "prebundled/daemon/daemon-sidecar.mjs",
-          nodeCommandRelative: "open-design/bin/node",
+          nodeCommandRelative: "storyforge/bin/node",
           webOutputMode: "standalone",
           webSidecarEntryRelative: "prebundled/web/web-sidecar.mjs",
         })}\n`,
@@ -96,8 +96,8 @@ describe("resolvePackagedLauncherRuntime", () => {
         `${JSON.stringify({
           channel: "beta",
           entry: {
-            cwd: "payload/Open Design Beta.app",
-            executable: "payload/Open Design Beta.app/Contents/MacOS/Open Design Beta",
+            cwd: "payload/StoryForge Beta.app",
+            executable: "payload/StoryForge Beta.app/Contents/MacOS/StoryForge Beta",
           },
           namespace: config.namespace,
           payloadRoot: "payload",
@@ -121,7 +121,7 @@ describe("resolvePackagedLauncherRuntime", () => {
         join(paths.installationRoot, "launcher", "channels", "beta", "namespaces", config.namespace, "install.json"),
         `${JSON.stringify({
           channel: "beta",
-          launchPath: "/Applications/Open Design Beta.app",
+          launchPath: "/Applications/StoryForge Beta.app",
           namespace: config.namespace,
           schemaVersion: LAUNCHER_SCHEMA_VERSION,
         })}\n`,
@@ -131,14 +131,14 @@ describe("resolvePackagedLauncherRuntime", () => {
 
       expect(runtime.source).toBe("payload");
       expect(runtime.electronNodeCommand).toBeNull();
-      expect(runtime.installedLaunchPath).toBe("/Applications/Open Design Beta.app");
+      expect(runtime.installedLaunchPath).toBe("/Applications/StoryForge Beta.app");
       expect(runtime.targetVersion).toBe("1.2.3-beta.5");
       expect(runtime.config.appVersion).toBe("1.2.3-beta.5");
-      expect(runtime.config.resourceRoot).toBe(join(resourcesPath, "open-design"));
+      expect(runtime.config.resourceRoot).toBe(join(resourcesPath, "storyforge"));
       expect(runtime.config.daemonSidecarEntry).toBe(join(resourcesPath, "prebundled", "daemon", "daemon-sidecar.mjs"));
       expect(runtime.config.webSidecarEntry).toBe(join(resourcesPath, "prebundled", "web", "web-sidecar.mjs"));
-      expect(runtime.config.webStandaloneRoot).toBe(join(resourcesPath, "open-design-web-standalone"));
-      expect(runtime.paths.resourceRoot).toBe(join(resourcesPath, "open-design"));
+      expect(runtime.config.webStandaloneRoot).toBe(join(resourcesPath, "storyforge-web-standalone"));
+      expect(runtime.paths.resourceRoot).toBe(join(resourcesPath, "storyforge"));
       expect(JSON.parse(await readFile(runtime.launcherPaths.attemptsPath, "utf8"))).toMatchObject({
         channel: "beta",
         generation: 1,
@@ -170,8 +170,8 @@ describe("resolvePackagedLauncherRuntime", () => {
         version: "1.2.3-beta.5",
       });
       const resourcesPath = join(versionPaths.versionRoot, "payload", "resources");
-      const payloadExePath = join(versionPaths.versionRoot, "payload", "Open Design.exe");
-      const webStandaloneRoot = join(resourcesPath, "open-design-web-standalone");
+      const payloadExePath = join(versionPaths.versionRoot, "payload", "StoryForge.exe");
+      const webStandaloneRoot = join(resourcesPath, "storyforge-web-standalone");
       await mkdir(join(resourcesPath, "prebundled", "daemon"), { recursive: true });
       await mkdir(join(resourcesPath, "prebundled", "web"), { recursive: true });
       await mkdir(webStandaloneRoot, { recursive: true });
@@ -180,7 +180,7 @@ describe("resolvePackagedLauncherRuntime", () => {
       await writeFile(join(resourcesPath, "prebundled", "daemon", "daemon-sidecar.mjs"), "");
       await writeFile(join(resourcesPath, "prebundled", "web", "web-sidecar.mjs"), "");
       await writeFile(
-        join(resourcesPath, "open-design-config.json"),
+        join(resourcesPath, "storyforge-config.json"),
         `${JSON.stringify({
           appVersion: "1.2.3-beta.5",
           daemonSidecarEntryRelative: "prebundled/daemon/daemon-sidecar.mjs",
@@ -194,7 +194,7 @@ describe("resolvePackagedLauncherRuntime", () => {
           channel: "beta",
           entry: {
             cwd: "payload",
-            executable: "payload/Open Design.exe",
+            executable: "payload/StoryForge.exe",
           },
           namespace: config.namespace,
           payloadRoot: "payload",

@@ -1,5 +1,5 @@
 {
-  "name": "open-design",
+  "name": "storyforge-app",
   "version": "0.12.1",
   "private": true,
   "packageManager": "pnpm@10.33.2",
@@ -28,12 +28,12 @@
     "typecheck": "pnpm -r --workspace-concurrency=4 --if-present run typecheck && tsc -p scripts/tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@open-design/components": "workspace:*",
-    "@open-design/daemon": "workspace:*",
-    "@open-design/tools-dev": "workspace:*",
-    "@open-design/tools-pack": "workspace:*",
-    "@open-design/tools-release": "workspace:*",
-    "@open-design/tools-serve": "workspace:*",
+    "@storyforge-app/components": "workspace:*",
+    "@storyforge-app/daemon": "workspace:*",
+    "@storyforge-app/tools-dev": "workspace:*",
+    "@storyforge-app/tools-pack": "workspace:*",
+    "@storyforge-app/tools-release": "workspace:*",
+    "@storyforge-app/tools-serve": "workspace:*",
     "@types/node": "20.19.39",
     "tsx": "4.22.3",
     "typescript": "5.9.3"

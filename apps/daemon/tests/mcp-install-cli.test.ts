@@ -34,10 +34,10 @@ async function runCli(args: string[]): Promise<{ stdout: string; stderr: string;
 
 describe('od mcp install CLI identity probe', () => {
   it('emits a stable identity token without requiring an agent slug', async () => {
-    const result = await runCli(['mcp', 'install', '--open-design-cli-probe']);
+    const result = await runCli(['mcp', 'install', '--storyforge-cli-probe']);
 
     expect(result.code).toBe(0);
     expect(result.stderr).toBe('');
-    expect(result.stdout).toBe('open-design-cli:mcp-install:v1\n');
+    expect(result.stdout).toBe('storyforge-cli:mcp-install:v1\n');
   });
 });

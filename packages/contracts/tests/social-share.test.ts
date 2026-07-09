@@ -6,12 +6,12 @@ import {
 } from '../src/api/social-share';
 
 describe('social-share contract', () => {
-  it('builds Open Design repository share targets', () => {
+  it('builds StoryForge repository share targets', () => {
     const payload = buildSocialSharePayload({
-      kind: 'open-design-repo',
+      kind: 'storyforge-repo',
       locale: 'zh-CN',
-      title: 'Open Design GitHub',
-      text: '推荐 Open Design',
+      title: 'StoryForge GitHub',
+      text: '推荐 StoryForge',
     });
 
     expect(payload.url).toBe(OPEN_DESIGN_GITHUB_REPO_URL);
@@ -24,16 +24,16 @@ describe('social-share contract', () => {
     const payload = buildSocialSharePayload({
       kind: 'project-html',
       locale: 'en',
-      url: 'https://example.com/open-design-demo',
+      url: 'https://example.com/storyforge-demo',
       title: 'Demo',
-      text: `Built with Open Design. Repo: ${OPEN_DESIGN_GITHUB_REPO_URL}`,
-      copyText: `Demo\nhttps://example.com/open-design-demo\n${OPEN_DESIGN_GITHUB_REPO_URL}`,
+      text: `Built with StoryForge. Repo: ${OPEN_DESIGN_GITHUB_REPO_URL}`,
+      copyText: `Demo\nhttps://example.com/storyforge-demo\n${OPEN_DESIGN_GITHUB_REPO_URL}`,
     });
 
-    expect(payload.url).toBe('https://example.com/open-design-demo');
+    expect(payload.url).toBe('https://example.com/storyforge-demo');
     expect(payload.githubRepoUrl).toBe(OPEN_DESIGN_GITHUB_REPO_URL);
     expect(payload.copyText).toContain(OPEN_DESIGN_GITHUB_REPO_URL);
     expect(payload.platforms.find((target) => target.platform === 'telegram')?.shareUrl)
-      .toContain('https%3A%2F%2Fexample.com%2Fopen-design-demo');
+      .toContain('https%3A%2F%2Fexample.com%2Fstoryforge-demo');
   });
 });

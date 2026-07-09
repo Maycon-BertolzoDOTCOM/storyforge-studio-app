@@ -7,8 +7,8 @@ import {
   OPEN_DESIGN_SIDECAR_CONTRACT,
   SIDECAR_MODES,
   SIDECAR_SOURCES,
-} from "@open-design/sidecar-proto";
-import { resolveAppIpcPath } from "@open-design/sidecar";
+} from "@storyforge-app/sidecar-proto";
+import { resolveAppIpcPath } from "@storyforge-app/sidecar";
 import { describe, expect, it } from "vitest";
 
 import { writePackagedDesktopIdentity } from "../src/identity.js";

@@ -13,9 +13,9 @@ import {
   deriveConfigureGlobals,
   projectKindFromMetadataToTracking,
   fidelityToTracking,
-} from '@open-design/contracts/analytics';
-import type { AmrModelsResponse, ChatSessionMode, RunContextSelection } from '@open-design/contracts';
-import { DEFAULT_UNSELECTED_SCENARIO_PLUGIN_ID } from '@open-design/contracts';
+} from '@storyforge-app/contracts/analytics';
+import type { AmrModelsResponse, ChatSessionMode, RunContextSelection } from '@storyforge-app/contracts';
+import { DEFAULT_UNSELECTED_SCENARIO_PLUGIN_ID } from '@storyforge-app/contracts';
 import { EntryView } from './components/EntryView';
 import type { IntegrationTab } from './components/IntegrationsView';
 import { MarketplaceView } from './components/MarketplaceView';
@@ -102,7 +102,7 @@ import type {
   PluginShareAction,
   PluginShareProjectOutcome,
 } from './state/projects';
-import type { OpenDesignHostProjectImportSuccess } from '@open-design/host';
+import type { OpenDesignHostProjectImportSuccess } from '@storyforge-app/host';
 import { useI18n } from './i18n';
 import { liveArtifactTabId } from './types';
 import type {
@@ -138,7 +138,7 @@ type AppCreateProjectInput = Omit<CreateInput, 'metadata'> & {
   linkedDirs?: string[] | null;
 };
 
-const APP_CONFIG_CHANGED_EVENT = 'open-design:app-config-changed';
+const APP_CONFIG_CHANGED_EVENT = 'storyforge:app-config-changed';
 const AMR_AGENT_ID = 'amr';
 const AMR_PROFILE_ENV_KEY = 'OPEN_DESIGN_AMR_PROFILE';
 const AGENT_FOCUS_REFRESH_THROTTLE_MS = 10_000;
@@ -375,7 +375,7 @@ function AppInner() {
   // Observability marker. `apps/web/src/observability/white-screen.ts`
   // keys its "app actually mounted" success condition on this attribute
   // because the dynamic-import loading shell (`<div class="od-loading-shell">
-  // Loading Open Design…</div>`) is itself >MIN_VISIBLE_TEXT and would
+  // Loading StoryForge…</div>`) is itself >MIN_VISIBLE_TEXT and would
   // otherwise be mistaken for a real mount. Survives subsequent render
   // crashes — once App has mounted at least once, it's no longer a white
   // screen (subsequent failures show up as `$exception`).

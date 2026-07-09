@@ -13,7 +13,7 @@
  *
  * @see apps/packaged/src/sidecars.ts
  * @see apps/daemon/src/legacy-data-migrator.ts
- * @see https://github.com/nexu-io/open-design/issues/710
+ * @see https://github.com/nexu-io/storyforge/issues/710
  */
 import { EventEmitter } from 'node:events';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -21,8 +21,8 @@ import { tmpdir } from 'node:os';
 import { delimiter, dirname, join, posix } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { createJsonIpcServer, resolveAppIpcPath } from '@open-design/sidecar';
-import { APP_KEYS, OPEN_DESIGN_SIDECAR_CONTRACT } from '@open-design/sidecar-proto';
+import { createJsonIpcServer, resolveAppIpcPath } from '@storyforge-app/sidecar';
+import { APP_KEYS, OPEN_DESIGN_SIDECAR_CONTRACT } from '@storyforge-app/sidecar-proto';
 
 import {
   buildPackagedDaemonSpawnEnv,
@@ -227,16 +227,16 @@ describe('resolvePackagedElectronNodeCommand', () => {
   it('uses the hidden Electron helper as the macOS Electron-as-Node command when available', async () => {
     const root = mkdtempSync(join(tmpdir(), 'od-packaged-electron-helper-'));
     try {
-      const appPath = posix.join(root.replaceAll('\\', '/'), 'Open Design.app');
-      const execPath = posix.join(appPath, 'Contents', 'MacOS', 'Open Design');
+      const appPath = posix.join(root.replaceAll('\\', '/'), 'StoryForge.app');
+      const execPath = posix.join(appPath, 'Contents', 'MacOS', 'StoryForge');
       const helperPath = posix.join(
         appPath,
         'Contents',
         'Frameworks',
-        'Open Design Helper.app',
+        'StoryForge Helper.app',
         'Contents',
         'MacOS',
-        'Open Design Helper',
+        'StoryForge Helper',
       );
 
       mkdirSync(posix.join(appPath, 'Contents', 'MacOS'), { recursive: true });
@@ -255,7 +255,7 @@ describe('resolvePackagedElectronNodeCommand', () => {
   it('falls back to the main executable when the macOS helper is unavailable', async () => {
     const root = mkdtempSync(join(tmpdir(), 'od-packaged-no-electron-helper-'));
     try {
-      const execPath = join(root, 'Open Design.app', 'Contents', 'MacOS', 'Open Design');
+      const execPath = join(root, 'StoryForge.app', 'Contents', 'MacOS', 'StoryForge');
       mkdirSync(dirname(execPath), { recursive: true });
       writeFileSync(execPath, '#!/bin/sh\n', 'utf8');
 
@@ -266,7 +266,7 @@ describe('resolvePackagedElectronNodeCommand', () => {
   });
 
   it('keeps the main executable on non-macOS platforms', async () => {
-    const execPath = '/opt/Open Design/open-design';
+    const execPath = '/opt/StoryForge/storyforge';
 
     await expect(resolvePackagedElectronNodeCommand(execPath, 'linux')).resolves.toBe(execPath);
   });
@@ -396,10 +396,10 @@ describe('buildPackagedDaemonSpawnEnv', () => {
       daemonCliEntry: null,
       legacyDataDir: null,
       requireDesktopAuth: true,
-      telemetryRelayUrl: 'https://telemetry.open-design.ai/api/langfuse',
+      telemetryRelayUrl: 'https://telemetry.storyforge.ai/api/langfuse',
     });
     expect(env.OPEN_DESIGN_TELEMETRY_RELAY_URL).toBe(
-      'https://telemetry.open-design.ai/api/langfuse',
+      'https://telemetry.storyforge.ai/api/langfuse',
     );
   });
 

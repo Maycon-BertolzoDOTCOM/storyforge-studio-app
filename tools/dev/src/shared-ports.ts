@@ -1,5 +1,5 @@
-import { allocatePort } from "@open-design/sidecar";
-import { APP_KEYS } from "@open-design/sidecar-proto";
+import { allocatePort } from "@storyforge-app/sidecar";
+import { APP_KEYS } from "@storyforge-app/sidecar-proto";
 
 import { parsePortOption, type ToolDevAppName, type ToolDevOptions } from "./config.js";
 

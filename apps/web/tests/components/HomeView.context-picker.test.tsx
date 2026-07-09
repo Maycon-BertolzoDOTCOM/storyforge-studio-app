@@ -8,7 +8,7 @@ import {
   type ConnectorDetail,
   type McpServerConfig,
   type SkillSummary,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 
 vi.mock('../../src/components/home-hero/PlaceholderCarousel', () => ({
   PlaceholderCarousel: () => null,
@@ -532,7 +532,7 @@ describe('HomeView context picker', () => {
       if (typeof url === 'string' && (url === '/api/projects/reference-a' || url.startsWith('/api/projects/reference-a?'))) {
         return new Response(JSON.stringify({
           project: referenceProject,
-          resolvedDir: '/tmp/open-design/missing-reference-a',
+          resolvedDir: '/tmp/storyforge/missing-reference-a',
         }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
@@ -615,7 +615,7 @@ describe('HomeView context picker', () => {
       if (typeof url === 'string' && (url === '/api/projects/reference-a' || url.startsWith('/api/projects/reference-a?'))) {
         return new Response(JSON.stringify({
           project: referenceProject,
-          resolvedDir: '/tmp/open-design/reference-a',
+          resolvedDir: '/tmp/storyforge/reference-a',
         }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
@@ -671,11 +671,11 @@ describe('HomeView context picker', () => {
             id: 'project:reference-a',
             kind: 'project',
             label: 'Reference A',
-            absolutePath: '/tmp/open-design/reference-a',
+            absolutePath: '/tmp/storyforge/reference-a',
           }),
         ],
       },
-      linkedDirs: ['/tmp/open-design/reference-a'],
+      linkedDirs: ['/tmp/storyforge/reference-a'],
     }));
   });
 

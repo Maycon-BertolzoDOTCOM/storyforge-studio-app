@@ -24,13 +24,13 @@ import {
 
 const validStamp = {
   app: APP_KEYS.WEB,
-  ipc: "/tmp/open-design/ipc/contract-check/web.sock",
+  ipc: "/tmp/storyforge/ipc/contract-check/web.sock",
   mode: "dev" as const,
   namespace: "contract-check",
   source: SIDECAR_SOURCES.TOOLS_DEV,
 };
 
-describe("open-design sidecar contract", () => {
+describe("storyforge sidecar contract", () => {
   it("exports the canonical five-field stamp descriptor", () => {
     expect(SIDECAR_STAMP_FIELDS).toEqual(["app", "mode", "namespace", "ipc", "source"]);
     expect(OPEN_DESIGN_SIDECAR_CONTRACT.stampFlags).toEqual({

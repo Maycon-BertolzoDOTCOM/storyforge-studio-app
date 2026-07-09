@@ -1,13 +1,13 @@
 import type {
   ConnectionTestKind,
   ConnectionTestProtocol,
-} from '@open-design/contracts/api/connectionTest';
+} from '@storyforge-app/contracts/api/connectionTest';
 import type {
   ProviderModelOption,
   ProviderModelsRequest,
   ProviderModelsResponse,
-} from '@open-design/contracts/api/providerModels';
-import { isLoopbackApiHost } from '@open-design/contracts/api/connectionTest';
+} from '@storyforge-app/contracts/api/providerModels';
+import { isLoopbackApiHost } from '@storyforge-app/contracts/api/connectionTest';
 import { redactSecrets, validateUserProviderBaseUrl } from '../connectionTest.js';
 import { googleProviderModelsUrl, normalizeGoogleModelId } from './google-models.js';
 import { aihubmixHeaders, aihubmixCatalogUrl, parseAIHubMixCatalog } from './aihubmix.js';

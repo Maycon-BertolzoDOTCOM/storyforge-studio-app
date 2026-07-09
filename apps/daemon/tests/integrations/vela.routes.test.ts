@@ -833,7 +833,7 @@ describe('POST /api/integrations/vela/login', () => {
     expect(env.VELA_API_URL).toBe(`${baseUrl}/api/integrations/vela/api-proxy`);
   });
 
-  it('passes Open Design attribution device id to vela login', async () => {
+  it('passes StoryForge attribution device id to vela login', async () => {
     const dataDir = process.env.OD_DATA_DIR as string;
     const previous = await readAppConfig(dataDir);
     const dumpPath = path.join(tmpHome, 'vela-env-attribution.json');
@@ -869,7 +869,7 @@ describe('POST /api/integrations/vela/login', () => {
     }
   });
 
-  it('omits Open Design attribution device id without analytics consent headers', async () => {
+  it('omits StoryForge attribution device id without analytics consent headers', async () => {
     const dataDir = process.env.OD_DATA_DIR as string;
     const previous = await readAppConfig(dataDir);
     const dumpPath = path.join(tmpHome, 'vela-env-attribution-no-headers.json');
@@ -900,7 +900,7 @@ describe('POST /api/integrations/vela/login', () => {
     }
   });
 
-  it('omits Open Design attribution device id when telemetry metrics are disabled', async () => {
+  it('omits StoryForge attribution device id when telemetry metrics are disabled', async () => {
     const dataDir = process.env.OD_DATA_DIR as string;
     const previous = await readAppConfig(dataDir);
     const dumpPath = path.join(tmpHome, 'vela-env-attribution-metrics-off.json');
@@ -934,7 +934,7 @@ describe('POST /api/integrations/vela/login', () => {
   it('derives the fallback login API proxy from OD_PUBLIC_BASE_URL when the direct attempt fails', async () => {
     const dumpPath = path.join(tmpHome, 'vela-env-public-base-url.json');
     process.env.FAKE_VELA_ENV_DUMP_PATH = dumpPath;
-    process.env.OD_PUBLIC_BASE_URL = 'https://open-design.example.com/';
+    process.env.OD_PUBLIC_BASE_URL = 'https://storyforge.example.com/';
     process.env.FAKE_VELA_LOGIN_FAIL_WITHOUT_API_URL =
       'start device authorization: API request failed with status 502: broken edge';
 
@@ -944,7 +944,7 @@ describe('POST /api/integrations/vela/login', () => {
     await waitForFile(dumpPath);
     const env = JSON.parse(readFileSync(dumpPath, 'utf8'));
     expect(env.VELA_API_URL).toBe(
-      'https://open-design.example.com/api/integrations/vela/api-proxy',
+      'https://storyforge.example.com/api/integrations/vela/api-proxy',
     );
   });
 
@@ -1230,7 +1230,7 @@ describe('ALL /api/integrations/vela/api-proxy/*', () => {
       expect(resp.status).toBe(201);
       expect(await resp.json()).toEqual({ ok: true });
       expect(upstreamRequests).toHaveLength(1);
-      expect(upstreamRequests[0]?.href).toBe('https://amr-api.open-design.ai/api/v1/oauth/token');
+      expect(upstreamRequests[0]?.href).toBe('https://amr-api.storyforge.ai/api/v1/oauth/token');
       expect(upstreamRequests[0]?.method).toBe('POST');
       expect(upstreamRequests[0]?.headers['content-type']).toContain(
         'application/x-www-form-urlencoded',
@@ -1244,7 +1244,7 @@ describe('ALL /api/integrations/vela/api-proxy/*', () => {
 });
 
 describe('POST /api/integrations/vela/analytics-entry', () => {
-  it('mirrors Open Design AMR entry clicks to the AMR analytics ingest shape', async () => {
+  it('mirrors StoryForge AMR entry clicks to the AMR analytics ingest shape', async () => {
     const requests: unknown[] = [];
     const captureServer = createServer((req, res) => {
       let raw = '';
@@ -1381,7 +1381,7 @@ describe('POST /api/integrations/vela/analytics-entry', () => {
     }
   });
 
-  it('mirrors Open Design onboarding profile snapshots with the header-derived device id', async () => {
+  it('mirrors StoryForge onboarding profile snapshots with the header-derived device id', async () => {
     const requests: unknown[] = [];
     const captureServer = createServer((req, res) => {
       let raw = '';

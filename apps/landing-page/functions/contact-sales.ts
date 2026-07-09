@@ -55,9 +55,9 @@ type ContactLead = {
 };
 
 const ALLOWED_ORIGINS = [
-  "https://open-design.ai",
-  "https://www.open-design.ai",
-  "https://staging.open-design.ai",
+  "https://storyforge.ai",
+  "https://www.storyforge.ai",
+  "https://staging.storyforge.ai",
   "od://app",
   "tauri://localhost",
   "http://localhost",

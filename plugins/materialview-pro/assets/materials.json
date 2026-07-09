@@ -1,0 +1,60 @@
+{
+  "materials": [
+    {
+      "id": "marble",
+      "name": "Marble",
+      "colors": ["white", "black", "beige", "grey", "emerald", "rosa"],
+      "dimensions": ["30x30cm", "60x60cm", "90x90cm"],
+      "surfaces": ["floor", "wall", "furniture"]
+    },
+    {
+      "id": "wood",
+      "name": "Wood",
+      "colors": ["natural", "dark", "light", "walnut", "oak", "cherry"],
+      "dimensions": ["30x30cm", "60x60cm"],
+      "surfaces": ["floor", "wall", "furniture", "ceiling"]
+    },
+    {
+      "id": "ceramic",
+      "name": "Ceramic",
+      "colors": ["white", "beige", "grey", "blue", "green"],
+      "dimensions": ["30x30cm", "60x60cm", "90x90cm"],
+      "surfaces": ["floor", "wall"]
+    },
+    {
+      "id": "granite",
+      "name": "Granite",
+      "colors": ["black", "white", "grey", "brown", "blue"],
+      "dimensions": ["60x60cm", "90x90cm"],
+      "surfaces": ["floor", "wall", "furniture"]
+    },
+    {
+      "id": "concrete",
+      "name": "Concrete",
+      "colors": ["grey", "dark", "light", "polished"],
+      "dimensions": ["60x60cm", "90x90cm"],
+      "surfaces": ["floor", "wall"]
+    },
+    {
+      "id": "metal",
+      "name": "Metal",
+      "colors": ["steel", "gold", "copper", "black", "chrome"],
+      "dimensions": ["custom"],
+      "surfaces": ["furniture", "car-body"]
+    },
+    {
+      "id": "glass",
+      "name": "Glass",
+      "colors": ["clear", "frosted", "tinted", "mirrored"],
+      "dimensions": ["custom"],
+      "surfaces": ["wall", "furniture"]
+    }
+  ],
+  "surfaces": [
+    {"id": "floor", "name": "Floor"},
+    {"id": "wall", "name": "Wall"},
+    {"id": "ceiling", "name": "Ceiling"},
+    {"id": "furniture", "name": "Furniture"},
+    {"id": "car-body", "name": "Car Body"}
+  ]
+}

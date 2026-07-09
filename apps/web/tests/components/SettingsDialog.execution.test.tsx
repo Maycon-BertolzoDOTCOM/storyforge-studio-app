@@ -2,8 +2,8 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { OpenDesignHostUpdaterStatusSnapshot } from '@open-design/host';
-import { installMockOpenDesignHost } from '@open-design/host/testing';
+import type { OpenDesignHostUpdaterStatusSnapshot } from '@storyforge-app/host';
+import { installMockOpenDesignHost } from '@storyforge-app/host/testing';
 import { en } from '../../src/i18n/locales/en';
 
 const {
@@ -2090,7 +2090,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     vi.unstubAllGlobals();
   });
 
-  it('pins Open Design to the top of the installed CLI list', () => {
+  it('pins StoryForge to the top of the installed CLI list', () => {
     const claudeAgent: AgentInfo = {
       id: 'claude',
       name: 'Claude Code',
@@ -2150,7 +2150,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
       version: null,
       models: [],
       installUrl: 'https://github.com/MoonshotAI/kimi-cli',
-      docsUrl: 'https://www.kimi.com/code/docs/en/kimi-cli/guides/getting-started.html?aff=open-design',
+      docsUrl: 'https://www.kimi.com/code/docs/en/kimi-cli/guides/getting-started.html?aff=storyforge',
     };
     const { onPersist } = renderSettingsDialog(
       { mode: 'daemon', agentId: null },
@@ -2309,7 +2309,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^Open Design\b/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^StoryForge\b/ }));
 
     const modelPickers = screen.getAllByRole('combobox', {
       name: en['settings.modelPicker'],
@@ -2606,7 +2606,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
 
-    expect(screen.getByRole('button', { name: /^Open Design\b/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^StoryForge\b/ })).toBeTruthy();
     expect(screen.queryByText('1.0.0')).toBeNull();
     expect(screen.queryByText(/AMR \(vela\)/i)).toBeNull();
     expect(screen.queryByText(/vela/i)).toBeNull();
@@ -2646,10 +2646,10 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*2 installed/i }));
-    expect(screen.getByRole('button', { name: /^Open Design\b/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^StoryForge\b/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Authorize' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: /^Open Design\b/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^StoryForge\b/ }));
 
     expect(await screen.findByRole('button', { name: 'Authorize' })).toBeTruthy();
   });
@@ -2685,7 +2685,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
-    const amrCardButton = screen.getByRole('button', { name: /^Open Design\b/ });
+    const amrCardButton = screen.getByRole('button', { name: /^StoryForge\b/ });
     const amrCard = amrCardButton.closest('.agent-card') as HTMLElement;
     expect(amrCard).toBeTruthy();
     expect(await screen.findByText('Signing in…')).toBeTruthy();
@@ -2749,7 +2749,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
-    const amrCard = screen.getByRole('button', { name: /^Open Design\b/ }).closest('.agent-card') as HTMLElement;
+    const amrCard = screen.getByRole('button', { name: /^StoryForge\b/ }).closest('.agent-card') as HTMLElement;
     expect(await screen.findByText('Signing in…')).toBeTruthy();
 
     fireEvent.mouseEnter(amrCard);
@@ -2814,7 +2814,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
-    const amrCard = screen.getByRole('button', { name: /^Open Design\b/ }).closest('.agent-card') as HTMLElement;
+    const amrCard = screen.getByRole('button', { name: /^StoryForge\b/ }).closest('.agent-card') as HTMLElement;
     expect(await screen.findByText('Signing in…')).toBeTruthy();
 
     fireEvent.mouseEnter(amrCard);
@@ -2895,7 +2895,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
-    const amrCard = screen.getByRole('button', { name: /^Open Design\b/ }).closest('.agent-card') as HTMLElement;
+    const amrCard = screen.getByRole('button', { name: /^StoryForge\b/ }).closest('.agent-card') as HTMLElement;
     expect(await screen.findByText('Signing in…')).toBeTruthy();
 
     fireEvent.mouseEnter(amrCard);
@@ -2952,7 +2952,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
 
     expect(await screen.findByRole('button', { name: 'Sign out' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Open Design\b/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^StoryForge\b/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Plan pro/ })).toBeTruthy();
     expect(screen.getByText('signed-in@example.com')).toBeTruthy();
     expect(screen.queryByText(/AMR \(vela\)/i)).toBeNull();
@@ -3101,7 +3101,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
 
     expect(await screen.findByRole('button', { name: 'Sign out' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Open Design\b/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^StoryForge\b/ })).toBeTruthy();
     expect(screen.queryByText(/@/i)).toBeNull();
     expect(screen.queryByText(/AMR \(vela\)/i)).toBeNull();
   });
@@ -3198,12 +3198,12 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /Local CLI.*1 installed/i }));
     expect(await screen.findByRole('button', { name: 'Sign out' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Open Design\b/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^StoryForge\b/ })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
 
     expect(await screen.findByRole('button', { name: 'Authorize' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Open Design\b/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^StoryForge\b/ })).toBeTruthy();
     expect(
       onPersist.mock.calls.some(
         ([nextConfig]) =>
@@ -3621,9 +3621,9 @@ describe('SettingsDialog connectors interactions', () => {
 
 describe('SettingsDialog MCP server interactions', () => {
   const installInfo = {
-    command: '/Applications/Open Design.app/Contents/Resources/open-design/bin/node',
+    command: '/Applications/StoryForge.app/Contents/Resources/storyforge/bin/node',
     args: [
-      '/Applications/Open Design.app/Contents/Resources/app/node_modules/@open-design/daemon/dist/cli.js',
+      '/Applications/StoryForge.app/Contents/Resources/app/node_modules/@storyforge-app/daemon/dist/cli.js',
       'mcp',
       '--daemon-url',
       'http://127.0.0.1:51706',
@@ -3678,10 +3678,10 @@ describe('SettingsDialog MCP server interactions', () => {
     });
     expect(screen.getByText(/Run this in your terminal/i)).toBeTruthy();
     await waitFor(() => {
-      expect(screen.getByText(/claude mcp add-json --scope user open-design/i)).toBeTruthy();
+      expect(screen.getByText(/claude mcp add-json --scope user storyforge/i)).toBeTruthy();
     });
     expect(screen.getByText(/Restart your client to pick up the new server/i)).toBeTruthy();
-    expect(screen.getByText(/Open Design must be running for MCP tool calls to succeed/i)).toBeTruthy();
+    expect(screen.getByText(/StoryForge must be running for MCP tool calls to succeed/i)).toBeTruthy();
   });
 
   it('switches client instructions and snippet content when a different MCP client is selected', async () => {
@@ -3691,7 +3691,7 @@ describe('SettingsDialog MCP server interactions', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/claude mcp add-json --scope user open-design/i)).toBeTruthy();
+      expect(screen.getByText(/claude mcp add-json --scope user storyforge/i)).toBeTruthy();
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Claude Code/i }));
@@ -3700,7 +3700,7 @@ describe('SettingsDialog MCP server interactions', () => {
     await waitFor(() => {
       expect(screen.getByText(/Append this table to ~\/\.codex\/config\.toml/i)).toBeTruthy();
     });
-    expect(screen.getByText(/\[mcp_servers\.open-design\]/i)).toBeTruthy();
+    expect(screen.getByText(/\[mcp_servers\.storyforge\]/i)).toBeTruthy();
 
     // Scope to the picker trigger ("Codex" + the TOML method chip) so
     // we don't collide with the new one-click "Install in Codex" /
@@ -3722,14 +3722,14 @@ describe('SettingsDialog MCP server interactions', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/claude mcp add-json --scope user open-design/i)).toBeTruthy();
+      expect(screen.getByText(/claude mcp add-json --scope user storyforge/i)).toBeTruthy();
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Copy MCP configuration snippet' }));
 
     await waitFor(() => {
       expect(writeTextMock).toHaveBeenCalledWith(
-        expect.stringContaining("claude mcp add-json --scope user open-design"),
+        expect.stringContaining("claude mcp add-json --scope user storyforge"),
       );
     });
     expect(screen.getByText('Copied')).toBeTruthy();
@@ -3754,7 +3754,7 @@ describe('SettingsDialog MCP server interactions', () => {
 describe('SettingsDialog language interactions', () => {
   afterEach(() => {
     cleanup();
-    window.localStorage.removeItem('open-design:locale');
+    window.localStorage.removeItem('storyforge:locale');
     document.documentElement.removeAttribute('lang');
     document.documentElement.removeAttribute('dir');
   });
@@ -3774,7 +3774,7 @@ describe('SettingsDialog language interactions', () => {
     fireEvent.click(screen.getByRole('radio', { name: /简体中文/i }));
 
     expect(screen.getByRole('radio', { name: /简体中文/i }).getAttribute('aria-checked')).toBe('true');
-    expect(window.localStorage.getItem('open-design:locale')).toBe('zh-CN');
+    expect(window.localStorage.getItem('storyforge:locale')).toBe('zh-CN');
     expect(document.documentElement.getAttribute('lang')).toBe('zh-CN');
     expect(document.documentElement.getAttribute('dir')).toBe('ltr');
   });
@@ -3784,7 +3784,7 @@ describe('SettingsDialog language interactions', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: /فارسی/i }));
 
-    expect(window.localStorage.getItem('open-design:locale')).toBe('fa');
+    expect(window.localStorage.getItem('storyforge:locale')).toBe('fa');
     expect(document.documentElement.getAttribute('lang')).toBe('fa');
     expect(document.documentElement.getAttribute('dir')).toBe('rtl');
   });
@@ -3794,13 +3794,13 @@ describe('SettingsDialog language interactions', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: /Deutsch/i }));
 
-    expect(window.localStorage.getItem('open-design:locale')).toBe('de');
+    expect(window.localStorage.getItem('storyforge:locale')).toBe('de');
     expect(document.documentElement.getAttribute('lang')).toBe('de');
 
     fireEvent.click(screen.getByTitle(/close|schließen/i));
     expect(onPersist).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalledTimes(1);
-    expect(window.localStorage.getItem('open-design:locale')).toBe('de');
+    expect(window.localStorage.getItem('storyforge:locale')).toBe('de');
     expect(document.documentElement.getAttribute('lang')).toBe('de');
     expect(document.documentElement.getAttribute('dir')).toBe('ltr');
   });
@@ -4686,7 +4686,7 @@ describe('SettingsDialog about interactions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: en['settings.updateViewReleases'] }));
 
-    expect(openExternalUrlMock).toHaveBeenCalledWith('https://github.com/nexu-io/open-design/releases');
+    expect(openExternalUrlMock).toHaveBeenCalledWith('https://github.com/nexu-io/storyforge/releases');
   });
 
   it('downloads an available packaged update from the about page', async () => {
@@ -4696,13 +4696,13 @@ describe('SettingsDialog about interactions', () => {
     });
     const downloaded = updateStatus({
       artifact: {
-        name: 'Open Design Beta.dmg',
+        name: 'StoryForge Beta.dmg',
         platformKey: 'macAppleSilicon',
         type: 'dmg',
-        url: 'https://fixture.test/Open Design Beta.dmg',
+        url: 'https://fixture.test/StoryForge Beta.dmg',
       },
       availableVersion: '1.2.3-beta.4',
-      downloadPath: '/tmp/open-design-updater/Open Design Beta.dmg',
+      downloadPath: '/tmp/storyforge-updater/StoryForge Beta.dmg',
       state: 'downloaded',
     });
     const download = vi.fn(async () => downloaded);
@@ -4744,10 +4744,10 @@ describe('SettingsDialog about interactions', () => {
   it('installs a downloaded payload update from the about page', async () => {
     const payloadReady = updateStatus({
       artifact: {
-        name: 'open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+        name: 'storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
         platformKey: 'mac',
         type: 'payload',
-        url: 'https://fixture.test/open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+        url: 'https://fixture.test/storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
       },
       availableVersion: '1.2.3-beta.4',
       capabilities: {
@@ -4756,7 +4756,7 @@ describe('SettingsDialog about interactions', () => {
         canOpenInstaller: false,
         requiresManualInstall: false,
       },
-      downloadPath: '/tmp/open-design-updater/open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+      downloadPath: '/tmp/storyforge-updater/storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
       state: 'downloaded',
     });
     const installing = updateStatus({
@@ -4804,10 +4804,10 @@ describe('SettingsDialog about interactions', () => {
   it('keeps a quit retry action when update install succeeds but quit fails', async () => {
     const payloadReady = updateStatus({
       artifact: {
-        name: 'open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+        name: 'storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
         platformKey: 'mac',
         type: 'payload',
-        url: 'https://fixture.test/open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+        url: 'https://fixture.test/storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
       },
       availableVersion: '1.2.3-beta.4',
       capabilities: {
@@ -4816,7 +4816,7 @@ describe('SettingsDialog about interactions', () => {
         canOpenInstaller: false,
         requiresManualInstall: false,
       },
-      downloadPath: '/tmp/open-design-updater/open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+      downloadPath: '/tmp/storyforge-updater/storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
       state: 'downloaded',
     });
     const installed = updateStatus({
@@ -4824,7 +4824,7 @@ describe('SettingsDialog about interactions', () => {
       installResult: {
         dryRun: true,
         openedAt: '2026-05-19T00:00:00.000Z',
-        path: '/tmp/open-design-updater/open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+        path: '/tmp/storyforge-updater/storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
       },
     });
     const install = vi.fn(async () => installed);

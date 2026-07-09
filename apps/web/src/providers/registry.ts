@@ -22,7 +22,7 @@ import type {
   RestoreProjectFileVersionResponse,
   SocialShareRequest,
   SocialShareResponse,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import type {
   AgentInfo,
   AppVersionInfo,
@@ -72,7 +72,7 @@ import type { ArtifactManifest } from '../artifacts/types';
 import {
   isOpenDesignHostAvailable,
   openHostExternalUrl,
-} from '@open-design/host';
+} from '@storyforge-app/host';
 
 export const DEFAULT_DEPLOY_PROVIDER_ID = 'vercel-self';
 export const CLOUDFLARE_PAGES_PROVIDER_ID = 'cloudflare-pages';
@@ -907,7 +907,7 @@ export interface ConnectorActionResult {
 }
 
 function popupBlockedMessage(): string {
-  return 'Popup blocked. Allow popups for Open Design and try again.';
+  return 'Popup blocked. Allow popups for StoryForge and try again.';
 }
 
 export async function openExternalUrl(url: string): Promise<boolean> {
@@ -1220,7 +1220,7 @@ export type LatestGithubReleaseInfo = {
 
 export async function fetchLatestGithubReleaseInfo(): Promise<LatestGithubReleaseInfo | null> {
   try {
-    const resp = await fetch('/api/github/open-design/releases/latest');
+    const resp = await fetch('/api/github/storyforge/releases/latest');
     if (!resp.ok) return null;
     const json = (await resp.json()) as Partial<OpenDesignGithubLatestReleaseResponse>;
     if (typeof json.tag_name !== 'string' || typeof json.html_url !== 'string') return null;
@@ -2232,17 +2232,17 @@ export async function replaceProjectWorkingDir(
 // editors on demand (PATH probe + macOS bundle scan), and the POST
 // endpoint spawns the chosen app with the project's resolvedDir.
 export async function fetchHostEditors(): Promise<
-  import('@open-design/contracts').HostEditorsResponse
+  import('@storyforge-app/contracts').HostEditorsResponse
 > {
   const resp = await fetch('/api/editors');
   if (!resp.ok) throw new Error(`GET /api/editors failed: ${resp.status}`);
-  return (await resp.json()) as import('@open-design/contracts').HostEditorsResponse;
+  return (await resp.json()) as import('@storyforge-app/contracts').HostEditorsResponse;
 }
 
 export async function openProjectInEditor(
   projectId: string,
-  editorId: import('@open-design/contracts').HostEditorId,
-): Promise<import('@open-design/contracts').OpenProjectInEditorResponse> {
+  editorId: import('@storyforge-app/contracts').HostEditorId,
+): Promise<import('@storyforge-app/contracts').OpenProjectInEditorResponse> {
   const resp = await fetch(
     `/api/projects/${encodeURIComponent(projectId)}/open-in`,
     {
@@ -2255,7 +2255,7 @@ export async function openProjectInEditor(
     const body = await readApiErrorBody(resp);
     throw new Error(body.message);
   }
-  return (await resp.json()) as import('@open-design/contracts').OpenProjectInEditorResponse;
+  return (await resp.json()) as import('@storyforge-app/contracts').OpenProjectInEditorResponse;
 }
 
 export async function fetchDesignSystemPreview(id: string): Promise<string | null> {
@@ -2433,8 +2433,8 @@ import type {
   LibraryIngestResponse,
   LibraryPairingStartResponse,
   LibrarySyncResponse,
-} from '@open-design/contracts';
-import { LIBRARY_UPLOAD_MAX_BYTES, isLibraryUploadMimeAllowed } from '@open-design/contracts';
+} from '@storyforge-app/contracts';
+import { LIBRARY_UPLOAD_MAX_BYTES, isLibraryUploadMimeAllowed } from '@storyforge-app/contracts';
 
 /** Raw bytes URL for a library asset (image src / download href). */
 export function libraryAssetRawUrl(id: string): string {

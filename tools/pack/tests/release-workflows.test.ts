@@ -179,8 +179,8 @@ describe("release workflows", () => {
     expect(prepareMac).toContain('RELEASE_ASSET_SUFFIX="${RELEASE_ASSET_SUFFIX:-}"');
     expect(prepareWin).toContain("[AllowEmptyString()]");
     expect(prepareWin).toContain("$sourcePayload = [string]$build.payloadPath");
-    expect(prepareWin).toContain("open-design-$ReleaseVersion$ReleaseAssetSuffix-win-x64-payload.7z");
-    expect(publishPlatform).toContain("open-design-${releaseVersion}${assetSuffix}-win-x64-payload.7z");
+    expect(prepareWin).toContain("storyforge-$ReleaseVersion$ReleaseAssetSuffix-win-x64-payload.7z");
+    expect(publishPlatform).toContain("storyforge-${releaseVersion}${assetSuffix}-win-x64-payload.7z");
     expect(publishPlatform).toContain("payload: assetEntry(payload)");
     expect(publishPlatform).toContain("versionLockObjectKey(releaseVersion, countedReleaseChannel)");
     expect(publishPlatform).toContain("assertCurrentVersionReservation(storage, releaseVersion, versionLockKey, countedReleaseChannel)");
@@ -193,11 +193,11 @@ describe("release workflows", () => {
     expect(winLifecycle).toContain("removedLauncherNamespaceRoot");
     expect(buildWin).toContain('Measure-Step "validate launcher payload artifact"');
     expect(buildWin).toContain('Measure-Step "validate launcher payload update fixture"');
-    expect(buildWin).toContain('Test-JsonString $manifest.entry.executable "entry.executable" "payload/Open Design.exe"');
+    expect(buildWin).toContain('Test-JsonString $manifest.entry.executable "entry.executable" "payload/StoryForge.exe"');
     for (const workspaceBuild of [winApp, macWorkspace, linuxPack]) {
-      const sidecarProtoBuild = 'await runPnpm(config, ["--filter", "@open-design/sidecar-proto", "build"])';
-      const launcherProtoBuild = 'await runPnpm(config, ["--filter", "@open-design/launcher-proto", "build"])';
-      const sidecarBuild = 'await runPnpm(config, ["--filter", "@open-design/sidecar", "build"])';
+      const sidecarProtoBuild = 'await runPnpm(config, ["--filter", "@storyforge-app/sidecar-proto", "build"])';
+      const launcherProtoBuild = 'await runPnpm(config, ["--filter", "@storyforge-app/launcher-proto", "build"])';
+      const sidecarBuild = 'await runPnpm(config, ["--filter", "@storyforge-app/sidecar", "build"])';
       expect(workspaceBuild).toContain(launcherProtoBuild);
       expect(workspaceBuild.indexOf(sidecarProtoBuild)).toBeLessThan(workspaceBuild.indexOf(launcherProtoBuild));
       expect(workspaceBuild.indexOf(launcherProtoBuild)).toBeLessThan(workspaceBuild.indexOf(sidecarBuild));
@@ -216,8 +216,8 @@ describe("release workflows", () => {
     expect(preview).toContain("tools-release verify-metadata");
     expect(preview).toContain("tools-release summary-metadata");
     expect(preview).toContain("RELEASE_ARTIFACT_MODE: all");
-    expect(preview).toContain("open-design-preview-mac-arm64-publish-manifest");
-    expect(preview).toContain("open-design-preview-win-x64-publish-manifest");
+    expect(preview).toContain("storyforge-preview-mac-arm64-publish-manifest");
+    expect(preview).toContain("storyforge-preview-win-x64-publish-manifest");
     expect(preview).toContain("workflow_call:");
     expect(preview).toContain("OPEN_DESIGN_PREVIEW_VERSION: ${{ inputs.release_version }}");
     expect(preview).toContain("GITHUB_SHA: ${{ needs.metadata.outputs.commit }}");
@@ -247,8 +247,8 @@ describe("release workflows", () => {
     expect(prerelease).toContain("pnpm exec tools-release prepare prerelease");
     expect(prerelease).toContain("OPEN_DESIGN_PRERELEASE_METADATA_URL");
     expect(prerelease).toContain("RELEASE_CHANNEL: prerelease");
-    expect(prerelease).toContain("open-design-prerelease-mac-arm64-publish-manifest");
-    expect(prerelease).toContain("open-design-prerelease-win-x64-publish-manifest");
+    expect(prerelease).toContain("storyforge-prerelease-mac-arm64-publish-manifest");
+    expect(prerelease).toContain("storyforge-prerelease-win-x64-publish-manifest");
     expect(prerelease).toContain("workflow_call:");
     expect(prerelease).toContain("OPEN_DESIGN_STABLE_VERSION: ${{ inputs.release_version }}");
     expect(prerelease).toContain("GITHUB_SHA: ${{ needs.metadata.outputs.commit }}");
@@ -300,8 +300,8 @@ describe("release workflows", () => {
     expect(stable).not.toContain("RELEASE_BRANCH: ${{ github.ref_name }}");
     expect(stable).toContain("tools-release verify-metadata");
     expect(stable).toContain("tools-release summary-metadata");
-    expect(stable).toContain("open-design-release-mac-arm64-publish-manifest");
-    expect(stable).toContain("open-design-release-win-x64-publish-manifest");
+    expect(stable).toContain("storyforge-release-mac-arm64-publish-manifest");
+    expect(stable).toContain("storyforge-release-win-x64-publish-manifest");
     expect(stable).toContain("--signed");
     expect(stable).toContain("--notarize");
     expect(stable).toContain("run: pnpm exec tools-release prepare stable");

@@ -3,7 +3,7 @@ import { test, vi } from 'vitest';
 import { homedir } from 'node:os';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as platform from '@open-design/platform';
+import * as platform from '@storyforge-app/platform';
 import {
   assert, chmodSync, detectAgents, detectAgentsStream, inspectAgentExecutableResolution, join, minimalAgentDef, mkdirSync, mkdtempSync, opencode, resolveAgentExecutable, rmSync, spawnEnvForAgent, tmpdir, withEnvSnapshot, withPlatform, writeFileSync,
 } from './helpers/test-helpers.js';
@@ -15,7 +15,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..')
 
 // Claude Code owns its own auth resolution. Preserve credentials from the
 // inherited environment so users who run the local CLI with API-key auth get
-// the same behavior through Open Design.
+// the same behavior through StoryForge.
 test('spawnEnvForAgent preserves inherited Anthropic API credentials for the claude adapter', () => {
   const env = spawnEnvForAgent('claude', {
     ANTHROPIC_API_KEY: 'sk-leak',
@@ -483,7 +483,7 @@ test('detectAgents includes sanitized install and docs metadata from split runti
 
       assert.ok(amr);
       assert.equal(amr.available, false);
-      assert.equal(amr.installUrl, 'https://open-design.ai/amr');
+      assert.equal(amr.installUrl, 'https://storyforge.ai/amr');
       assert.ok(qoder);
       assert.equal(qoder.available, false);
       assert.equal(qoder.installUrl, 'https://qoder.com/download');
@@ -496,7 +496,7 @@ test('detectAgents includes sanitized install and docs metadata from split runti
       assert.ok(kimi);
       assert.equal(
         kimi.docsUrl,
-        'https://www.kimi.com/code/docs/en/kimi-cli/guides/getting-started.html?aff=open-design',
+        'https://www.kimi.com/code/docs/en/kimi-cli/guides/getting-started.html?aff=storyforge',
       );
     });
   } finally {
@@ -602,7 +602,7 @@ fsTest('detectAgents keeps packaged built-in AMR unavailable when OpenCode canno
   const root = mkdtempSync(join(tmpdir(), 'od-detect-amr-built-in-'));
   try {
     return await withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_RESOURCE_ROOT', 'VELA_OPENCODE_BIN'], async () => {
-      const resourceRoot = join(root, 'resources', 'open-design');
+      const resourceRoot = join(root, 'resources', 'storyforge');
       const builtInVela = join(resourceRoot, 'bin', 'vela');
       mkdirSync(join(resourceRoot, 'bin'), { recursive: true });
       writeFileSync(
@@ -632,7 +632,7 @@ fsTest('detectAgents marks AMR available from packaged built-in Vela with the bu
   const root = mkdtempSync(join(tmpdir(), 'od-detect-amr-built-in-'));
   try {
     return await withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_RESOURCE_ROOT', 'VELA_OPENCODE_BIN'], async () => {
-      const resourceRoot = join(root, 'resources', 'open-design');
+      const resourceRoot = join(root, 'resources', 'storyforge');
       const builtInVela = join(resourceRoot, 'bin', 'vela');
       const companionTree = join(resourceRoot, 'bin', 'libexec', 'opencode');
       mkdirSync(join(resourceRoot, 'bin'), { recursive: true });
@@ -1232,7 +1232,7 @@ test('spawnEnvForAgent preserves Anthropic credentials for non-claude adapters',
 
 // Codex CLI owns its own auth resolution. Preserve credentials from the
 // inherited environment so users who run the local CLI with API-key auth get
-// the same behavior through Open Design.
+// the same behavior through StoryForge.
 test('spawnEnvForAgent preserves inherited OPENAI_API_KEY for the codex adapter', () => {
   const env = spawnEnvForAgent('codex', {
     OPENAI_API_KEY: 'sk-stale-byok',

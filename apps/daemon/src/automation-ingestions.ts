@@ -14,7 +14,7 @@ import type {
   CreateAutomationSourceIngestionRequest,
   JsonValue,
   MemoryType,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 
 import { createAutomationProposal } from './automation-proposals.js';
 import { getAnyAutomationTemplate } from './automation-templates.js';
@@ -158,6 +158,18 @@ function outputSinksFrom(
 function estimateTokens(text: string): number {
   if (!text.trim()) return 0;
   return Math.max(1, Math.ceil(text.length / 4));
+}
+
+// Precise variant using GhostStore's js-tiktoken BPE
+async function estimateTokensPrecise(text: string): Promise<number> {
+  if (!text.trim()) return 0;
+  try {
+    const { countTokensPrecise } = await import('./token-count.js');
+    const result = await countTokensPrecise(text);
+    return result.tokens;
+  } catch {
+    return estimateTokens(text);
+  }
 }
 
 function slugify(value: string): string {

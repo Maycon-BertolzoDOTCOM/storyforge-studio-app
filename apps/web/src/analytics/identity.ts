@@ -2,14 +2,14 @@
 // so it stays SSR-safe: every entry point guards window/localStorage access
 // and falls back to a deterministic-enough fake id under jsdom and Next.js
 // pre-render. The daemon mirrors these values via the x-od-analytics-*
-// headers (see @open-design/contracts/analytics).
+// headers (see @storyforge-app/contracts/analytics).
 
-import type { AnalyticsClientType } from '@open-design/contracts/analytics';
-import { detectOpenDesignHostClientType } from '@open-design/host';
+import type { AnalyticsClientType } from '@storyforge-app/contracts/analytics';
+import { detectOpenDesignHostClientType } from '@storyforge-app/host';
 
-const ANONYMOUS_ID_KEY = 'open-design:analytics.anonymous_id';
-const SESSION_ID_KEY = 'open-design:analytics.session_id';
-const RUN_TURN_INDEX_KEY = 'open-design:analytics.run_turn_index';
+const ANONYMOUS_ID_KEY = 'storyforge:analytics.anonymous_id';
+const SESSION_ID_KEY = 'storyforge:analytics.session_id';
+const RUN_TURN_INDEX_KEY = 'storyforge:analytics.run_turn_index';
 
 function randomUuid(): string {
   // Prefer the standard crypto.randomUUID — present in every modern browser
@@ -74,7 +74,7 @@ export function claimRunTurnIndex(): { turnIndex: number; isFirstRun: boolean } 
   }
 }
 
-// Desktop packaged builds install the Open Design host bridge so the
+// Desktop packaged builds install the StoryForge host bridge so the
 // same web bundle can distinguish desktop runs from browser visits.
 // Falls back to 'web' when the host bridge isn't present.
 export function detectClientType(): AnalyticsClientType {

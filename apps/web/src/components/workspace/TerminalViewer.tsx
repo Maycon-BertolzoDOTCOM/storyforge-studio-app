@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ITheme, Terminal } from '@xterm/xterm';
 import type { FitAddon } from '@xterm/addon-fit';
-import type { TerminalDataEvent, TerminalExitEvent } from '@open-design/contracts';
+import type { TerminalDataEvent, TerminalExitEvent } from '@storyforge-app/contracts';
 import { useT } from '../../i18n';
 import { Icon } from '../Icon';
 import {
@@ -390,7 +390,7 @@ export function TerminalViewer({ terminalId, projectId, onClose, onSessionIdChan
           <div className={styles.loadingStack}>
             <div className={styles.loadingPromptLine} aria-hidden>
               <span className={styles.loadingPrompt}>$</span>
-              <span className={styles.loadingCommand}>open-design shell</span>
+              <span className={styles.loadingCommand}>storyforge shell</span>
               <span className={styles.loadingCursor} />
             </div>
             <div className={styles.loadingCopy}>

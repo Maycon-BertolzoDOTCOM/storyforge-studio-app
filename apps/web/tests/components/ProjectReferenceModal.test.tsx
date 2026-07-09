@@ -104,14 +104,14 @@ describe('ProjectReferenceModal', () => {
     const { onSelect } = renderModal();
     vi.mocked(getProjectDetail).mockResolvedValue({
       project,
-      resolvedDir: '/tmp/open-design/project-ref',
+      resolvedDir: '/tmp/storyforge/project-ref',
     });
 
     await confirmSelection();
 
     await waitFor(() => {
       expect(onSelect).toHaveBeenCalledWith([
-        { project, resolvedDir: '/tmp/open-design/project-ref' },
+        { project, resolvedDir: '/tmp/storyforge/project-ref' },
       ]);
     });
   });
@@ -141,10 +141,10 @@ describe('ProjectReferenceModal', () => {
     const { onSelect } = renderModal({ projects: [project, secondProject] });
     vi.mocked(getProjectDetail).mockImplementation(async (id: string) => {
       if (id === project.id) {
-        return { project, resolvedDir: '/tmp/open-design/project-ref' };
+        return { project, resolvedDir: '/tmp/storyforge/project-ref' };
       }
       if (id === secondProject.id) {
-        return { project: secondProject, resolvedDir: '/tmp/open-design/second-project' };
+        return { project: secondProject, resolvedDir: '/tmp/storyforge/second-project' };
       }
       return null;
     });
@@ -155,8 +155,8 @@ describe('ProjectReferenceModal', () => {
 
     await waitFor(() => {
       expect(onSelect).toHaveBeenCalledWith([
-        { project, resolvedDir: '/tmp/open-design/project-ref' },
-        { project: secondProject, resolvedDir: '/tmp/open-design/second-project' },
+        { project, resolvedDir: '/tmp/storyforge/project-ref' },
+        { project: secondProject, resolvedDir: '/tmp/storyforge/second-project' },
       ]);
     });
   });

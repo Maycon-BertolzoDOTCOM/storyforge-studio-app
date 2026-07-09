@@ -8,7 +8,7 @@
 // textarea can live centered in the hero.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Dialog, DialogFooter, DialogTitle } from '@open-design/components';
+import { Dialog, DialogFooter, DialogTitle } from '@storyforge-app/components';
 import type {
   ApplyResult,
   ChatSessionMode,
@@ -19,9 +19,9 @@ import type {
   ProjectKind,
   AudioVoiceOption,
   WorkspaceContextItem,
-} from '@open-design/contracts';
-import { DEFAULT_UNSELECTED_SCENARIO_PLUGIN_ID } from '@open-design/contracts';
-import { projectKindFromMetadataToTracking } from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts';
+import { DEFAULT_UNSELECTED_SCENARIO_PLUGIN_ID } from '@storyforge-app/contracts';
+import { projectKindFromMetadataToTracking } from '@storyforge-app/contracts/analytics';
 import { useAnalytics } from '../analytics/provider';
 import {
   trackCommunityGalleryClick,
@@ -64,7 +64,7 @@ import {
   openFolderDialog,
   pushRecentLinkedDir,
 } from '../providers/registry';
-import { isOpenDesignHostAvailable, pickHostWorkingDir } from '@open-design/host';
+import { isOpenDesignHostAvailable, pickHostWorkingDir } from '@storyforge-app/host';
 import type {
   DesignSystemSummary,
   Project,
@@ -202,9 +202,9 @@ interface PendingPluginUseHandoff {
 }
 
 const AUTHORING_DEFAULT_SCENARIO_INPUTS = {
-  artifactKind: 'Open Design plugin',
-  audience: 'Open Design plugin authors',
-  topic: 'packaging a reusable workflow as an Open Design plugin',
+  artifactKind: 'StoryForge plugin',
+  audience: 'StoryForge plugin authors',
+  topic: 'packaging a reusable workflow as an StoryForge plugin',
 };
 
 
@@ -251,8 +251,8 @@ const EMPTY_PROMPT_TEMPLATES: PromptTemplateSummary[] = [];
 // template, skill, staged files, working directory) are intentionally NOT
 // persisted here — they reference live catalogue records / File handles / a
 // desktop auth token that cannot round-trip through JSON safely.
-const HOME_COMPOSER_PROMPT_KEY = 'open-design:home-composer:prompt';
-const HOME_COMPOSER_DESIGN_SYSTEM_KEY = 'open-design:home-composer:design-system';
+const HOME_COMPOSER_PROMPT_KEY = 'storyforge:home-composer:prompt';
+const HOME_COMPOSER_DESIGN_SYSTEM_KEY = 'storyforge:home-composer:design-system';
 
 function readHomeComposerDraft(key: string): string | null {
   if (typeof window === 'undefined') return null;
@@ -504,10 +504,10 @@ export function HomeView({
       });
     };
     load();
-    window.addEventListener('open-design:plugins-changed', load);
+    window.addEventListener('storyforge:plugins-changed', load);
     return () => {
       cancelled = true;
-      window.removeEventListener('open-design:plugins-changed', load);
+      window.removeEventListener('storyforge:plugins-changed', load);
     };
   }, []);
 
@@ -1307,7 +1307,7 @@ export function HomeView({
       // auth gate and surface as a confusing late create-time failure.
       // Surface the host error instead and keep the existing working dir.
       setError(
-        `Couldn't open the folder picker (${'reason' in result ? result.reason : 'host unavailable'}). Please update Open Design and try again.`,
+        `Couldn't open the folder picker (${'reason' in result ? result.reason : 'host unavailable'}). Please update StoryForge and try again.`,
       );
       return null;
     }
@@ -1332,7 +1332,7 @@ export function HomeView({
       }
       if ('canceled' in result && result.canceled) return null;
       setError(
-        `Couldn't open the folder picker (${'reason' in result ? result.reason : 'host unavailable'}). Please update Open Design and try again.`,
+        `Couldn't open the folder picker (${'reason' in result ? result.reason : 'host unavailable'}). Please update StoryForge and try again.`,
       );
       return null;
     }

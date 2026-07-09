@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installMockOpenDesignHost } from '@open-design/host/testing';
+import { installMockOpenDesignHost } from '@storyforge-app/host/testing';
 import {
   archiveFilenameFrom,
   archiveRootFromFilePath,
@@ -360,7 +360,7 @@ describe('buildDesignHandoffContent', () => {
       files: ['index.html', 'src/app.css', 'src/app.js'],
     }));
 
-    expect(manifest.schema).toBe('open-design.design-manifest.v1');
+    expect(manifest.schema).toBe('storyforge.design-manifest.v1');
     expect(manifest.entryFile).toBe('index.html');
     expect(manifest.sourceFiles.css).toEqual(['src/app.css']);
     expect(manifest.sourceFiles.scriptsAndComponents).toEqual(['src/app.js']);
@@ -899,8 +899,8 @@ describe('sandboxed preview Blob exports', () => {
     });
     vi.stubGlobal('window', {
       location: {
-        href: 'https://open-design.test/plugins/example',
-        origin: 'https://open-design.test',
+        href: 'https://storyforge.test/plugins/example',
+        origin: 'https://storyforge.test',
       },
       open: (_url: string, _target: string, features?: string) => {
         openCalls.push([_url, _target]);
@@ -933,7 +933,7 @@ describe('sandboxed preview Blob exports', () => {
 
     expect(capturedBlob).toBeDefined();
     const wrapper = await capturedBlob!.text();
-    expect(wrapper).toContain('&lt;base href=&quot;https://open-design.test/&quot;&gt;');
+    expect(wrapper).toContain('&lt;base href=&quot;https://storyforge.test/&quot;&gt;');
   });
 
   it('passes srcdoc options through the sandboxed new-tab wrapper', async () => {

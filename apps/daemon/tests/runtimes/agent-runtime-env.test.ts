@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
-import { SIDECAR_ENV } from '@open-design/sidecar-proto';
+import { SIDECAR_ENV } from '@storyforge-app/sidecar-proto';
 
 import { createAgentRuntimeEnv, createAgentRuntimeToolPrompt } from '../../src/server.js';
 import { applyAgentLaunchEnv } from '../../src/runtimes/launch.js';
@@ -12,13 +12,13 @@ describe('agent runtime tool environment', () => {
       { PATH: '/bin', OD_TOOL_TOKEN: 'stale-token' },
       'http://127.0.0.1:7456',
       { token: 'fresh-token' },
-      '/opt/open-design/bin/node',
+      '/opt/storyforge/bin/node',
     );
 
     expect(env).toMatchObject({
-      PATH: `/opt/open-design/bin${path.delimiter}/bin`,
+      PATH: `/opt/storyforge/bin${path.delimiter}/bin`,
       OD_DAEMON_URL: 'http://127.0.0.1:7456',
-      OD_NODE_BIN: '/opt/open-design/bin/node',
+      OD_NODE_BIN: '/opt/storyforge/bin/node',
       OD_TOOL_TOKEN: 'fresh-token',
     });
   });
@@ -68,11 +68,11 @@ describe('agent runtime tool environment', () => {
       { PATH: '/bin', OD_TOOL_TOKEN: 'stale-token' },
       'http://127.0.0.1:7456',
       null,
-      '/opt/open-design/bin/node',
+      '/opt/storyforge/bin/node',
     );
 
     expect(env.OD_DAEMON_URL).toBe('http://127.0.0.1:7456');
-    expect(env.OD_NODE_BIN).toBe('/opt/open-design/bin/node');
+    expect(env.OD_NODE_BIN).toBe('/opt/storyforge/bin/node');
     expect(env.OD_TOOL_TOKEN).toBeUndefined();
   });
 
@@ -81,7 +81,7 @@ describe('agent runtime tool environment', () => {
       { PATH: '/bin' },
       'http://127.0.0.1:7456',
       null,
-      '/opt/open-design/bin/node',
+      '/opt/storyforge/bin/node',
     );
 
     expect(env.OD_DATA_DIR).toBe(process.env.OD_DATA_DIR);
@@ -92,7 +92,7 @@ describe('agent runtime tool environment', () => {
       { PATH: '/bin', HTTP_PROXY: 'http://127.0.0.1:9', NO_PROXY: '' },
       'http://127.0.0.1:7456',
       { token: 'fresh-token' },
-      '/opt/open-design/bin/node',
+      '/opt/storyforge/bin/node',
     );
 
     expect(env.HTTP_PROXY).toBe('http://127.0.0.1:9');
@@ -102,23 +102,23 @@ describe('agent runtime tool environment', () => {
 
   it('passes the daemon sidecar IPC path from the explicit base env into agent wrapper sessions', () => {
     const env = createAgentRuntimeEnv(
-      { PATH: '/bin', [SIDECAR_ENV.IPC_PATH]: '/tmp/open-design/ipc/daemon.sock' },
+      { PATH: '/bin', [SIDECAR_ENV.IPC_PATH]: '/tmp/storyforge/ipc/daemon.sock' },
       'http://127.0.0.1:7456',
       null,
-      '/opt/open-design/bin/node',
+      '/opt/storyforge/bin/node',
     );
 
-    expect(env[SIDECAR_ENV.IPC_PATH]).toBe('/tmp/open-design/ipc/daemon.sock');
+    expect(env[SIDECAR_ENV.IPC_PATH]).toBe('/tmp/storyforge/ipc/daemon.sock');
   });
 
   it('does not pull the daemon sidecar IPC path from ambient process state', () => {
-    vi.stubEnv(SIDECAR_ENV.IPC_PATH, '/tmp/open-design/ipc/stale.sock');
+    vi.stubEnv(SIDECAR_ENV.IPC_PATH, '/tmp/storyforge/ipc/stale.sock');
     try {
       const env = createAgentRuntimeEnv(
         { PATH: '/bin' },
         'http://127.0.0.1:7456',
         null,
-        '/opt/open-design/bin/node',
+        '/opt/storyforge/bin/node',
       );
 
       expect(env[SIDECAR_ENV.IPC_PATH]).toBeUndefined();

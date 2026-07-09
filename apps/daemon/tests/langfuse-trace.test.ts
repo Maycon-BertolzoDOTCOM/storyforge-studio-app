@@ -157,15 +157,15 @@ describe('readLangfuseConfig', () => {
 });
 
 describe('readTelemetrySinkConfig', () => {
-  it('prefers the Open Design telemetry relay when configured', () => {
+  it('prefers the StoryForge telemetry relay when configured', () => {
     const cfg = readTelemetrySinkConfig({
-      OPEN_DESIGN_TELEMETRY_RELAY_URL: 'https://telemetry.open-design.ai/api/langfuse//',
+      OPEN_DESIGN_TELEMETRY_RELAY_URL: 'https://telemetry.storyforge.ai/api/langfuse//',
       LANGFUSE_PUBLIC_KEY: 'pk',
       LANGFUSE_SECRET_KEY: 'sk',
     });
     expect(cfg).toEqual({
       kind: 'relay',
-      relayUrl: 'https://telemetry.open-design.ai/api/langfuse',
+      relayUrl: 'https://telemetry.storyforge.ai/api/langfuse',
       timeoutMs: 20_000,
       retries: 1,
     });
@@ -173,7 +173,7 @@ describe('readTelemetrySinkConfig', () => {
 
   it('uses relay-specific timeout and retry tuning when present', () => {
     const cfg = readTelemetrySinkConfig({
-      OPEN_DESIGN_TELEMETRY_RELAY_URL: 'https://telemetry.open-design.ai/api/langfuse',
+      OPEN_DESIGN_TELEMETRY_RELAY_URL: 'https://telemetry.storyforge.ai/api/langfuse',
       OPEN_DESIGN_TELEMETRY_TIMEOUT_MS: '30000',
       OPEN_DESIGN_TELEMETRY_RETRIES: '3',
       LANGFUSE_TIMEOUT_MS: '1',
@@ -338,7 +338,7 @@ describe('buildTracePayload', () => {
     const generation = bodyOf(batch, 'generation-create', 'llm');
     expect(trace.input).toBe('Make a landing page for a coffee shop.');
     expect(generation.input).toMatchObject({
-      type: 'open-design.prompt-stack',
+      type: 'storyforge.prompt-stack',
       redactionVersion: 'prompt-stack-redaction-v1',
       sectionCount: 3,
       sections: [
@@ -475,7 +475,7 @@ describe('buildTracePayload', () => {
       expect(trace.metadata.promptStack).toBeUndefined();
       expect(trace.metadata.promptStack_redactedContentBytes).toBe(0);
       expect(generation.input).toMatchObject({
-        type: 'open-design.prompt-stack',
+        type: 'storyforge.prompt-stack',
         redactedContentBytes: 0,
         sections: [expect.not.objectContaining({ redactedContent: expect.any(String) })],
       });
@@ -828,7 +828,7 @@ describe('buildTracePayload', () => {
       makeCtx({ extraTags: ['legacy:tag'] }),
     );
     expect((batch[0] as any).body.tags).toEqual([
-      'open-design',
+      'storyforge',
       'project:proj-1',
       'agent:claude',
       'legacy:tag',
@@ -854,7 +854,7 @@ describe('buildTracePayload', () => {
       }),
     );
     expect((batch[0] as any).body.tags).toEqual([
-      'open-design',
+      'storyforge',
       'project:proj-1',
       'agent:claude',
       'model:gpt-4o',
@@ -1731,10 +1731,10 @@ describe('reportRunCompleted', () => {
     expect(JSON.stringify(batch)).not.toContain('sk-raw');
   });
 
-  it('POSTs serialized ingestion batches to the Open Design telemetry relay', async () => {
+  it('POSTs serialized ingestion batches to the StoryForge telemetry relay', async () => {
     const relayConfig: TelemetrySinkConfig = {
       kind: 'relay',
-      relayUrl: 'https://telemetry.open-design.ai/api/langfuse',
+      relayUrl: 'https://telemetry.storyforge.ai/api/langfuse',
       timeoutMs: 20_000,
       retries: 0,
     };
@@ -1754,7 +1754,7 @@ describe('reportRunCompleted', () => {
     const call = fetchSpy.mock.calls[0]!;
     const url = call[0] as string;
     const init = call[1] as RequestInit & { headers: Record<string, string> };
-    expect(url).toBe('https://telemetry.open-design.ai/api/langfuse');
+    expect(url).toBe('https://telemetry.storyforge.ai/api/langfuse');
     expect(init.method).toBe('POST');
     expect(init.headers.Authorization).toBeUndefined();
     expect(init.headers['Content-Type']).toBe('application/json');
@@ -1770,7 +1770,7 @@ describe('reportRunCompleted', () => {
   it('warns when the relay returns per-event errors', async () => {
     const relayConfig: TelemetrySinkConfig = {
       kind: 'relay',
-      relayUrl: 'https://telemetry.open-design.ai/api/langfuse',
+      relayUrl: 'https://telemetry.storyforge.ai/api/langfuse',
       timeoutMs: 20_000,
       retries: 0,
     };
@@ -1803,7 +1803,7 @@ describe('reportRunCompleted', () => {
   it('classifies relay 413 responses as relay_413', async () => {
     const relayConfig: TelemetrySinkConfig = {
       kind: 'relay',
-      relayUrl: 'https://telemetry.open-design.ai/api/langfuse',
+      relayUrl: 'https://telemetry.storyforge.ai/api/langfuse',
       timeoutMs: 20_000,
       retries: 0,
     };
@@ -1829,7 +1829,7 @@ describe('reportRunCompleted', () => {
   it('classifies relay 5xx responses as relay_5xx', async () => {
     const relayConfig: TelemetrySinkConfig = {
       kind: 'relay',
-      relayUrl: 'https://telemetry.open-design.ai/api/langfuse',
+      relayUrl: 'https://telemetry.storyforge.ai/api/langfuse',
       timeoutMs: 20_000,
       retries: 0,
     };
@@ -1875,7 +1875,7 @@ describe('reportRunCompleted', () => {
   it('classifies relay per-event 429s separately from generic 4xx', async () => {
     const relayConfig: TelemetrySinkConfig = {
       kind: 'relay',
-      relayUrl: 'https://telemetry.open-design.ai/api/langfuse',
+      relayUrl: 'https://telemetry.storyforge.ai/api/langfuse',
       timeoutMs: 20_000,
       retries: 0,
     };

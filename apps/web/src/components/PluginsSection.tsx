@@ -34,7 +34,7 @@ import type {
   ApplyResult,
   ContextItem,
   InstalledPluginRecord,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import {
   applyPlugin,
   renderPluginBriefTemplate,

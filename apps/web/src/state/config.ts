@@ -1,4 +1,4 @@
-import type { AppConfigPrefs } from '@open-design/contracts';
+import type { AppConfigPrefs } from '@storyforge-app/contracts';
 import { MEDIA_PROVIDERS } from '../media/models';
 import { isOpenAICompatible } from '../providers/openai-compatible';
 import type {
@@ -20,7 +20,7 @@ import {
 } from '../utils/notifications';
 import { randomUUID } from '../utils/uuid';
 
-const STORAGE_KEY = 'open-design:config';
+const STORAGE_KEY = 'storyforge:config';
 const CONFIG_MIGRATION_VERSION = 1;
 
 // Hatched out of the box, but tucked away — the user has to go through

@@ -6,7 +6,7 @@
  * shape for client-side reconciliation and smoke checks.
  *
  * Keep `PRICING_SNAPSHOT` and `public/pricing/plans.json` in lockstep until
- * Open Design Cloud exposes an external JSON contract that can replace this
+ * StoryForge Cloud exposes an external JSON contract that can replace this
  * static landing-page contract.
  */
 
@@ -50,8 +50,8 @@ export interface PricingContract {
   tiers: PlanTierConfig[];
 }
 
-/** Production public host for the Open Design Cloud commerce app. */
-export const CLOUD_BASE_URL = 'https://open-design.ai/cloud';
+/** Production public host for the StoryForge Cloud commerce app. */
+export const CLOUD_BASE_URL = 'https://storyforge.ai/cloud';
 
 /** Public pricing contract served by the landing page. */
 export const PLANS_JSON_URL = '/pricing/plans.json';

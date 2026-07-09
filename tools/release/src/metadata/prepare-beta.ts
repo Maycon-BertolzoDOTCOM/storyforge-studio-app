@@ -10,11 +10,11 @@ import {
   parseCountedReleaseVersion,
   parseReleaseBaseVersion,
   type ReleaseBaseVersionTuple,
-} from "@open-design/release";
+} from "@storyforge-app/release";
 
 const execFile = promisify(execFileCallback);
 
-const stableTagPattern = /^open-design-v(\d+\.\d+\.\d+)$/;
+const stableTagPattern = /^storyforge-v(\d+\.\d+\.\d+)$/;
 
 type ParsedStableVersion = {
   parsed: ReleaseBaseVersionTuple;
@@ -283,7 +283,7 @@ if (stableMetadataUrl != null && stableMetadataUrl.length > 0) {
   latestStable = parseStableMetadataJson(stableMetadataJson);
   console.log(`[release-beta] stable metadata.json version: ${latestStable.value}`);
 } else {
-  const tags = await fetchGitTags("open-design-v*");
+  const tags = await fetchGitTags("storyforge-v*");
   for (const tag of tags) {
     const stableVersion = extractStableVersionFromTag(tag);
     if (stableVersion == null) continue;
@@ -344,7 +344,7 @@ if (latestBeta != null) {
 const betaVersion = `${packagedVersion}-beta.${betaNumber}`;
 const branch = process.env.GITHUB_REF_NAME ?? "";
 const commit = process.env.GITHUB_SHA ?? "";
-const releaseName = `Open Design Beta ${betaVersion}`;
+const releaseName = `StoryForge Beta ${betaVersion}`;
 
 console.log(`[release-beta] channel: beta`);
 console.log(`[release-beta] base version: ${packagedVersion}`);

@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { act, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installMockOpenDesignHost } from '@open-design/host/testing';
+import { installMockOpenDesignHost } from '@storyforge-app/host/testing';
 
 import { DesignBrowserPanel } from '../../src/components/DesignBrowserPanel';
 import { I18nProvider } from '../../src/i18n';

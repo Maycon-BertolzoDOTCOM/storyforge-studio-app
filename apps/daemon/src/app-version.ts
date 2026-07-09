@@ -1,11 +1,11 @@
 import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, parse as parsePath } from 'node:path';
-import { releaseChannelFromVersion } from '@open-design/release';
+import { releaseChannelFromVersion } from '@storyforge-app/release';
 
 export const APP_VERSION_FALLBACK = '0.0.0';
 
-// Keep this structurally aligned with `@open-design/contracts` AppVersionInfo.
+// Keep this structurally aligned with `@storyforge-app/contracts` AppVersionInfo.
 // Daemon cannot import the package root type directly yet because its NodeNext
 // test typecheck follows the contracts source re-exports and requires explicit
 // `.js` extensions across that package.

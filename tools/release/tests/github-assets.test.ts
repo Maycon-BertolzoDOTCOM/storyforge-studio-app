@@ -30,21 +30,21 @@ describe("stable GitHub Release asset plan", () => {
 
     try {
       const allowed = [
-        `open-design-${version}-mac-arm64.dmg`,
-        `open-design-${version}-mac-arm64.dmg.sha256`,
-        `open-design-${version}-mac-x64.dmg`,
-        `open-design-${version}-mac-x64.dmg.sha256`,
-        `open-design-${version}-win-x64-setup.exe`,
-        `open-design-${version}-win-x64-setup.exe.sha256`,
+        `storyforge-${version}-mac-arm64.dmg`,
+        `storyforge-${version}-mac-arm64.dmg.sha256`,
+        `storyforge-${version}-mac-x64.dmg`,
+        `storyforge-${version}-mac-x64.dmg.sha256`,
+        `storyforge-${version}-win-x64-setup.exe`,
+        `storyforge-${version}-win-x64-setup.exe.sha256`,
       ];
       for (const name of allowed) {
         await writeAsset(source, name.includes("win") ? "win" : name.includes("x64") ? "mac-intel" : "mac", name);
       }
       for (const name of [
-        `open-design-${version}-mac-arm64-payload.zip`,
-        `open-design-${version}-mac-x64.zip`,
-        `open-design-${version}-win-x64-payload.7z`,
-        `open-design-${version}-win-x64-portable.zip`,
+        `storyforge-${version}-mac-arm64-payload.zip`,
+        `storyforge-${version}-mac-x64.zip`,
+        `storyforge-${version}-win-x64-payload.7z`,
+        `storyforge-${version}-win-x64-portable.zip`,
         "latest.yml",
         "latest-mac.yml",
       ]) {

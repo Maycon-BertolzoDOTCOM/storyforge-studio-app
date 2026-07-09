@@ -46,11 +46,11 @@ function makeConfig(root: string, namespace: string): ToolPackConfig {
 describe("resolveMacInstallIdentity", () => {
   it("keeps stable builds on the canonical mac identity", () => {
     expect(resolveMacInstallIdentity(makeConfig("/work", "release-stable"))).toMatchObject({
-      appId: "io.open-design.desktop",
-      installerTitle: "Open Design",
-      productName: "Open Design",
-      publicAppBundleName: "Open Design.app",
-      systemAppBundleName: "Open Design.app",
+      appId: "io.storyforge.desktop",
+      installerTitle: "StoryForge",
+      productName: "StoryForge",
+      publicAppBundleName: "StoryForge.app",
+      systemAppBundleName: "StoryForge.app",
     });
   });
 
@@ -58,28 +58,28 @@ describe("resolveMacInstallIdentity", () => {
     const config = makeConfig("/work", "release-beta");
 
     expect(resolveMacInstallIdentity(config)).toEqual({
-      appId: "io.open-design.desktop.beta",
-      executableName: "Open Design Beta",
-      installerTitle: "Open Design Beta",
-      productName: "Open Design Beta",
-      publicAppBundleName: "Open Design Beta.app",
-      systemAppBundleName: "Open Design Beta.app",
+      appId: "io.storyforge.desktop.beta",
+      executableName: "StoryForge Beta",
+      installerTitle: "StoryForge Beta",
+      productName: "StoryForge Beta",
+      publicAppBundleName: "StoryForge Beta.app",
+      systemAppBundleName: "StoryForge Beta.app",
     });
-    expect(resolveMacPaths(config).appPath).toMatch(/Open Design Beta\.app$/);
+    expect(resolveMacPaths(config).appPath).toMatch(/StoryForge Beta\.app$/);
   });
 
   it("uses first-class preview app identity for preview release namespaces", () => {
     const config = makeConfig("/work", "release-preview");
 
     expect(resolveMacInstallIdentity(config)).toEqual({
-      appId: "io.open-design.desktop.preview",
-      executableName: "Open Design Preview",
-      installerTitle: "Open Design Preview",
-      productName: "Open Design Preview",
-      publicAppBundleName: "Open Design Preview.app",
-      systemAppBundleName: "Open Design Preview.app",
+      appId: "io.storyforge.desktop.preview",
+      executableName: "StoryForge Preview",
+      installerTitle: "StoryForge Preview",
+      productName: "StoryForge Preview",
+      publicAppBundleName: "StoryForge Preview.app",
+      systemAppBundleName: "StoryForge Preview.app",
     });
-    expect(resolveMacPaths(config).appPath).toMatch(/Open Design Preview\.app$/);
+    expect(resolveMacPaths(config).appPath).toMatch(/StoryForge Preview\.app$/);
   });
 
   it("uses first-class prerelease app identity for prerelease release versions and namespaces", () => {
@@ -90,17 +90,17 @@ describe("resolveMacInstallIdentity", () => {
     const prereleaseNamespaceConfig = makeConfig("/work", "release-prerelease");
 
     expect(resolveMacInstallIdentity(prereleaseVersionConfig)).toEqual({
-      appId: "io.open-design.desktop.prerelease",
-      executableName: "Open Design Prerelease",
-      installerTitle: "Open Design Prerelease",
-      productName: "Open Design Prerelease",
-      publicAppBundleName: "Open Design Prerelease.app",
-      systemAppBundleName: "Open Design Prerelease.app",
+      appId: "io.storyforge.desktop.prerelease",
+      executableName: "StoryForge Prerelease",
+      installerTitle: "StoryForge Prerelease",
+      productName: "StoryForge Prerelease",
+      publicAppBundleName: "StoryForge Prerelease.app",
+      systemAppBundleName: "StoryForge Prerelease.app",
     });
-    expect(resolveMacPaths(prereleaseVersionConfig).appPath).toMatch(/Open Design Prerelease\.app$/);
+    expect(resolveMacPaths(prereleaseVersionConfig).appPath).toMatch(/StoryForge Prerelease\.app$/);
     expect(resolveMacInstallIdentity(prereleaseNamespaceConfig)).toMatchObject({
-      productName: "Open Design Prerelease",
-      publicAppBundleName: "Open Design Prerelease.app",
+      productName: "StoryForge Prerelease",
+      publicAppBundleName: "StoryForge Prerelease.app",
     });
   });
 });

@@ -1076,7 +1076,7 @@ describe('FileWorkspace launcher tab creation', () => {
       <FileWorkspace
         projectId="project-1"
         projectKind="prototype"
-        resolvedDir="/tmp/open-design/project-1"
+        resolvedDir="/tmp/storyforge/project-1"
         files={[]}
         liveArtifacts={[]}
         onRefreshFiles={vi.fn()}
@@ -1099,7 +1099,7 @@ describe('FileWorkspace launcher tab creation', () => {
       <FileWorkspace
         projectId="project-1"
         projectKind="prototype"
-        resolvedDir="/tmp/open-design/project-1"
+        resolvedDir="/tmp/storyforge/project-1"
         files={[workspaceFile('cover.html')]}
         liveArtifacts={[]}
         onRefreshFiles={vi.fn()}
@@ -1116,7 +1116,7 @@ describe('FileWorkspace launcher tab creation', () => {
         kind: 'design-files',
         label: 'Design Files',
         tabId: '__design_files__',
-        absolutePath: '/tmp/open-design/project-1',
+        absolutePath: '/tmp/storyforge/project-1',
       });
     });
   });
@@ -1625,7 +1625,7 @@ describe('DesignFilesPanel plugin folders', () => {
       <DesignFilesPanel
         projectId="project-1"
         files={[
-          workspaceFile('generated-plugin/open-design.json'),
+          workspaceFile('generated-plugin/storyforge.json'),
           workspaceFile('generated-plugin/SKILL.md'),
           workspaceFile('generated-plugin/examples/demo.md'),
         ]}

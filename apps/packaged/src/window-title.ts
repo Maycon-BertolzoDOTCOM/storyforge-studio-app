@@ -2,9 +2,9 @@ import {
   releaseChannelFromNamespace,
   releaseChannelFromVersion,
   releaseInstallIdentity,
-} from "@open-design/release";
+} from "@storyforge-app/release";
 
-const DEFAULT_WINDOW_TITLE = "Open Design";
+const DEFAULT_WINDOW_TITLE = "StoryForge";
 
 export function resolvePackagedWindowTitle(config: { appVersion: string | null; namespace: string }): string {
   const channel =

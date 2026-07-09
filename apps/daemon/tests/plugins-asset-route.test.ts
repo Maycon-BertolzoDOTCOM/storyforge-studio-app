@@ -34,9 +34,9 @@ beforeAll(async () => {
     '<!DOCTYPE html><title>fixture</title><script>console.log(1)</script>',
   );
   await writeFile(
-    path.join(pluginRoot, 'open-design.json'),
+    path.join(pluginRoot, 'storyforge.json'),
     JSON.stringify({
-      $schema: 'https://open-design.ai/schemas/plugin.v1.json',
+      $schema: 'https://storyforge.ai/schemas/plugin.v1.json',
       name: 'asset-plugin',
       title: 'Asset',
       version: '1.0.0',

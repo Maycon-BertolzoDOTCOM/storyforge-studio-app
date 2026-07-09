@@ -85,8 +85,8 @@ describe('plugin manifest localized text', () => {
 
   it('accepts localized marketplace entry metadata', () => {
     const entry = MarketplacePluginEntrySchema.parse({
-      name: 'open-design/example-sample',
-      source: 'github:open-design/plugins/examples/sample',
+      name: 'storyforge/example-sample',
+      source: 'github:storyforge/plugins/examples/sample',
       version: '1.0.0',
       title: 'Sample',
       title_i18n: {

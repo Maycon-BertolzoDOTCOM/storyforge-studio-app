@@ -1,16 +1,16 @@
 import { appendFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
-import { waitForProcessExit } from "@open-design/platform";
-import type { LauncherAfterQuitRequest } from "@open-design/launcher-proto";
+import { waitForProcessExit } from "@storyforge-app/platform";
+import type { LauncherAfterQuitRequest } from "@storyforge-app/launcher-proto";
 import {
   APP_KEYS,
   OPEN_DESIGN_SIDECAR_CONTRACT,
   SIDECAR_MESSAGES,
   type AppKey,
   type DesktopStatusSnapshot,
-} from "@open-design/sidecar-proto";
-import { requestJsonIpc, resolveAppIpcPath } from "@open-design/sidecar";
+} from "@storyforge-app/sidecar-proto";
+import { requestJsonIpc, resolveAppIpcPath } from "@storyforge-app/sidecar";
 
 import type { PackagedNamespacePaths } from "./paths.js";
 
@@ -44,7 +44,7 @@ export async function waitForLauncherAfterQuit(
   }
   const message = `timed-out targetPid=${request.targetPid}`;
   await writeLauncherAfterQuitLog(paths, message);
-  logger.warn(`[open-design launcher] ${message}`);
+  logger.warn(`[storyforge launcher] ${message}`);
 }
 
 export async function inspectExistingDesktopForLauncher(
@@ -74,7 +74,7 @@ export async function inspectExistingDesktopForLauncher(
   } catch (error) {
     const message = `inspect-unavailable namespace=${namespace} action=continue error=${error instanceof Error ? error.message : String(error)}`;
     await writeLauncherAfterQuitLog(options.paths, message);
-    logger.info?.(`[open-design launcher] ${message}`);
+    logger.info?.(`[storyforge launcher] ${message}`);
     return { action: "continue", reason: "inspect-failed" };
   }
 
@@ -111,7 +111,7 @@ export async function inspectExistingDesktopForLauncher(
     } catch (error) {
       const message = `inspect-found-existing namespace=${namespace} shutdown=failed reason=stale-sidecar error=${error instanceof Error ? error.message : String(error)}`;
       await writeLauncherAfterQuitLog(options.paths, message);
-      logger.warn(`[open-design launcher] ${message}`);
+      logger.warn(`[storyforge launcher] ${message}`);
       return { action: "exit", reason: "existing-focus-failed" };
     }
     if (pid != null) {
@@ -132,7 +132,7 @@ export async function inspectExistingDesktopForLauncher(
   } catch (error) {
     const message = `inspect-found-existing namespace=${namespace} focus=failed error=${error instanceof Error ? error.message : String(error)}`;
     await writeLauncherAfterQuitLog(options.paths, message);
-    logger.warn(`[open-design launcher] ${message}`);
+    logger.warn(`[storyforge launcher] ${message}`);
     return { action: "exit", reason: "existing-focus-failed" };
   }
 }

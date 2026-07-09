@@ -3,14 +3,14 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { BrandSummary } from '@open-design/contracts';
-import { isOpenDesignHostAvailable, pickHostWorkingDir } from '@open-design/host';
+import type { BrandSummary } from '@storyforge-app/contracts';
+import { isOpenDesignHostAvailable, pickHostWorkingDir } from '@storyforge-app/host';
 import { NewProjectPanel } from '../../src/components/NewProjectPanel';
 import { openFolderDialog } from '../../src/providers/registry';
 import type { DesignSystemSummary, SkillSummary } from '../../src/types';
 
-vi.mock('@open-design/host', async () => {
-  const actual = await vi.importActual<typeof import('@open-design/host')>('@open-design/host');
+vi.mock('@storyforge-app/host', async () => {
+  const actual = await vi.importActual<typeof import('@storyforge-app/host')>('@storyforge-app/host');
   return {
     ...actual,
     isOpenDesignHostAvailable: vi.fn(),

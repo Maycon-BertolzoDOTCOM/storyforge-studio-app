@@ -3,12 +3,12 @@ import type {
   OpenDesignDiscordPresenceResponse,
   OpenDesignGithubLatestReleaseResponse,
   OpenDesignGithubRepoResponse,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import type { RouteDeps } from '../server-context.js';
 import {
   OPEN_DESIGN_DISCORD_INVITE_URL,
   type OpenDesignPublicMetadataService,
-} from '../services/open-design-public-metadata.js';
+} from '../services/storyforge-public-metadata.js';
 
 export interface RegisterOpenDesignPublicMetadataRoutesDeps extends RouteDeps<'http'> {
   openDesignPublicMetadata: OpenDesignPublicMetadataService;
@@ -24,11 +24,11 @@ export function registerOpenDesignPublicMetadataRoutes(
 ): void {
   const { openDesignPublicMetadata } = ctx;
 
-  app.get('/api/github/open-design', async (_req, res) => {
+  app.get('/api/github/storyforge', async (_req, res) => {
     try {
       const stats = await openDesignPublicMetadata.readGithubRepoStats();
       const payload: OpenDesignGithubRepoResponse = {
-        repo: 'nexu-io/open-design',
+        repo: 'nexu-io/storyforge',
         stargazers_count: stats.stargazersCount,
         fetchedAt: stats.fetchedAt,
         stale: stats.stale,
@@ -39,11 +39,11 @@ export function registerOpenDesignPublicMetadataRoutes(
     }
   });
 
-  app.get('/api/github/open-design/releases/latest', async (_req, res) => {
+  app.get('/api/github/storyforge/releases/latest', async (_req, res) => {
     try {
       const release = await openDesignPublicMetadata.readLatestReleaseInfo();
       const payload: OpenDesignGithubLatestReleaseResponse = {
-        repo: 'nexu-io/open-design',
+        repo: 'nexu-io/storyforge',
         tag_name: release.tagName,
         html_url: release.htmlUrl,
         fetchedAt: release.fetchedAt,

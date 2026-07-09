@@ -4,12 +4,12 @@ import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
-import { createCommandInvocation } from '@open-design/platform';
+import { createCommandInvocation } from '@storyforge-app/platform';
 import type {
   AmrEntryAttribution,
   TrackingAmrEntrySource,
   TrackingPageName,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 
 import { resolveAgentLaunch } from '../runtimes/launch.js';
 import { spawnEnvForAgent } from '../runtimes/env.js';
@@ -84,7 +84,7 @@ const AMR_ENTRY_SOURCE_PAGE_BY_SOURCE: Record<
 };
 
 const AMR_ANALYTICS_EVENTS_URL =
-  'https://amr-api.open-design.ai/api/v1/analytics/events';
+  'https://amr-api.storyforge.ai/api/v1/analytics/events';
 const AMR_ANALYTICS_TIMEOUT_MS = 1500;
 const OD_DEVICE_ID_MAX_LENGTH = 128;
 
@@ -519,7 +519,7 @@ export function readVelaControlApiContext(
     const status = readVelaLoginStatus(env, configuredEnv);
     return {
       profile,
-      apiUrl: envApiUrl || 'https://amr-api.open-design.ai',
+      apiUrl: envApiUrl || 'https://amr-api.storyforge.ai',
       controlKey: envControlKey,
       user: status.user,
       configMtimeMs: null,
@@ -531,7 +531,7 @@ export function readVelaControlApiContext(
   if (!controlKey) return null;
   return {
     profile,
-    apiUrl: stored?.apiUrl?.trim() || envApiUrl || 'https://amr-api.open-design.ai',
+    apiUrl: stored?.apiUrl?.trim() || envApiUrl || 'https://amr-api.storyforge.ai',
     controlKey,
     user: stored?.user ?? null,
     configMtimeMs: existsSync(amrConfigPath()) ? statSync(amrConfigPath()).mtimeMs : null,

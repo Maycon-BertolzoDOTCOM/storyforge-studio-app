@@ -26,7 +26,7 @@ import type {
   ApplyResult,
   InstalledPluginRecord,
   PluginConnectorBinding,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import {
   applyPlugin,
   MissingInputError,
@@ -46,7 +46,7 @@ import { getManifestContextCraft } from './context-craft.js';
 import {
   type ConnectorProbe,
 } from './connector-gate.js';
-import type { RegistryView } from '@open-design/plugin-runtime';
+import type { RegistryView } from '@storyforge-app/plugin-runtime';
 
 type SqliteDb = Database.Database;
 

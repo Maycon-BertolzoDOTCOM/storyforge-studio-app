@@ -64,7 +64,7 @@ function defaultHost(): OpenDesignHostBridge {
       }),
       pickAndReplaceWorkingDir: async () => ({
         ok: true,
-        baseDir: "/tmp/open-design-test",
+        baseDir: "/tmp/storyforge-test",
         entryFile: null,
       }),
     },

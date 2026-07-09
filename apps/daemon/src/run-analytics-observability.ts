@@ -5,7 +5,7 @@ import type {
   TrackingRunLifecyclePhase,
   TrackingRunPhaseTimingStatus,
   TrackingRuntimeType,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 import type { VelaLoginStatus } from './integrations/vela.js';
 
 const RUNTIME_TYPES: readonly TrackingRuntimeType[] = [

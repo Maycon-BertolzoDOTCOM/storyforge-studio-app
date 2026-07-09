@@ -10,7 +10,7 @@ import type {
   DesktopExportArtifactResult,
   DesktopRenderSlidesInput,
   DesktopRenderSlidesResult,
-} from '@open-design/sidecar-proto';
+} from '@storyforge-app/sidecar-proto';
 import { startServer } from '../src/server.js';
 
 // ---------------------------------------------------------------------------

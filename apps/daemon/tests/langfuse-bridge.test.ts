@@ -367,7 +367,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
     // useful telemetry but varies between dev / CI environments — assert
     // its presence by prefix rather than pinning a value.
     expect(trace.tags).toEqual(
-      expect.arrayContaining(['open-design', 'project:proj-1', 'agent:qoder']),
+      expect.arrayContaining(['storyforge', 'project:proj-1', 'agent:qoder']),
     );
     expect((trace.tags as string[]).some((t) => t.startsWith('os:'))).toBe(true);
     expect(trace.metadata.eventsSummary.toolCalls).toBe(2);
@@ -557,7 +557,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
     });
     const priorNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
-    process.env.OPEN_DESIGN_TELEMETRY_RELAY_URL = 'https://telemetry.open-design.ai/api/langfuse';
+    process.env.OPEN_DESIGN_TELEMETRY_RELAY_URL = 'https://telemetry.storyforge.ai/api/langfuse';
     process.env.LANGFUSE_PUBLIC_KEY = 'pk';
     process.env.LANGFUSE_SECRET_KEY = 'sk';
     try {
@@ -604,8 +604,8 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(4);
     expect(fetchSpy.mock.calls[0]![0]).toContain('/api/langfuse');
-    expect(fetchSpy.mock.calls[1]![0]).toBe('https://telemetry.open-design.ai/api/objects/authorize');
-    expect(fetchSpy.mock.calls[2]![0]).toBe('https://telemetry.open-design.ai/api/objects/batch');
+    expect(fetchSpy.mock.calls[1]![0]).toBe('https://telemetry.storyforge.ai/api/objects/authorize');
+    expect(fetchSpy.mock.calls[2]![0]).toBe('https://telemetry.storyforge.ai/api/objects/batch');
     expect(fetchSpy.mock.calls[3]![0]).toContain('/api/langfuse');
     const init = fetchSpy.mock.calls[3]![1] as RequestInit;
     const langfuseBody = init.body as string;
@@ -682,7 +682,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       return new Response('{}', { status: 207 });
     });
 
-    process.env.OPEN_DESIGN_TELEMETRY_RELAY_URL = 'https://telemetry.open-design.ai/api/langfuse';
+    process.env.OPEN_DESIGN_TELEMETRY_RELAY_URL = 'https://telemetry.storyforge.ai/api/langfuse';
     process.env.LANGFUSE_PUBLIC_KEY = 'pk';
     process.env.LANGFUSE_SECRET_KEY = 'sk';
     try {
@@ -809,7 +809,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       return new Response('{}', { status: 207 });
     });
 
-    process.env.OPEN_DESIGN_OBJECT_RELAY_URL = 'https://telemetry.open-design.ai/api/objects/batch';
+    process.env.OPEN_DESIGN_OBJECT_RELAY_URL = 'https://telemetry.storyforge.ai/api/objects/batch';
     process.env.LANGFUSE_PUBLIC_KEY = 'pk';
     process.env.LANGFUSE_SECRET_KEY = 'sk';
     try {
@@ -836,9 +836,9 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
     }
 
     expect(fetchSpy).toHaveBeenCalledTimes(4);
-    expect(fetchSpy.mock.calls[0]![0]).toBe('https://telemetry.open-design.ai/api/langfuse');
-    expect(fetchSpy.mock.calls[1]![0]).toBe('https://telemetry.open-design.ai/api/objects/authorize');
-    expect(fetchSpy.mock.calls[2]![0]).toBe('https://telemetry.open-design.ai/api/objects/batch');
+    expect(fetchSpy.mock.calls[0]![0]).toBe('https://telemetry.storyforge.ai/api/langfuse');
+    expect(fetchSpy.mock.calls[1]![0]).toBe('https://telemetry.storyforge.ai/api/objects/authorize');
+    expect(fetchSpy.mock.calls[2]![0]).toBe('https://telemetry.storyforge.ai/api/objects/batch');
     expect(fetchSpy.mock.calls[3]![0]).toBe('https://us.cloud.langfuse.com/api/public/ingestion');
     const registrationBatch = JSON.parse(fetchSpy.mock.calls[0]![1]!.body as string).batch as any[];
     const finalBatch = JSON.parse(fetchSpy.mock.calls[3]![1]!.body as string).batch as any[];
@@ -888,7 +888,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       return new Response('{}', { status: 207 });
     });
 
-    process.env.OPEN_DESIGN_OBJECT_RELAY_URL = 'https://telemetry.open-design.ai/api/objects/batch';
+    process.env.OPEN_DESIGN_OBJECT_RELAY_URL = 'https://telemetry.storyforge.ai/api/objects/batch';
     process.env.LANGFUSE_PUBLIC_KEY = 'pk';
     process.env.LANGFUSE_SECRET_KEY = 'sk';
     try {
@@ -974,8 +974,8 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       return new Response('{}', { status: 207 });
     });
 
-    process.env.OPEN_DESIGN_OBJECT_RELAY_URL = 'https://telemetry.open-design.ai/api/objects/batch';
-    process.env.OPEN_DESIGN_TELEMETRY_RELAY_URL = 'https://telemetry.open-design.ai/api/langfuse';
+    process.env.OPEN_DESIGN_OBJECT_RELAY_URL = 'https://telemetry.storyforge.ai/api/objects/batch';
+    process.env.OPEN_DESIGN_TELEMETRY_RELAY_URL = 'https://telemetry.storyforge.ai/api/langfuse';
     process.env.LANGFUSE_PUBLIC_KEY = 'pk';
     process.env.LANGFUSE_SECRET_KEY = 'sk';
     try {
@@ -1398,7 +1398,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
     const generation = bodyOf(batch, 'generation-create', 'llm');
     expect(trace.input).toBe('design a coffee landing page');
     expect(generation.input).toMatchObject({
-      type: 'open-design.prompt-stack',
+      type: 'storyforge.prompt-stack',
       sections: [
         expect.objectContaining({
           kind: 'daemonSystemPrompt',

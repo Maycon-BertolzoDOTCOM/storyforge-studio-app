@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HandoffButton } from '../../src/components/HandoffButton';
 import { I18nProvider } from '../../src/i18n';
-import type { AgentInfo, HostEditorsResponse } from '@open-design/contracts';
+import type { AgentInfo, HostEditorsResponse } from '@storyforge-app/contracts';
 
 const fetchHostEditors = vi.fn<() => Promise<HostEditorsResponse>>();
 const openProjectInEditor = vi.fn();
@@ -112,7 +112,7 @@ describe('HandoffButton zero-editors fallback', () => {
         <HandoffButton
           projectId="p1"
           projectName="Landing"
-          projectDir="/tmp/open-design/Landing"
+          projectDir="/tmp/storyforge/Landing"
           agents={agents}
           metricsConsent
           installationId="od-install-abc"
@@ -124,7 +124,7 @@ describe('HandoffButton zero-editors fallback', () => {
     fireEvent.click(await screen.findByRole('tab', { name: '复制给 CLI' }));
     const amrWebsiteLink = screen.getByRole('link', { name: /打开 AMR 官网/ }) as HTMLAnchorElement;
     expect(amrWebsiteLink.getAttribute('href'))
-      .toBe('https://open-design.ai/amr');
+      .toBe('https://storyforge.ai/amr');
     fireEvent.click(amrWebsiteLink);
     const amrWebsiteUrl = new URL(amrWebsiteLink.href);
     expect(amrWebsiteUrl.searchParams.get('od_origin')).toBe('open_design');
@@ -134,7 +134,7 @@ describe('HandoffButton zero-editors fallback', () => {
       '/api/integrations/vela/analytics-entry',
       expect.objectContaining({ method: 'POST' }),
     );
-    expect(screen.getByTestId('handoff-cli-item-amr').textContent).toContain('Open Design');
+    expect(screen.getByTestId('handoff-cli-item-amr').textContent).toContain('StoryForge');
     expect(screen.getByTestId('handoff-cli-item-amr').textContent).not.toContain('未安装');
     expect(
       screen.getByTestId('handoff-cli-item-amr').compareDocumentPosition(
@@ -146,7 +146,7 @@ describe('HandoffButton zero-editors fallback', () => {
 
     await waitFor(() => expect(copyToClipboard).toHaveBeenCalledTimes(1));
     const prompt = copyToClipboard.mock.calls[0]?.[0] as string;
-    expect(prompt).toContain('/tmp/open-design/Landing');
+    expect(prompt).toContain('/tmp/storyforge/Landing');
     expect(prompt).toContain('Vue.js');
     expect(prompt).toContain('Claude Code');
     expect(prompt).toContain('真实可运行');
@@ -164,7 +164,7 @@ describe('HandoffButton zero-editors fallback', () => {
       ],
     });
     copyToClipboard.mockResolvedValue(true);
-    const projectDir = '/tmp/open-design/Landing';
+    const projectDir = '/tmp/storyforge/Landing';
 
     render(
       <I18nProvider initial="en">

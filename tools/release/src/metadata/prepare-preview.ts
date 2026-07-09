@@ -10,11 +10,11 @@ import {
   parseCountedReleaseVersion,
   parseReleaseBaseVersion,
   type ReleaseBaseVersionTuple,
-} from "@open-design/release";
+} from "@storyforge-app/release";
 
 const execFile = promisify(execFileCallback);
 
-const stableTagPattern = /^open-design-v(\d+\.\d+\.\d+)$/;
+const stableTagPattern = /^storyforge-v(\d+\.\d+\.\d+)$/;
 const previewReleaseBranchPattern = /^preview\/v(\d+\.\d+\.\d+)$/;
 
 type ParsedStableVersion = {
@@ -270,7 +270,7 @@ if (previewBaseVersion.value !== packagedVersion) {
   );
 }
 
-const tags = await fetchGitTags("open-design-v*");
+const tags = await fetchGitTags("storyforge-v*");
 let latestStable: ParsedStableVersion | null = null;
 for (const tag of tags) {
   const stableVersion = extractStableVersionFromTag(tag);
@@ -327,7 +327,7 @@ if (latestPreview != null) {
 
 const previewVersion = `${packagedVersion}-preview.${previewNumber}`;
 const commit = process.env.GITHUB_SHA ?? "";
-const releaseName = `Open Design Preview ${previewVersion}`;
+const releaseName = `StoryForge Preview ${previewVersion}`;
 
 console.log("[release-preview] channel: preview");
 console.log(`[release-preview] base version: ${packagedVersion}`);

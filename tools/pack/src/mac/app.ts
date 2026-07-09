@@ -306,9 +306,9 @@ export async function writeAssembledApp(
     `${JSON.stringify(
       {
         dependencies,
-        description: "Open Design packaged runtime",
+        description: "StoryForge packaged runtime",
         main: "./main.cjs",
-        name: "open-design-packaged-app",
+        name: "storyforge-packaged-app",
         private: true,
         productName: identity.productName,
         version: packageVersion,

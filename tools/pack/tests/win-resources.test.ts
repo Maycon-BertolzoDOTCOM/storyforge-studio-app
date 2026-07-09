@@ -35,7 +35,7 @@ async function createWorkspaceFixture(workspaceRoot: string): Promise<void> {
     recursive: true,
   });
   await writeFile(
-    join(workspaceRoot, "plugins", "_official", "sample", "open-design.json"),
+    join(workspaceRoot, "plugins", "_official", "sample", "storyforge.json"),
     "{\"id\":\"sample\"}\n",
     "utf8",
   );
@@ -43,7 +43,7 @@ async function createWorkspaceFixture(workspaceRoot: string): Promise<void> {
     recursive: true,
   });
   await writeFile(
-    join(workspaceRoot, "plugins", "registry", "community", "open-design-marketplace.json"),
+    join(workspaceRoot, "plugins", "registry", "community", "storyforge-marketplace.json"),
     "{\"plugins\":[]}\n",
     "utf8",
   );
@@ -69,9 +69,9 @@ async function createWorkspaceFixture(workspaceRoot: string): Promise<void> {
 
 describe("prepareResourceTree", () => {
   it("invalidates the Windows resource tree cache when design templates change", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-resources-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-resources-"));
     const workspaceRoot = join(root, "workspace");
-    const resourceRoot = join(root, "materialized", "open-design");
+    const resourceRoot = join(root, "materialized", "storyforge");
     const cache = new ToolPackCache(join(root, "cache"));
     const config = { workspaceRoot } as ToolPackConfig;
     const paths = { resourceRoot } as WinPaths;
@@ -115,9 +115,9 @@ describe("prepareResourceTree", () => {
   }, RESOURCE_TREE_CACHE_TEST_TIMEOUT_MS);
 
   it("invalidates the Windows resource tree cache when the plugin-preview manifest changes", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-previews-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-previews-"));
     const workspaceRoot = join(root, "workspace");
-    const resourceRoot = join(root, "materialized", "open-design");
+    const resourceRoot = join(root, "materialized", "storyforge");
     const cache = new ToolPackCache(join(root, "cache"));
     const config = { workspaceRoot } as ToolPackConfig;
     const paths = { resourceRoot } as WinPaths;
@@ -161,9 +161,9 @@ describe("prepareResourceTree", () => {
   }, RESOURCE_TREE_CACHE_TEST_TIMEOUT_MS);
 
   it("copies a configured Vela CLI binary into the Windows resource tree", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-vela-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-vela-"));
     const workspaceRoot = join(root, "workspace");
-    const resourceRoot = join(root, "materialized", "open-design");
+    const resourceRoot = join(root, "materialized", "storyforge");
     const source = join(root, "source", "vela.exe");
     const cache = new ToolPackCache(join(root, "cache"));
     const config = { workspaceRoot } as ToolPackConfig;
@@ -193,9 +193,9 @@ describe("prepareResourceTree", () => {
   });
 
   it("fails strict Windows resource preparation when configured Vela CLI is missing", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-vela-strict-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-vela-strict-"));
     const workspaceRoot = join(root, "workspace");
-    const resourceRoot = join(root, "materialized", "open-design");
+    const resourceRoot = join(root, "materialized", "storyforge");
     const cache = new ToolPackCache(join(root, "cache"));
     const config = {
       workspaceRoot,
@@ -218,9 +218,9 @@ describe("prepareResourceTree", () => {
   });
 
   it("invalidates the Windows resource tree cache when the Vela companion changes", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-vela-companion-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-vela-companion-"));
     const workspaceRoot = join(root, "workspace");
-    const resourceRoot = join(root, "materialized", "open-design");
+    const resourceRoot = join(root, "materialized", "storyforge");
     const source = join(root, "source", "vela.exe");
     const cache = new ToolPackCache(join(root, "cache"));
     const config = { workspaceRoot } as ToolPackConfig;

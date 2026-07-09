@@ -17,7 +17,7 @@ import {
   releaseChannelDescriptor,
   releaseMetadataVersionFields,
   type CountedReleaseChannel,
-} from "@open-design/release";
+} from "@storyforge-app/release";
 
 type PlatformManifest = {
   artifacts?: Record<string, { url?: string }>;

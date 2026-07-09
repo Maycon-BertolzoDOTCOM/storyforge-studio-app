@@ -24,7 +24,7 @@ import {
   downloadCopyAndClear,
   type ManagedDownloadChecksum,
   type ManagedDownloadProgress,
-} from "@open-design/download";
+} from "@storyforge-app/download";
 import {
   LAUNCHER_SCHEMA_VERSION,
   buildLauncherAfterQuitArgs,
@@ -36,7 +36,7 @@ import {
   type LauncherCleanupDescriptor,
   type LauncherCleanupEntry,
   type LauncherRuntimeDescriptor,
-} from "@open-design/launcher-proto";
+} from "@storyforge-app/launcher-proto";
 import {
   DESKTOP_UPDATE_CHANNELS,
   DESKTOP_UPDATE_MODES,
@@ -55,8 +55,8 @@ import {
   type DesktopUpdateStatusSnapshot,
   type DesktopUpdateState,
   type SidecarSource,
-} from "@open-design/sidecar-proto";
-import { releaseChannelFromVersion } from "@open-design/release";
+} from "@storyforge-app/sidecar-proto";
+import { releaseChannelFromVersion } from "@storyforge-app/release";
 
 import {
   markInstallerObservationOpenFailed,
@@ -84,8 +84,8 @@ export const DESKTOP_UPDATE_ENV = Object.freeze({
   PLATFORM: "OD_UPDATE_PLATFORM",
 } as const);
 
-const DEFAULT_RELEASE_ORIGIN = "https://releases.open-design.ai";
-const OWNERSHIP_SENTINEL = ".open-design-updater-root.json";
+const DEFAULT_RELEASE_ORIGIN = "https://releases.storyforge.ai";
+const OWNERSHIP_SENTINEL = ".storyforge-updater-root.json";
 const STORE_METADATA_FILE = "metadata.json";
 const RELEASES_DIR = "releases";
 const STAGING_DIR = "staging";
@@ -528,7 +528,7 @@ function extensionForArtifact(name: string | undefined, type: string): string {
 function artifactFileName(candidate: UpdateCandidate): string {
   const ext = extensionForArtifact(candidate.artifact.name, candidate.artifact.type ?? "artifact");
   return [
-    "open-design",
+    "storyforge",
     sanitizePathSegment(candidate.version),
     sanitizePathSegment(candidate.platformKey),
     sanitizePathSegment(candidate.arch),
@@ -633,7 +633,7 @@ function storeShapeError(root: string, message: string, details?: unknown): Desk
 }
 
 function logStoreError(logger: DesktopUpdaterLogger, error: DesktopUpdateErrorSnapshot): void {
-  logger.error("[open-design updater] invalid update store", error);
+  logger.error("[storyforge updater] invalid update store", error);
 }
 
 function isAllowedRootEntry(layout: DesktopUpdaterStoreLayout, name: string): boolean {
@@ -743,13 +743,13 @@ async function ensureOwnedUpdateRoot(
           ok: false,
           error: createError(
             "update-root-not-owned",
-            `update root is not empty and has no Open Design updater ownership marker: ${realRoot}`,
+            `update root is not empty and has no StoryForge updater ownership marker: ${realRoot}`,
           ),
         };
       }
       await writeJson(layout.ownershipSentinelPath, {
         createdAt: new Date().toISOString(),
-        owner: "open-design-updater",
+        owner: "storyforge-updater",
         source: config.source,
         version: UPDATE_ROOT_VERSION,
       });
@@ -1168,7 +1168,7 @@ async function assertLauncherPayloadBootConfig(input: {
   if (!resourcesEntry.isDirectory() || resourcesEntry.isSymbolicLink()) {
     throw new Error("launcher payload resources must be a plain directory");
   }
-  const packagedConfigPath = join(resourcesPath, "open-design-config.json");
+  const packagedConfigPath = join(resourcesPath, "storyforge-config.json");
   if (!containsPath(input.stagingRoot, packagedConfigPath)) {
     throw new Error("launcher payload config path escaped extracted payload");
   }
@@ -1176,7 +1176,7 @@ async function assertLauncherPayloadBootConfig(input: {
   if (!isRecord(rawConfig)) throw new Error("launcher payload config must be a JSON object");
   const resourceRoot = typeof rawConfig.resourceRoot === "string" && rawConfig.resourceRoot.length > 0
     ? rawConfig.resourceRoot
-    : join(resourcesPath, "open-design");
+    : join(resourcesPath, "storyforge");
   const resourceRootEntry = await lstat(resourceRoot);
   if (!resourceRootEntry.isDirectory() || resourceRootEntry.isSymbolicLink()) {
     throw new Error("launcher payload resource root must be a plain directory");
@@ -1622,12 +1622,12 @@ async function cleanupBackDirectory(root: string, logger: DesktopUpdaterLogger):
   const entry = await lstat(backDir).catch(() => null);
   if (entry == null) return;
   if (!entry.isDirectory() || entry.isSymbolicLink()) {
-    logger.warn("[open-design updater] skipped invalid update backup directory", backDir);
+    logger.warn("[storyforge updater] skipped invalid update backup directory", backDir);
     return;
   }
   const realBackDir = await realpath(backDir).catch(() => null);
   if (realBackDir == null || !containsPath(root, realBackDir)) {
-    logger.warn("[open-design updater] skipped escaped update backup directory", backDir);
+    logger.warn("[storyforge updater] skipped escaped update backup directory", backDir);
     return;
   }
   const entries = await readdir(backDir);
@@ -1642,14 +1642,14 @@ async function cleanupBackDirectory(root: string, logger: DesktopUpdaterLogger):
       if (real == null || !containsPath(root, real)) return;
     }
     await rm(resolved, { force: true, recursive: true }).catch((error: unknown) => {
-      logger.warn("[open-design updater] failed to clean update backup entry", error);
+      logger.warn("[storyforge updater] failed to clean update backup entry", error);
     });
   }));
 }
 
 function scheduleBackCleanup(root: string, logger: DesktopUpdaterLogger): void {
   void cleanupBackDirectory(root, logger).catch((error: unknown) => {
-    logger.warn("[open-design updater] failed to clean update backup directory", error);
+    logger.warn("[storyforge updater] failed to clean update backup directory", error);
   });
 }
 
@@ -1761,14 +1761,14 @@ async function withUpdaterLifecycleLock<T>(
     await mkdir(layout.lockRoot);
     await writeJson(join(layout.lockRoot, LOCK_OWNER_FILE), {
       createdAt: new Date().toISOString(),
-      owner: "open-design-updater-lifecycle",
+      owner: "storyforge-updater-lifecycle",
       pid: process.pid,
       version: RELEASE_CLEANUP_DESCRIPTOR_VERSION,
     });
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code === "EEXIST") {
-      logger.warn("[open-design updater] skipped release lifecycle because updater lifecycle lock is held", {
+      logger.warn("[storyforge updater] skipped release lifecycle because updater lifecycle lock is held", {
         lockRoot: layout.lockRoot,
       });
       return null;
@@ -1779,7 +1779,7 @@ async function withUpdaterLifecycleLock<T>(
     return await task();
   } finally {
     await rm(layout.lockRoot, { force: true, recursive: true }).catch((error: unknown) => {
-      logger.warn("[open-design updater] failed to release updater lifecycle lock", error);
+      logger.warn("[storyforge updater] failed to release updater lifecycle lock", error);
     });
   }
 }
@@ -1955,7 +1955,7 @@ async function cleanupDeprecatedReleaseEntries(input: {
         updatedAt: nowIso,
       });
     } catch (error) {
-      logger.warn("[open-design updater] failed to clean deprecated release", {
+      logger.warn("[storyforge updater] failed to clean deprecated release", {
         error: error instanceof Error ? error.message : String(error),
         key: entry.key,
         path: releaseDir,
@@ -2083,7 +2083,7 @@ async function runLauncherCleanupLifecycle(input: {
       { channel: config.channel, namespace: config.namespace },
     );
   } catch (error) {
-    logger.warn("[open-design updater] failed to read launcher cleanup lifecycle inputs", {
+    logger.warn("[storyforge updater] failed to read launcher cleanup lifecycle inputs", {
       error: error instanceof Error ? error.message : String(error),
       cleanupPath: launcherPaths.cleanupPath,
       runtimePath: config.launcherRuntimePath,
@@ -2141,7 +2141,7 @@ async function runLauncherCleanupLifecycle(input: {
         updatedAt: nowIso,
       });
     } catch (error) {
-      logger.warn("[open-design updater] failed to clean deprecated launcher payload", {
+      logger.warn("[storyforge updater] failed to clean deprecated launcher payload", {
         error: error instanceof Error ? error.message : String(error),
         path: versionPaths.versionRoot,
         version: entry.version,
@@ -2204,10 +2204,10 @@ async function clearInterruptedIncomingDownload(
   const stagingDir = resolve(stagingRoot, incoming.cycleId);
   if (containsPath(stagingRoot, stagingDir)) {
     await rm(stagingDir, { force: true, recursive: true }).catch((error: unknown) => {
-      logger.warn("[open-design updater] failed to clean interrupted update staging directory", error);
+      logger.warn("[storyforge updater] failed to clean interrupted update staging directory", error);
     });
   } else {
-    logger.warn("[open-design updater] skipped escaped interrupted update staging directory", {
+    logger.warn("[storyforge updater] skipped escaped interrupted update staging directory", {
       cycleId: incoming.cycleId,
       stagingDir,
     });
@@ -2217,7 +2217,7 @@ async function clearInterruptedIncomingDownload(
     incoming: undefined,
   };
   await writeStoreMetadata(root, next);
-  logger.warn("[open-design updater] cleared interrupted update download", {
+  logger.warn("[storyforge updater] cleared interrupted update download", {
     cycleId: incoming.cycleId,
     version: incoming.version,
   });
@@ -2381,7 +2381,7 @@ export function createDesktopUpdater(
   const sessionId = `${now().toISOString()}-${processPid}`;
 
   function logUpdateEvent(event: string, fields: Record<string, unknown> = {}): void {
-    logger.info?.("[open-design updater] lifecycle", {
+    logger.info?.("[storyforge updater] lifecycle", {
       currentVersion: config.currentVersion,
       event,
       mode: config.mode,
@@ -2560,7 +2560,7 @@ export function createDesktopUpdater(
       now,
       trigger: "cold-start",
     }).catch((lifecycleError: unknown) => {
-      logger.warn("[open-design updater] failed to run cold-start release lifecycle", lifecycleError);
+      logger.warn("[storyforge updater] failed to run cold-start release lifecycle", lifecycleError);
       return null;
     });
     if (coldStartLifecycle != null) lifecycleSummary = coldStartLifecycle;
@@ -2577,7 +2577,7 @@ export function createDesktopUpdater(
       logger,
       now,
     }).catch((lifecycleError: unknown) => {
-      logger.warn("[open-design updater] failed to run launcher cleanup lifecycle", lifecycleError);
+      logger.warn("[storyforge updater] failed to run launcher cleanup lifecycle", lifecycleError);
       return null;
     });
     if (launcherLifecycle != null) {
@@ -2852,7 +2852,7 @@ export function createDesktopUpdater(
         readyVersion: nextCandidate.version,
         trigger: "next-version-ready",
       }).catch((lifecycleError: unknown) => {
-        logger.warn("[open-design updater] failed to run next-version-ready release lifecycle", lifecycleError);
+        logger.warn("[storyforge updater] failed to run next-version-ready release lifecycle", lifecycleError);
         return null;
       });
       if (readyLifecycle != null) lifecycleSummary = readyLifecycle;
@@ -2895,7 +2895,7 @@ export function createDesktopUpdater(
         toVersion: activeRelease.ref.version,
       });
     } catch (observationError) {
-      logger.warn("[open-design updater] failed to write installer observation", observationError);
+      logger.warn("[storyforge updater] failed to write installer observation", observationError);
       return null;
     }
   }
@@ -2908,7 +2908,7 @@ export function createDesktopUpdater(
     try {
       await markInstallerObservationOpenFailed(observation, failedAt);
     } catch (observationError) {
-      logger.warn("[open-design updater] failed to update installer observation", observationError);
+      logger.warn("[storyforge updater] failed to update installer observation", observationError);
     }
   }
 
@@ -3145,7 +3145,7 @@ export function createDesktopUpdaterScheduler(
     if (!warnedZeroDelay) {
       warnedZeroDelay = true;
       logger.warn(
-        `[open-design updater] refusing non-positive scheduled poll delay (${delayMs}ms); `
+        `[storyforge updater] refusing non-positive scheduled poll delay (${delayMs}ms); `
           + `using ${MIN_SCHEDULED_POLL_DELAY_MS}ms floor`,
       );
     }
@@ -3183,7 +3183,7 @@ export function createDesktopUpdaterScheduler(
         return;
       }
     } catch (error) {
-      logger.warn("[open-design updater] scheduled update check failed", error);
+      logger.warn("[storyforge updater] scheduled update check failed", error);
     } finally {
       tickRunning = false;
     }

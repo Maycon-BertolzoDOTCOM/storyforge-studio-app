@@ -27,7 +27,7 @@ type ShikiThemeObject = Exclude<
 // reuses `--coral`, `--olive`, and `--ink-*` tokens for syntax accents so
 // fenced blocks read as part of the editorial body, not a foreign widget.
 const editorialPaperTheme: ShikiThemeObject = {
-  name: 'open-design-editorial',
+  name: 'storyforge-editorial',
   type: 'light',
   colors: {
     'editor.background': '#f7f1de', // --bone
@@ -104,11 +104,11 @@ const editorialPaperTheme: ShikiThemeObject = {
 // `@astrojs/sitemap` for every URL it emits, and by `index.astro` to
 // build the `<link rel="canonical">` / `og:url` tags.
 //
-// `open-design.ai` is the live domain bound to the Cloudflare Pages
-// project (`open-design-landing`); the env override exists so preview
+// `storyforge.ai` is the live domain bound to the Cloudflare Pages
+// project (`storyforge-landing`); the env override exists so preview
 // builds (Cloudflare Pages preview deployments, local previews on a
 // different host) can stamp their own URL without forking the config.
-const site = process.env.OD_LANDING_SITE ?? 'https://open-design.ai';
+const site = process.env.OD_LANDING_SITE ?? 'https://storyforge.ai';
 // Staging / PR-preview builds set OD_LANDING_NOINDEX=1. Resolved here (config
 // runs in Node and can read process.env) and inlined into components as the
 // compile-time constant `__OD_LANDING_NOINDEX__` via vite.define below —

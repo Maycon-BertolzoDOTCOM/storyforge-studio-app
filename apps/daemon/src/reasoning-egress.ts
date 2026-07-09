@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import type {
   ReasoningExecutionMode,
   ReasoningExecutionPolicy,
-} from '@open-design/contracts/api/reasoningExecution';
+} from '@storyforge-app/contracts/api/reasoningExecution';
 import { normalizeGoogleModelId } from './integrations/google-models.js';
 
 export type ReasoningEgressRouteKind =

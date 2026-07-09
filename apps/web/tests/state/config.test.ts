@@ -845,7 +845,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(legacyConfig));
+    store.set('storyforge:config', JSON.stringify(legacyConfig));
 
     const config = loadConfig();
 
@@ -871,7 +871,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(persisted));
+    store.set('storyforge:config', JSON.stringify(persisted));
 
     const config = loadConfig();
 
@@ -891,7 +891,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(persisted));
+    store.set('storyforge:config', JSON.stringify(persisted));
 
     expect(loadConfig().baseUrl).toBe('https://api.example.com/v1');
   });
@@ -909,7 +909,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(persisted));
+    store.set('storyforge:config', JSON.stringify(persisted));
 
     const config = loadConfig();
 
@@ -918,7 +918,7 @@ describe('loadConfig', () => {
     expect(config.apiVersion).toBe('2024-01-01');
     expect(config.baseUrl).toBe('https://proxy.example.com/bedrock-runtime/v1');
     expect(config.model).toBe('gpt-4o');
-    expect(store.get('open-design:config')).toBe(JSON.stringify(persisted));
+    expect(store.get('storyforge:config')).toBe(JSON.stringify(persisted));
   });
 
   it('migrates legacy Anthropic API configs to an explicit apiProtocol', () => {
@@ -931,7 +931,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(legacyConfig));
+    store.set('storyforge:config', JSON.stringify(legacyConfig));
 
     const config = loadConfig();
 
@@ -949,7 +949,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(legacyConfig));
+    store.set('storyforge:config', JSON.stringify(legacyConfig));
 
     const config = loadConfig();
 
@@ -987,7 +987,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(savedConfig));
+    store.set('storyforge:config', JSON.stringify(savedConfig));
 
     const config = loadConfig();
 
@@ -1005,7 +1005,7 @@ describe('loadConfig', () => {
     });
 
     const persisted = JSON.parse(
-      store.get('open-design:config') ?? '{}',
+      store.get('storyforge:config') ?? '{}',
     ) as Partial<AppConfig>;
     expect(persisted.apiProtocol).toBe('anthropic');
     expect(persisted.apiKey).toBe('');
@@ -1029,7 +1029,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(daemonConfig));
+    store.set('storyforge:config', JSON.stringify(daemonConfig));
 
     const config = loadConfig();
 
@@ -1048,7 +1048,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(legacyConfig));
+    store.set('storyforge:config', JSON.stringify(legacyConfig));
 
     const config = loadConfig();
 
@@ -1070,7 +1070,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(legacyConfig));
+    store.set('storyforge:config', JSON.stringify(legacyConfig));
 
     const config = loadConfig();
 
@@ -1089,7 +1089,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(legacyConfig));
+    store.set('storyforge:config', JSON.stringify(legacyConfig));
 
     const config = loadConfig();
 
@@ -1108,7 +1108,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(explicitConfig));
+    store.set('storyforge:config', JSON.stringify(explicitConfig));
 
     const config = loadConfig();
 
@@ -1125,7 +1125,7 @@ describe('loadConfig', () => {
       skillId: null,
       designSystemId: null,
     };
-    store.set('open-design:config', JSON.stringify(legacyConfig));
+    store.set('storyforge:config', JSON.stringify(legacyConfig));
 
     const config = loadConfig();
 
@@ -1141,7 +1141,7 @@ describe('loadConfig', () => {
       theme: 'dark',
       accentColor: '#4F46E5',
     };
-    store.set('open-design:config', JSON.stringify(savedConfig));
+    store.set('storyforge:config', JSON.stringify(savedConfig));
 
     const config = loadConfig();
 
@@ -1153,7 +1153,7 @@ describe('loadConfig', () => {
     const savedConfig: Partial<AppConfig> = {
       accentColor: 'blue',
     };
-    store.set('open-design:config', JSON.stringify(savedConfig));
+    store.set('storyforge:config', JSON.stringify(savedConfig));
 
     expect(loadConfig().accentColor).toBe(DEFAULT_CONFIG.accentColor);
   });
@@ -1166,13 +1166,13 @@ describe('loadConfig', () => {
         templateSkillId: 'orbit-general',
       },
     };
-    store.set('open-design:config', JSON.stringify(savedConfig));
+    store.set('storyforge:config', JSON.stringify(savedConfig));
 
     expect(loadConfig().orbit?.time).toBe(DEFAULT_CONFIG.orbit?.time);
   });
 
   it('returns defaults for malformed localStorage JSON', () => {
-    store.set('open-design:config', '{broken-json');
+    store.set('storyforge:config', '{broken-json');
 
     expect(loadConfig()).toEqual(DEFAULT_CONFIG);
   });
@@ -1193,7 +1193,7 @@ describe('saveConfig', () => {
       telemetry: { metrics: true },
     });
 
-    const saved = JSON.parse(store.get('open-design:config') ?? '{}');
+    const saved = JSON.parse(store.get('storyforge:config') ?? '{}');
     expect(saved.installationId).toBeUndefined();
     expect(saved.privacyDecisionAt).toBeUndefined();
     expect(saved.telemetry).toBeUndefined();
@@ -1222,7 +1222,7 @@ describe('saveConfig', () => {
       },
     });
 
-    const saved = JSON.parse(store.get('open-design:config') ?? '{}');
+    const saved = JSON.parse(store.get('storyforge:config') ?? '{}');
     expect(saved.agentCliEnv.claude).toEqual({
       ANTHROPIC_BASE_URL: 'https://proxy.example/anthropic',
       CLAUDE_CONFIG_DIR: '~/.claude-2',

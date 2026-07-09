@@ -77,7 +77,7 @@ describe('AmrAccountControl', () => {
     });
 
     expect(
-      screen.getByRole('group', { name: 'Open Design account status' }),
+      screen.getByRole('group', { name: 'StoryForge account status' }),
     ).toBeTruthy();
     expect(screen.getByText('Not signed in')).toBeTruthy();
     const signIn = screen.getByRole('button', { name: 'Sign in' });
@@ -279,11 +279,11 @@ describe('AmrLoginPill', () => {
 
     expect(screen.queryByText('PROD')).toBeNull();
     expect(screen.getByRole('link', { name: 'Manage' }).getAttribute('href')).toBe(
-      'https://open-design.ai/amr/wallet?source=open_design',
+      'https://storyforge.ai/amr/wallet?source=open_design',
     );
   });
 
-  it('adds Open Design attribution to the signed-in management link on click', () => {
+  it('adds StoryForge attribution to the signed-in management link on click', () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 202 }));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -387,7 +387,7 @@ describe('AmrLoginPill', () => {
     });
   });
 
-  it('passes the Open Design device id in login attribution when metrics consent is enabled', async () => {
+  it('passes the StoryForge device id in login attribution when metrics consent is enabled', async () => {
     const fetchMock = vi.fn(async (input, init) => {
       const url = typeof input === 'string' ? input : (input as URL).toString();
       if (url.endsWith('/api/integrations/vela/status')) {

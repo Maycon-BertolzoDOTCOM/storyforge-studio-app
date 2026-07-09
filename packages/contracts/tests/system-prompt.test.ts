@@ -5,7 +5,7 @@ import { DISCOVERY_AND_PHILOSOPHY } from '../src/prompts/discovery.js';
 
 // Guard: the contracts copy of DISCOVERY_AND_PHILOSOPHY must have the same
 // cap removal as apps/daemon/src/prompts/discovery.ts. The web app imports
-// composeSystemPrompt from @open-design/contracts, so only testing the daemon
+// composeSystemPrompt from @storyforge-app/contracts, so only testing the daemon
 // copy leaves the web-originated chat path unguarded.
 describe('DISCOVERY_AND_PHILOSOPHY (contracts copy) — TodoWrite plan item count', () => {
   it('does not cap the plan at 10 items via "5–10" wording', () => {
@@ -36,8 +36,8 @@ describe('DISCOVERY_AND_PHILOSOPHY (contracts copy) — TodoWrite plan item coun
     const prompt = composeSystemPrompt({ sessionMode: 'chat' });
 
     expect(prompt).toContain('# Ask mode — bare conversation');
-    expect(prompt).toContain('https://github.com/nexu-io/open-design');
-    expect(prompt).toContain('https://open-design.ai/');
+    expect(prompt).toContain('https://github.com/nexu-io/storyforge');
+    expect(prompt).toContain('https://storyforge.ai/');
     expect(prompt).toContain('https://discord.gg/mHAjSMV6gz');
     expect(prompt).toContain('Do not emit a default discovery `<question-form>`');
     // Ask mode is deliberately light: neither the ~3k-token discovery layer nor

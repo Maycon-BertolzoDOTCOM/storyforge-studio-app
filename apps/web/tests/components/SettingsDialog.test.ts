@@ -22,7 +22,7 @@ import {
   updateCurrentApiProtocolConfig,
 } from '../../src/components/SettingsDialog';
 import { deriveUpdaterModel } from '../../src/lib/updater';
-import type { OpenDesignHostUpdaterStatusSnapshot } from '@open-design/host';
+import type { OpenDesignHostUpdaterStatusSnapshot } from '@storyforge-app/host';
 import type { AppConfig, AppVersionInfo, ConnectionTestResponse } from '../../src/types';
 
 const originalFetch = globalThis.fetch;
@@ -131,10 +131,10 @@ describe('SettingsDialog about update control', () => {
           incoming: {
             arch: 'arm64',
             artifact: {
-              name: 'Open Design Beta.dmg',
+              name: 'StoryForge Beta.dmg',
               platformKey: 'macAppleSilicon',
               type: 'dmg',
-              url: 'https://fixture.test/Open Design Beta.dmg',
+              url: 'https://fixture.test/StoryForge Beta.dmg',
             },
             channel: 'beta',
             progress: {
@@ -164,13 +164,13 @@ describe('SettingsDialog about update control', () => {
       deriveUpdaterModel(
         updateStatus({
           artifact: {
-            name: 'Open Design Beta.dmg',
+            name: 'StoryForge Beta.dmg',
             platformKey: 'macAppleSilicon',
             type: 'dmg',
-            url: 'https://fixture.test/Open Design Beta.dmg',
+            url: 'https://fixture.test/StoryForge Beta.dmg',
           },
           availableVersion: '1.2.3-beta.4',
-          downloadPath: '/tmp/Open Design Beta.dmg',
+          downloadPath: '/tmp/StoryForge Beta.dmg',
           state: 'downloaded',
         }),
         { hostAvailable: true },
@@ -191,10 +191,10 @@ describe('SettingsDialog about update control', () => {
       deriveUpdaterModel(
         updateStatus({
           artifact: {
-            name: 'open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+            name: 'storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
             platformKey: 'mac',
             type: 'payload',
-            url: 'https://fixture.test/open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+            url: 'https://fixture.test/storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
           },
           availableVersion: '1.2.3-beta.4',
           capabilities: {
@@ -203,7 +203,7 @@ describe('SettingsDialog about update control', () => {
             canOpenInstaller: false,
             requiresManualInstall: false,
           },
-          downloadPath: '/tmp/open-design-updater/open-design-1.2.3-beta.4-mac-arm64-payload.zip',
+          downloadPath: '/tmp/storyforge-updater/storyforge-1.2.3-beta.4-mac-arm64-payload.zip',
           state: 'downloaded',
         }),
         { hostAvailable: true },
@@ -224,17 +224,17 @@ describe('SettingsDialog about update control', () => {
       deriveUpdaterModel(
         updateStatus({
           artifact: {
-            name: 'Open Design Beta.dmg',
+            name: 'StoryForge Beta.dmg',
             platformKey: 'macAppleSilicon',
             type: 'dmg',
-            url: 'https://fixture.test/Open Design Beta.dmg',
+            url: 'https://fixture.test/StoryForge Beta.dmg',
           },
           availableVersion: '1.2.3-beta.4',
-          downloadPath: '/tmp/Open Design Beta.dmg',
+          downloadPath: '/tmp/StoryForge Beta.dmg',
           installResult: {
             dryRun: true,
             openedAt: '2026-05-19T00:00:00.000Z',
-            path: '/tmp/Open Design Beta.dmg',
+            path: '/tmp/StoryForge Beta.dmg',
           },
           state: 'downloaded',
         }),

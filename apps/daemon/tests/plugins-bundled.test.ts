@@ -7,7 +7,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { migratePlugins } from '../src/plugins/persistence.js';
 import { listInstalledPlugins, upsertInstalledPlugin } from '../src/plugins/registry.js';
-import type { InstalledPluginRecord } from '@open-design/contracts';
+import type { InstalledPluginRecord } from '@storyforge-app/contracts';
 import { registerBundledPlugins } from '../src/plugins/bundled.js';
 
 let db: Database.Database;
@@ -15,7 +15,7 @@ let tmpRoot: string;
 
 const SAMPLE_MANIFEST = (id: string) =>
   JSON.stringify({
-    $schema: 'https://open-design.ai/schemas/plugin.v1.json',
+    $schema: 'https://storyforge.ai/schemas/plugin.v1.json',
     name: id,
     title: id,
     version: '0.1.0',
@@ -44,15 +44,15 @@ afterEach(async () => {
 describe('registerBundledPlugins', () => {
   it('registers every <bundledRoot>/<tier>/<id>/ folder under source_kind=bundled', async () => {
     // Build a layout with one atom + one scenario:
-    //   <bundledRoot>/atoms/discovery-question-form/{open-design.json,SKILL.md}
-    //   <bundledRoot>/scenarios/od-new-generation/{open-design.json,SKILL.md}
+    //   <bundledRoot>/atoms/discovery-question-form/{storyforge.json,SKILL.md}
+    //   <bundledRoot>/scenarios/od-new-generation/{storyforge.json,SKILL.md}
     const atomDir = path.join(tmpRoot, 'atoms', 'discovery-question-form');
     const sceneDir = path.join(tmpRoot, 'scenarios', 'od-new-generation');
     await mkdir(atomDir, { recursive: true });
     await mkdir(sceneDir, { recursive: true });
-    await writeFile(path.join(atomDir, 'open-design.json'), SAMPLE_MANIFEST('discovery-question-form'));
+    await writeFile(path.join(atomDir, 'storyforge.json'), SAMPLE_MANIFEST('discovery-question-form'));
     await writeFile(path.join(atomDir, 'SKILL.md'), SAMPLE_SKILL('discovery-question-form'));
-    await writeFile(path.join(sceneDir, 'open-design.json'), SAMPLE_MANIFEST('od-new-generation'));
+    await writeFile(path.join(sceneDir, 'storyforge.json'), SAMPLE_MANIFEST('od-new-generation'));
     await writeFile(path.join(sceneDir, 'SKILL.md'), SAMPLE_SKILL('od-new-generation'));
 
     const result = await registerBundledPlugins({ db, bundledRoot: tmpRoot });
@@ -68,7 +68,7 @@ describe('registerBundledPlugins', () => {
   it('can stamp official registry provenance on bundled preinstalls', async () => {
     const folder = path.join(tmpRoot, 'scenarios', 'starter');
     await mkdir(folder, { recursive: true });
-    await writeFile(path.join(folder, 'open-design.json'), SAMPLE_MANIFEST('starter'));
+    await writeFile(path.join(folder, 'storyforge.json'), SAMPLE_MANIFEST('starter'));
     await writeFile(path.join(folder, 'SKILL.md'), SAMPLE_SKILL('starter'));
 
     const result = await registerBundledPlugins({
@@ -77,27 +77,27 @@ describe('registerBundledPlugins', () => {
       marketplaceProvenance: {
         sourceMarketplaceId: 'official',
         marketplaceTrust: 'official',
-        entryNamePrefix: 'open-design',
+        entryNamePrefix: 'storyforge',
       },
     });
 
     expect(result.registered[0]?.sourceKind).toBe('bundled');
     expect(result.registered[0]?.sourceMarketplaceId).toBe('official');
-    expect(result.registered[0]?.sourceMarketplaceEntryName).toBe('open-design/starter');
+    expect(result.registered[0]?.sourceMarketplaceEntryName).toBe('storyforge/starter');
     expect(result.registered[0]?.sourceMarketplaceEntryVersion).toBe('0.1.0');
     expect(result.registered[0]?.marketplaceTrust).toBe('official');
     expect(result.registered[0]?.resolvedSource).toBe(folder);
 
     const [row] = listInstalledPlugins(db);
     expect(row?.sourceMarketplaceId).toBe('official');
-    expect(row?.sourceMarketplaceEntryName).toBe('open-design/starter');
+    expect(row?.sourceMarketplaceEntryName).toBe('storyforge/starter');
   });
 
   it('also registers a direct <bundledRoot>/<plugin-id>/ folder', async () => {
     // Direct layout (no tier): <bundledRoot>/sample-plugin/...
     const folder = path.join(tmpRoot, 'sample-plugin');
     await mkdir(folder, { recursive: true });
-    await writeFile(path.join(folder, 'open-design.json'), SAMPLE_MANIFEST('sample-plugin'));
+    await writeFile(path.join(folder, 'storyforge.json'), SAMPLE_MANIFEST('sample-plugin'));
     await writeFile(path.join(folder, 'SKILL.md'), SAMPLE_SKILL('sample-plugin'));
 
     const result = await registerBundledPlugins({ db, bundledRoot: tmpRoot });
@@ -107,7 +107,7 @@ describe('registerBundledPlugins', () => {
   it('is idempotent — re-running upserts the same row', async () => {
     const folder = path.join(tmpRoot, 'atoms', 'sample');
     await mkdir(folder, { recursive: true });
-    await writeFile(path.join(folder, 'open-design.json'), SAMPLE_MANIFEST('sample'));
+    await writeFile(path.join(folder, 'storyforge.json'), SAMPLE_MANIFEST('sample'));
     await writeFile(path.join(folder, 'SKILL.md'), SAMPLE_SKILL('sample'));
 
     await registerBundledPlugins({ db, bundledRoot: tmpRoot });
@@ -124,7 +124,7 @@ describe('registerBundledPlugins', () => {
     expect(result.warnings).toEqual([]);
   });
 
-  it('skips folders without open-design.json without warning', async () => {
+  it('skips folders without storyforge.json without warning', async () => {
     const folder = path.join(tmpRoot, 'atoms', 'no-manifest');
     await mkdir(folder, { recursive: true });
     await writeFile(path.join(folder, 'README.md'), '# nothing\n');
@@ -141,7 +141,7 @@ describe('registerBundledPlugins', () => {
     const staleDir = path.join(tmpRoot, 'atoms', 'stale');
     for (const [dir, id] of [[keepDir, 'keep'], [staleDir, 'stale']] as const) {
       await mkdir(dir, { recursive: true });
-      await writeFile(path.join(dir, 'open-design.json'), SAMPLE_MANIFEST(id));
+      await writeFile(path.join(dir, 'storyforge.json'), SAMPLE_MANIFEST(id));
       await writeFile(path.join(dir, 'SKILL.md'), SAMPLE_SKILL(id));
     }
     await registerBundledPlugins({ db, bundledRoot: tmpRoot });
@@ -178,7 +178,7 @@ describe('registerBundledPlugins', () => {
     // packaging bug into data loss.
     const folder = path.join(tmpRoot, 'atoms', 'sample');
     await mkdir(folder, { recursive: true });
-    await writeFile(path.join(folder, 'open-design.json'), SAMPLE_MANIFEST('sample'));
+    await writeFile(path.join(folder, 'storyforge.json'), SAMPLE_MANIFEST('sample'));
     await writeFile(path.join(folder, 'SKILL.md'), SAMPLE_SKILL('sample'));
     await registerBundledPlugins({ db, bundledRoot: tmpRoot });
 

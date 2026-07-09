@@ -13,8 +13,8 @@ import { createPortal, flushSync } from 'react-dom';
 import {
   clearHostBrowserData,
   isOpenDesignHostAvailable,
-} from '@open-design/host';
-import type { TrackingReferenceBoardCategory } from '@open-design/contracts/analytics';
+} from '@storyforge-app/host';
+import type { TrackingReferenceBoardCategory } from '@storyforge-app/contracts/analytics';
 import { useAnalytics } from '../analytics/provider';
 import {
   trackReferenceBoardClick,
@@ -264,7 +264,7 @@ export interface BrowserPageInfo {
 }
 
 const EMPTY_URL = 'about:blank';
-const DESIGN_BROWSER_PARTITION = 'persist:open-design-design-browser';
+const DESIGN_BROWSER_PARTITION = 'persist:storyforge-design-browser';
 const HISTORY_LIMIT = 80;
 const HISTORY_SUGGESTION_LIMIT = 20;
 const EMPTY_PREVIEW_COMMENTS: PreviewComment[] = [];
@@ -710,7 +710,7 @@ export function browserUsePrompt(action: BrowserUseAction, context: BrowserUsePr
   return [
     '@agent-browser',
     '',
-    'Use the selected Open Design Browser tab as the bound target.',
+    'Use the selected StoryForge Browser tab as the bound target.',
     'Browser tab context:',
     `- tab: ${tabLabel}`,
     `- title: ${title}`,

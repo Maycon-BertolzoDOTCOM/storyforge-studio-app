@@ -13,8 +13,8 @@
 // needs to commit.
 
 import { useMemo, useState } from 'react';
-import { VisuallyHidden } from '@open-design/components';
-import type { InstalledPluginRecord } from '@open-design/contracts';
+import { VisuallyHidden } from '@storyforge-app/components';
+import type { InstalledPluginRecord } from '@storyforge-app/contracts';
 import { useI18n } from '../../i18n';
 import type { PluginShareAction } from '../../state/projects';
 import { Icon } from '../Icon';
@@ -352,18 +352,18 @@ export function PluginCard({
               <button
                 type="button"
                 className="plugins-home__action plugins-home__action--secondary plugins-home__action--compact"
-                onClick={() => onShareAction(record, 'contribute-open-design')}
+                onClick={() => onShareAction(record, 'contribute-storyforge')}
                 disabled={pendingAny || shareBusy}
-                aria-busy={sharePendingAction === 'contribute-open-design' ? 'true' : undefined}
+                aria-busy={sharePendingAction === 'contribute-storyforge' ? 'true' : undefined}
                 aria-label={t('pluginCard.contributeAria', { title })}
                 title={t('pluginCard.contributeTitle')}
-                data-testid={`plugins-home-contribute-open-design-${record.id}`}
+                data-testid={`plugins-home-contribute-storyforge-${record.id}`}
               >
                 <Icon
-                  name={sharePendingAction === 'contribute-open-design' ? 'spinner' : 'share'}
+                  name={sharePendingAction === 'contribute-storyforge' ? 'spinner' : 'share'}
                   size={12}
                 />
-                <span>{sharePendingAction === 'contribute-open-design' ? t('pluginCard.starting') : t('pluginCard.contribute')}</span>
+                <span>{sharePendingAction === 'contribute-storyforge' ? t('pluginCard.starting') : t('pluginCard.contribute')}</span>
               </button>
             </div>
           ) : null}

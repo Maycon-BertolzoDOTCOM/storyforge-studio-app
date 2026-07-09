@@ -89,7 +89,7 @@ describe('asInProjectFilePath', () => {
     it('matches local absolute paths against known project files', () => {
       expect(
         asInProjectFilePath(
-          '/Users/mac/open-design/open-design-preview-0.10.0/projects/Web%20Prototype/index.html',
+          '/Users/mac/storyforge/storyforge-preview-0.10.0/projects/Web%20Prototype/index.html',
           new Set(['index.html']),
         ),
       ).toBe('index.html');
@@ -98,7 +98,7 @@ describe('asInProjectFilePath', () => {
     it('keeps unknown local absolute paths as normal links', () => {
       expect(
         asInProjectFilePath(
-          '/Users/mac/open-design/open-design-preview-0.10.0/projects/Web%20Prototype/index.html',
+          '/Users/mac/storyforge/storyforge-preview-0.10.0/projects/Web%20Prototype/index.html',
           new Set(['summary.html']),
         ),
       ).toBeNull();

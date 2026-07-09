@@ -243,8 +243,8 @@ describe('Plan §8 e2e-3 (entry slice) — headless install → project → run'
       }>;
     };
     const plugin = (listBody.plugins ?? []).find((record) =>
-      record.id === 'example-open-design-landing-deck' ||
-      record.manifest?.name === 'example-open-design-landing-deck',
+      record.id === 'example-storyforge-landing-deck' ||
+      record.manifest?.name === 'example-storyforge-landing-deck',
     );
     expect(plugin).toBeTruthy();
 
@@ -264,14 +264,14 @@ describe('Plan §8 e2e-3 (entry slice) — headless install → project → run'
     expect(body.error).toMatchObject({
       code: 'UNSUPPORTED_DUPLICATE_DEPENDENCIES',
     });
-    expect(body.error?.message).toContain('../open-design-landing/assets/hero.png');
+    expect(body.error?.message).toContain('../storyforge-landing/assets/hero.png');
   });
 
   it('surfaces duplicate daemon errors through CLI structured stderr', async () => {
     const result = await runCliResult([
       'plugin',
       'duplicate',
-      'example-open-design-landing-deck',
+      'example-storyforge-landing-deck',
       '--json',
     ]);
 
@@ -281,7 +281,7 @@ describe('Plan §8 e2e-3 (entry slice) — headless install → project → run'
       error?: { code?: string; message?: string };
     };
     expect(body.error?.code).toBe('UNSUPPORTED_DUPLICATE_DEPENDENCIES');
-    expect(body.error?.message).toContain('../open-design-landing/assets/hero.png');
+    expect(body.error?.message).toContain('../storyforge-landing/assets/hero.png');
   });
 
   it('walks install → project create → run start → status with snapshot pinned', async () => {
@@ -399,7 +399,7 @@ describe('Plan §8 e2e-3 (entry slice) — headless install → project → run'
     expect(shareBody.sourcePluginId).toBe('sample-plugin');
     expect(shareBody.appliedPluginSnapshotId).toBeTruthy();
     expect(shareBody.stagedPath).toBe('plugin-source/sample-plugin');
-    expect(shareBody.prompt).toContain('Publish the local Open Design plugin');
+    expect(shareBody.prompt).toContain('Publish the local StoryForge plugin');
     expect(shareBody.prompt).toContain('/api/projects/$OD_PROJECT_ID/plugins/publish-github');
     expect(shareBody.prompt).toContain('plugin-source/sample-plugin');
     expect(shareBody.project.pendingPrompt).toBe(shareBody.prompt);
@@ -410,7 +410,7 @@ describe('Plan §8 e2e-3 (entry slice) — headless install → project → run'
     expect(filesResp.status).toBe(200);
     const filesBody = (await filesResp.json()) as { files: Array<{ name: string }> };
     const fileNames = filesBody.files.map((file) => file.name).sort();
-    expect(fileNames).toContain('plugin-source/sample-plugin/open-design.json');
+    expect(fileNames).toContain('plugin-source/sample-plugin/storyforge.json');
     expect(fileNames).toContain('plugin-source/sample-plugin/SKILL.md');
 
     const snapshotResp = await fetch(
@@ -430,7 +430,7 @@ describe('Plan §8 e2e-3 (entry slice) — headless install → project → run'
     const contributeResp = await fetch(`${baseUrl}/api/plugins/sample-plugin/share-project`, {
       method:  'POST',
       headers: { 'content-type': 'application/json' },
-      body:    JSON.stringify({ action: 'contribute-open-design', locale: 'en' }),
+      body:    JSON.stringify({ action: 'contribute-storyforge', locale: 'en' }),
     });
     expect(contributeResp.status).toBe(200);
     const contributeBody = (await contributeResp.json()) as {
@@ -443,11 +443,11 @@ describe('Plan §8 e2e-3 (entry slice) — headless install → project → run'
       prompt: string;
     };
     expect(contributeBody.ok).toBe(true);
-    expect(contributeBody.actionPluginId).toBe('od-plugin-contribute-open-design');
+    expect(contributeBody.actionPluginId).toBe('od-plugin-contribute-storyforge');
     expect(contributeBody.sourcePluginId).toBe('sample-plugin');
     expect(contributeBody.appliedPluginSnapshotId).toBeTruthy();
     expect(contributeBody.stagedPath).toBe('plugin-source/sample-plugin');
-    expect(contributeBody.prompt).toContain('/api/projects/$OD_PROJECT_ID/plugins/contribute-open-design');
+    expect(contributeBody.prompt).toContain('/api/projects/$OD_PROJECT_ID/plugins/contribute-storyforge');
 
     const locator = process.platform === 'win32' ? 'where' : 'which';
     const realGit = ((await execFileP(locator, ['git'])).stdout as string)
@@ -461,10 +461,10 @@ describe('Plan §8 e2e-3 (entry slice) — headless install → project → run'
     const previousGitCommitterName = process.env.GIT_COMMITTER_NAME;
     const previousGitCommitterEmail = process.env.GIT_COMMITTER_EMAIL;
     process.env.OD_REAL_GIT = realGit;
-    process.env.GIT_AUTHOR_NAME = 'Open Design Test';
-    process.env.GIT_AUTHOR_EMAIL = 'open-design-test@example.com';
-    process.env.GIT_COMMITTER_NAME = 'Open Design Test';
-    process.env.GIT_COMMITTER_EMAIL = 'open-design-test@example.com';
+    process.env.GIT_AUTHOR_NAME = 'StoryForge Test';
+    process.env.GIT_AUTHOR_EMAIL = 'storyforge-test@example.com';
+    process.env.GIT_COMMITTER_NAME = 'StoryForge Test';
+    process.env.GIT_COMMITTER_EMAIL = 'storyforge-test@example.com';
     try {
       await withFakeAgent(
         'gh',
@@ -493,14 +493,14 @@ if (args[0] === 'repo' && args[1] === 'view') {
   }
   ok('https://github.com/test-user/' + path.basename(process.cwd()));
 }
-if (args[0] === 'repo' && args[1] === 'fork') ok('forked nexu-io/open-design');
+if (args[0] === 'repo' && args[1] === 'fork') ok('forked nexu-io/storyforge');
 if (args[0] === 'repo' && args[1] === 'clone') {
   const dest = args[3] || path.basename(args[2]);
   fs.mkdirSync(dest, { recursive: true });
   const init = spawnSync(process.env.OD_REAL_GIT, ['init'], { cwd: dest, stdio: 'inherit' });
   process.exit(init.status ?? 0);
 }
-if (args[0] === 'pr' && args[1] === 'create') ok('https://github.com/nexu-io/open-design/pull/123');
+if (args[0] === 'pr' && args[1] === 'create') ok('https://github.com/nexu-io/storyforge/pull/123');
 console.error('unexpected gh command: ' + args.join(' '));
 process.exit(1);
 `,
@@ -524,7 +524,7 @@ if (args[0] === 'clone') {
     if (init.stderr) process.stderr.write(init.stderr);
     process.exit(init.status ?? 1);
   }
-  const remote = args.find((arg) => String(arg).startsWith('https://')) || 'https://github.com/test-user/open-design.git';
+  const remote = args.find((arg) => String(arg).startsWith('https://')) || 'https://github.com/test-user/storyforge.git';
   const remoteAdd = spawnSync(process.env.OD_REAL_GIT, ['remote', 'add', 'origin', remote], { cwd: dest, encoding: 'utf8' });
   if (remoteAdd.status !== 0) {
     if (remoteAdd.stderr) process.stderr.write(remoteAdd.stderr);
@@ -559,7 +559,7 @@ process.exit(result.status ?? 0);
               expect(publishEndpointBody.url).toBe('https://github.com/test-user/sample-plugin');
 
               const contributeEndpointResp = await fetch(
-                `${baseUrl}/api/projects/${encodeURIComponent(contributeBody.project.id)}/plugins/contribute-open-design`,
+                `${baseUrl}/api/projects/${encodeURIComponent(contributeBody.project.id)}/plugins/contribute-storyforge`,
                 {
                   method: 'POST',
                   headers: { 'content-type': 'application/json' },
@@ -572,7 +572,7 @@ process.exit(result.status ?? 0);
                 url?: string;
               };
               expect(contributeEndpointBody.ok).toBe(true);
-              expect(contributeEndpointBody.url).toBe('https://github.com/nexu-io/open-design/pull/123');
+              expect(contributeEndpointBody.url).toBe('https://github.com/nexu-io/storyforge/pull/123');
             },
           );
         },
@@ -612,9 +612,9 @@ process.exit(result.status ?? 0);
     const fixture = path.join(pluginRoot, pluginId);
     await mkdir(fixture, { recursive: true });
     await writeFile(
-      path.join(fixture, 'open-design.json'),
+      path.join(fixture, 'storyforge.json'),
       JSON.stringify({
-        $schema: 'https://open-design.ai/schemas/plugin.v1.json',
+        $schema: 'https://storyforge.ai/schemas/plugin.v1.json',
         name: pluginId,
         title: 'Headless CLI Plugin',
         version: '1.0.0',
@@ -749,9 +749,9 @@ process.stdin.on('end', () => {
     const fixture = path.join(tmpRoot, 'pipeline-plugin');
     await fs.mkdir(fixture, { recursive: true });
     await fs.writeFile(
-      path.join(fixture, 'open-design.json'),
+      path.join(fixture, 'storyforge.json'),
       JSON.stringify({
-        $schema: 'https://open-design.ai/schemas/plugin.v1.json',
+        $schema: 'https://storyforge.ai/schemas/plugin.v1.json',
         name: 'pipeline-plugin',
         title: 'Pipeline Plugin',
         version: '1.0.0',

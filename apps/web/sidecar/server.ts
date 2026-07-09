@@ -20,12 +20,12 @@ import {
   normalizeWebSidecarMessage,
   type SidecarStamp,
   type WebStatusSnapshot,
-} from "@open-design/sidecar-proto";
+} from "@storyforge-app/sidecar-proto";
 import {
   createJsonIpcServer,
   type JsonIpcServerHandle,
   type SidecarRuntimeContext,
-} from "@open-design/sidecar";
+} from "@storyforge-app/sidecar";
 
 const HOST = process.env.OD_HOST || "127.0.0.1";
 if (process.env.OD_HOST != null && !/^[a-zA-Z0-9._\-:[\]@]+$/.test(process.env.OD_HOST)) {
@@ -88,7 +88,7 @@ function resolveWebRoot(): string {
   for (let depth = 0; depth < 8; depth += 1) {
     try {
       const packageJson = JSON.parse(readFileSync(join(current, "package.json"), "utf8")) as { name?: unknown };
-      if (packageJson.name === "@open-design/web") return current;
+      if (packageJson.name === "@storyforge-app/web") return current;
     } catch {
       // Keep walking until the package root is found. This must work from both
       // sidecar/*.ts under tsx and dist/sidecar/*.js in packaged installs.
@@ -99,7 +99,7 @@ function resolveWebRoot(): string {
     current = parent;
   }
 
-  throw new Error("failed to resolve @open-design/web package root");
+  throw new Error("failed to resolve @storyforge-app/web package root");
 }
 
 function parsePort(value: string | undefined): number {
@@ -647,7 +647,7 @@ function shouldStartStandaloneBackendInProcess(): boolean {
 
 async function startStandaloneBackendInProcess(entryPath: string, port: number, origin: string): Promise<StandaloneBackend> {
   Object.assign(process.env, createStandaloneBackendEnv({ port }));
-  console.log(`[open-design web] starting in-process standalone Next.js server from ${entryPath}`);
+  console.log(`[storyforge web] starting in-process standalone Next.js server from ${entryPath}`);
   const restoreChdir = await installInProcessStandaloneChdirAlias(dirname(entryPath));
   try {
     await import(pathToFileURL(entryPath).href);
@@ -704,7 +704,7 @@ async function startStandaloneBackend(webRoot: string | null): Promise<Standalon
   if (entryPath == null) {
     throw new Error(
       webRoot == null
-        ? `missing Next.js standalone server under ${WEB_STANDALONE_ROOT_ENV}; configure ${WEB_STANDALONE_ROOT_ENV} or install @open-design/web`
+        ? `missing Next.js standalone server under ${WEB_STANDALONE_ROOT_ENV}; configure ${WEB_STANDALONE_ROOT_ENV} or install @storyforge-app/web`
         : `missing Next.js standalone server under ${resolveWebDistDir(webRoot)}; rebuild with ${WEB_OUTPUT_MODE_ENV}=standalone`,
     );
   }
@@ -715,7 +715,7 @@ async function startStandaloneBackend(webRoot: string | null): Promise<Standalon
     return await startStandaloneBackendInProcess(entryPath, port, origin);
   }
 
-  console.log(`[open-design web] starting standalone Next.js server from ${entryPath}`);
+  console.log(`[storyforge web] starting standalone Next.js server from ${entryPath}`);
   const child = spawn(process.execPath, createStandaloneServerArgs(entryPath), {
     cwd: dirname(entryPath),
     env: createStandaloneBackendEnv({ port }),
@@ -731,7 +731,7 @@ async function startStandaloneBackend(webRoot: string | null): Promise<Standalon
   child.once("exit", (code, signal) => {
     standaloneRunning = false;
     standaloneExitReason = `code=${code ?? "null"} signal=${signal ?? "null"}`;
-    console.error(`[open-design web] standalone Next.js server exited ${standaloneExitReason}`);
+    console.error(`[storyforge web] standalone Next.js server exited ${standaloneExitReason}`);
   });
 
   try {

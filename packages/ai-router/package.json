@@ -1,0 +1,25 @@
+{
+  "name": "@storyforge-app/ai-router",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cascade AI router with credit tracking and difficulty-based routing. Extracted from MaterialView-Pro.",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsx ./esbuild.config.ts && tsc -p tsconfig.json --emitDeclarationOnly",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.0",
+    "tsx": "4.22.3",
+    "typescript": "5.9.3"
+  }
+}

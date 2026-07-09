@@ -1,6 +1,6 @@
-export const OPEN_DESIGN_GITHUB_REPO_URL = 'https://github.com/nexu-io/open-design';
+export const OPEN_DESIGN_GITHUB_REPO_URL = 'https://github.com/nexu-io/storyforge';
 
-export type SocialShareTargetKind = 'open-design-repo' | 'project-html';
+export type SocialShareTargetKind = 'storyforge-repo' | 'project-html';
 
 export type SocialSharePlatform =
   | 'x'
@@ -156,14 +156,14 @@ function buildPlatformUrl(
 }
 
 export function buildSocialSharePayload(input: SocialShareRequest): SocialShareResponse {
-  const kind = input.kind === 'project-html' ? 'project-html' : 'open-design-repo';
+  const kind = input.kind === 'project-html' ? 'project-html' : 'storyforge-repo';
   const url = normalizeSocialShareUrl(input.url)
-    ?? (kind === 'open-design-repo' ? OPEN_DESIGN_GITHUB_REPO_URL : '');
-  const fallbackTitle = kind === 'project-html' ? 'Open Design project' : 'Open Design';
+    ?? (kind === 'storyforge-repo' ? OPEN_DESIGN_GITHUB_REPO_URL : '');
+  const fallbackTitle = kind === 'project-html' ? 'StoryForge project' : 'StoryForge';
   const title = cleanText(input.title, fallbackTitle);
   const fallbackText = kind === 'project-html'
-    ? `Built with Open Design: ${title}. Open Design repo: ${OPEN_DESIGN_GITHUB_REPO_URL}`
-    : 'Open Design is an open-source workspace for creating, editing, deploying, and handing off design artifacts.';
+    ? `Built with StoryForge: ${title}. StoryForge repo: ${OPEN_DESIGN_GITHUB_REPO_URL}`
+    : 'StoryForge is an open-source workspace for creating, editing, deploying, and handing off design artifacts.';
   const text = cleanText(input.text, fallbackText);
   const copyText = cleanText(input.copyText, `${text}\n${url}`);
   const platforms = PLATFORM_DESCRIPTORS.map((descriptor) => ({

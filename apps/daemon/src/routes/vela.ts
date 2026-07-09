@@ -42,7 +42,7 @@ import {
 } from '../runtimes/defs/amr.js';
 
 const AMR_API_PROXY_PREFIX = '/api/integrations/vela/api-proxy';
-const AMR_API_UPSTREAM_ORIGIN = 'https://amr-api.open-design.ai';
+const AMR_API_UPSTREAM_ORIGIN = 'https://amr-api.storyforge.ai';
 
 type ReadAppConfig = (dataDir: string) => Promise<AppConfigPrefs>;
 type PublicBaseUrlResolver = (req: Request) => string;
@@ -320,9 +320,9 @@ export function registerVelaRoutes(app: Express, deps: RegisterVelaRoutesDeps): 
       }
       // Start device authorization over a direct connection first. The
       // daemon-local IPv4 proxy (added in #4210 for hosts whose direct
-      // amr-api.open-design.ai edge path is broken, #3726) re-originates the
+      // amr-api.storyforge.ai edge path is broken, #3726) re-originates the
       // request through the daemon. Behind a corporate transparent proxy that
-      // hijacks amr-api.open-design.ai onto an internal gateway (e.g.
+      // hijacks amr-api.storyforge.ai onto an internal gateway (e.g.
       // 飞连/CorpLink → 30.x), that extra hop makes the upstream lose the
       // client IP and reject device authorization with
       // "502: Invalid IP address: undefined", even though the direct path

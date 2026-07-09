@@ -1,5 +1,5 @@
 {
-  "name": "@open-design/contracts",
+  "name": "@storyforge-app/contracts",
   "version": "0.12.1",
   "private": true,
   "type": "module",
@@ -73,7 +73,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tests.json --noEmit"
   },
   "dependencies": {
-    "@open-design/release": "workspace:*",
+    "@storyforge-app/release": "workspace:*",
     "zod": "3.25.76"
   },
   "devDependencies": {

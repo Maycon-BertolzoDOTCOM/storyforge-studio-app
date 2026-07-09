@@ -14,12 +14,12 @@ import {
   releaseNamespace,
   type ReleaseBaseVersionTuple,
   type ReleaseChannel,
-} from "@open-design/release";
+} from "@storyforge-app/release";
 
 const execFile = promisify(execFileCallback);
 
 const stableReleaseBranchPattern = /^release\/v(\d+\.\d+\.\d+)$/;
-const stableTagPattern = /^open-design-v(\d+\.\d+\.\d+)$/;
+const stableTagPattern = /^storyforge-v(\d+\.\d+\.\d+)$/;
 
 type GitHubRelease = {
   draft?: boolean;
@@ -566,7 +566,7 @@ if (stableBaseVersion.value !== packagedVersion) {
 }
 
 const releases = await fetchReleases(repository);
-const versionTag = `open-design-v${packagedVersion}`;
+const versionTag = `storyforge-v${packagedVersion}`;
 
 let latestStable: ParsedStableVersion | null = null;
 for (const release of releases) {
@@ -589,7 +589,7 @@ if (latestStable != null && compareReleaseBaseVersions(packagedParsed, latestSta
 }
 
 let releaseVersion = packagedVersion;
-let releaseName = `Open Design ${packagedVersion}`;
+let releaseName = `StoryForge ${packagedVersion}`;
 let prereleaseNumber = "";
 let stateSource = channel === "prerelease" ? "R2 metadata.json" : "GitHub Releases";
 
@@ -631,7 +631,7 @@ if (channel === "prerelease") {
 
   prereleaseNumber = String(nextPrereleaseNumber);
   releaseVersion = formatReleaseVersion("prerelease", packagedVersion, nextPrereleaseNumber);
-  releaseName = `Open Design Prerelease ${releaseVersion}`;
+  releaseName = `StoryForge Prerelease ${releaseVersion}`;
   log(`latest prerelease: ${latestPrerelease.prereleaseVersion}`);
 } else {
   const stablePrerelease = await validateStablePrereleaseMetadata({

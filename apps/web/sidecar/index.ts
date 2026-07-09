@@ -1,6 +1,6 @@
-import { APP_KEYS, OPEN_DESIGN_SIDECAR_CONTRACT } from "@open-design/sidecar-proto";
-import { bootstrapSidecarRuntime } from "@open-design/sidecar";
-import { readProcessStamp } from "@open-design/platform";
+import { APP_KEYS, OPEN_DESIGN_SIDECAR_CONTRACT } from "@storyforge-app/sidecar-proto";
+import { bootstrapSidecarRuntime } from "@storyforge-app/sidecar";
+import { readProcessStamp } from "@storyforge-app/platform";
 
 import { startWebSidecar } from "./server.js";
 

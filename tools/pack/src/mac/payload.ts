@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import {
   LAUNCHER_SCHEMA_VERSION,
   resolveLauncherVersionPaths,
-} from "@open-design/launcher-proto";
+} from "@storyforge-app/launcher-proto";
 
 import type { ToolPackConfig } from "../config.js";
 import {

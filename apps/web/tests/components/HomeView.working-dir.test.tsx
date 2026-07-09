@@ -8,11 +8,11 @@ vi.mock('../../src/components/home-hero/PlaceholderCarousel', () => ({
 }));
 
 import { HomeView } from '../../src/components/HomeView';
-import { isOpenDesignHostAvailable, pickHostWorkingDir } from '@open-design/host';
+import { isOpenDesignHostAvailable, pickHostWorkingDir } from '@storyforge-app/host';
 import { openFolderDialog } from '../../src/providers/registry';
 
-vi.mock('@open-design/host', async () => {
-  const actual = await vi.importActual<typeof import('@open-design/host')>('@open-design/host');
+vi.mock('@storyforge-app/host', async () => {
+  const actual = await vi.importActual<typeof import('@storyforge-app/host')>('@storyforge-app/host');
   return {
     ...actual,
     isOpenDesignHostAvailable: vi.fn(),

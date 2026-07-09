@@ -69,7 +69,7 @@ test("bad bundled scenario manifest craft references are reported", async () => 
   assert.deepEqual(findCraftReferenceViolations(references, new Set(), new Set()), [
     {
       kind: "unresolved",
-      manifestPath: "plugins/_official/scenarios/bad-scenario/open-design.json",
+      manifestPath: "plugins/_official/scenarios/bad-scenario/storyforge.json",
       slug: "typograpy",
     },
   ]);

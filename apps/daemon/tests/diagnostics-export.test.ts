@@ -11,8 +11,8 @@ import {
   SIDECAR_MODES,
   SIDECAR_SOURCES,
   type SidecarStamp,
-} from '@open-design/sidecar-proto';
-import type { SidecarRuntimeContext } from '@open-design/sidecar';
+} from '@storyforge-app/sidecar-proto';
+import type { SidecarRuntimeContext } from '@storyforge-app/sidecar';
 
 import {
   STANDALONE_LAUNCH_WARNING,
@@ -234,7 +234,7 @@ describe('diagnostics export handler — run event logs', () => {
     const runsDir = join(root, 'runs');
     const runLogPath = join(runsDir, 'run-sensitive', 'events.jsonl');
     const username = userInfo().username;
-    const homePath = `/Users/${username}/open-design/project`;
+    const homePath = `/Users/${username}/storyforge/project`;
     const secretBearer = 'od_bearer_secret_12345';
     const secretQuery = 'query-token-secret';
     const secretApiKey = 'api-key-secret';
@@ -312,7 +312,7 @@ describe('diagnostics export handler — run event logs', () => {
       expect(runLog).toContain('Bearer [REDACTED]');
       expect(runLog).toContain('access_token=[REDACTED]');
       expect(runLog).toContain('api_key=[REDACTED]');
-      expect(runLog).toContain('/Users/<USER>/open-design/project');
+      expect(runLog).toContain('/Users/<USER>/storyforge/project');
       expect(runLog).not.toContain(secretBearer);
       expect(runLog).not.toContain(secretQuery);
       expect(runLog).not.toContain(secretApiKey);

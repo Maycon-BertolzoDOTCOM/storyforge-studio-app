@@ -16,7 +16,7 @@ import {
   ANALYTICS_HEADER_LOCALE,
   ANALYTICS_HEADER_REQUEST_ID,
   ANALYTICS_HEADER_SESSION_ID,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 import {
   applyConsent,
   applyIdentity,
@@ -28,7 +28,7 @@ import {
   setConfigureGlobals,
 } from './client';
 import { patchExceptionTrackingAppVersion } from './error-tracking';
-import type { AnalyticsConfigureGlobals } from '@open-design/contracts/analytics';
+import type { AnalyticsConfigureGlobals } from '@storyforge-app/contracts/analytics';
 import {
   detectClientType,
   getAnonymousId,

@@ -222,7 +222,7 @@ describe('MemorySection', () => {
     const entry = {
       id: 'project_design_agent_goal',
       name: 'Design agent goal',
-      description: 'Open Design should evolve from accepted work',
+      description: 'StoryForge should evolve from accepted work',
       type: 'project',
       body: '- Keep design-system extraction in the loop',
       updatedAt: Date.now(),
@@ -314,7 +314,7 @@ describe('MemorySection', () => {
     const entry = {
       id: 'project_design_agent_goal',
       name: 'Design agent goal',
-      description: 'Open Design should evolve from accepted work',
+      description: 'StoryForge should evolve from accepted work',
       type: 'project',
       body: '- Keep design-system extraction in the loop',
       updatedAt: Date.now(),
@@ -1151,7 +1151,7 @@ describe('MemorySection', () => {
       connected = true;
       window.dispatchEvent(new MessageEvent('message', {
         origin: window.location.origin,
-        data: { type: 'open-design:connector-connected' },
+        data: { type: 'storyforge:connector-connected' },
       }));
 
       await waitFor(() => expect(onConnectorsChanged).toHaveBeenCalledTimes(1));

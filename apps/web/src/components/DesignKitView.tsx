@@ -26,8 +26,8 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, Textarea } from '@open-design/components';
-import type { DesignSystemEditClickProps } from '@open-design/contracts/analytics';
+import { Button, Textarea } from '@storyforge-app/components';
+import type { DesignSystemEditClickProps } from '@storyforge-app/contracts/analytics';
 import { useT } from '../i18n';
 import { openExternalUrl, projectRawUrl } from '../providers/registry';
 import { buildSrcdoc } from '../runtime/srcdoc';

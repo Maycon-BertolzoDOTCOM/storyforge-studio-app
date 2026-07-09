@@ -12,7 +12,7 @@ test('live artifact MCP discovery is limited to mature ACP agents', () => {
     assert.equal(server.length, 1);
     const s = server[0];
     if (!s) throw new Error('unreachable: server length verified as 1 above');
-    assert.equal(s.name, 'open-design-live-artifacts');
+    assert.equal(s.name, 'storyforge-live-artifacts');
     assert.equal(s.command, 'od');
     assert.deepEqual(s.args, ['mcp', 'live-artifacts']);
     const envIsMap =
@@ -40,7 +40,7 @@ test('live artifact MCP discovery can use daemon-resolved CLI command', () => {
     } as unknown as Parameters<typeof buildLiveArtifactsMcpServersForAgent>[1]),
     [
       {
-        name: 'open-design-live-artifacts',
+        name: 'storyforge-live-artifacts',
         command: process.execPath,
         args: ['/workspace/apps/daemon/dist/cli.js', 'mcp', 'live-artifacts'],
         env: [{ name: 'ELECTRON_RUN_AS_NODE', value: '1' }],
@@ -67,7 +67,7 @@ test('MCP-capable agents can discover equivalent live artifact and connector too
   }
 
   const initialized = await handleLiveArtifactsMcpRequest({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }) as { result: { serverInfo: { name: string }; capabilities: unknown } };
-  assert.equal(initialized.result.serverInfo.name, 'open-design-live-artifacts');
+  assert.equal(initialized.result.serverInfo.name, 'storyforge-live-artifacts');
   assert.deepEqual(initialized.result.capabilities, { tools: {} });
 
   const listed = await handleLiveArtifactsMcpRequest({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) as { result: { tools: Array<{ name: string }> } };

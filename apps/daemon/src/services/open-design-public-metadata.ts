@@ -66,8 +66,8 @@ export interface OpenDesignPublicMetadataServiceOptions {
   now?: () => number;
 }
 
-const OPEN_DESIGN_GITHUB_REPO_API = 'https://api.github.com/repos/nexu-io/open-design';
-const OPEN_DESIGN_GITHUB_RELEASE_LATEST_API = 'https://api.github.com/repos/nexu-io/open-design/releases/latest';
+const OPEN_DESIGN_GITHUB_REPO_API = 'https://api.github.com/repos/nexu-io/storyforge';
+const OPEN_DESIGN_GITHUB_RELEASE_LATEST_API = 'https://api.github.com/repos/nexu-io/storyforge/releases/latest';
 const OPEN_DESIGN_GITHUB_CACHE_TTL_MS = 60 * 60 * 1000;
 const OPEN_DESIGN_GITHUB_TIMEOUT_MS = 4_000;
 const OPEN_DESIGN_DISCORD_INVITE_CODE = 'mHAjSMV6gz';
@@ -122,7 +122,7 @@ export function createOpenDesignPublicMetadataService({
         const response = await fetchImpl(OPEN_DESIGN_GITHUB_REPO_API, {
           headers: {
             accept: 'application/vnd.github+json',
-            'user-agent': 'open-design-daemon',
+            'user-agent': 'storyforge-daemon',
           },
           signal: ctrl.signal,
         });
@@ -166,7 +166,7 @@ export function createOpenDesignPublicMetadataService({
         const response = await fetchImpl(OPEN_DESIGN_GITHUB_RELEASE_LATEST_API, {
           headers: {
             accept: 'application/vnd.github+json',
-            'user-agent': 'open-design-daemon',
+            'user-agent': 'storyforge-daemon',
           },
           signal: ctrl.signal,
         });
@@ -211,7 +211,7 @@ export function createOpenDesignPublicMetadataService({
         const response = await fetchImpl(OPEN_DESIGN_DISCORD_INVITE_API, {
           headers: {
             accept: 'application/json',
-            'user-agent': 'open-design-daemon',
+            'user-agent': 'storyforge-daemon',
           },
           signal: ctrl.signal,
         });

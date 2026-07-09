@@ -134,7 +134,7 @@ function createConfig(root: string, cacheRoot: string): ToolPackConfig {
 
 describe("ensureWorkspaceBuildArtifacts", () => {
   it("builds once and skips when the key and outputs are still valid", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-workspace-build-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-workspace-build-"));
     const cache = new ToolPackCache(join(root, ".cache"));
     const config = createConfig(root, cache.root);
     let builds = 0;
@@ -163,7 +163,7 @@ describe("ensureWorkspaceBuildArtifacts", () => {
   });
 
   it("writes a Windows version-family alias after a successful build", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-workspace-build-alias-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-workspace-build-alias-"));
     const cache = new ToolPackCache(join(root, ".cache"));
     const config: ToolPackConfig = { ...createConfig(root, cache.root), appVersion: "0.9.1-beta.1" };
 
@@ -183,7 +183,7 @@ describe("ensureWorkspaceBuildArtifacts", () => {
   });
 
   it("hoists standalone web peer deps with Windows-compatible directory links", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-workspace-build-peer-deps-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-workspace-build-peer-deps-"));
     const cache = new ToolPackCache(join(root, ".cache"));
     const config = createConfig(root, cache.root);
 
@@ -206,7 +206,7 @@ describe("ensureWorkspaceBuildArtifacts", () => {
   });
 
   it("does not write a version-family alias for mac workspace builds", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-workspace-build-mac-alias-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-workspace-build-mac-alias-"));
     const cache = new ToolPackCache(join(root, ".cache"));
     const config: ToolPackConfig = { ...createConfig(root, cache.root), appVersion: "0.9.1-beta.1", platform: "mac" };
 
@@ -223,7 +223,7 @@ describe("ensureWorkspaceBuildArtifacts", () => {
   });
 
   it("materializes cached outputs when an expected workspace output is missing", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-workspace-build-stale-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-workspace-build-stale-"));
     const cache = new ToolPackCache(join(root, ".cache"));
     const config = createConfig(root, cache.root);
     let builds = 0;
@@ -249,7 +249,7 @@ describe("ensureWorkspaceBuildArtifacts", () => {
   });
 
   it("materializes cached internal package outputs for pack tarballs", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-workspace-build-package-cache-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-workspace-build-package-cache-"));
     const cache = new ToolPackCache(join(root, ".cache"));
     const config = createConfig(root, cache.root);
     let builds = 0;
@@ -275,7 +275,7 @@ describe("ensureWorkspaceBuildArtifacts", () => {
   });
 
   it("keeps platform-specific workspace build cache nodes separate", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-workspace-build-platform-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-workspace-build-platform-"));
     const cache = new ToolPackCache(join(root, ".cache"));
     const winConfig = createConfig(root, cache.root);
     const macConfig: ToolPackConfig = {

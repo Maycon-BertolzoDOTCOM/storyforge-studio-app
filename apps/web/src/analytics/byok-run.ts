@@ -21,8 +21,8 @@ import {
   type TrackingProjectKind,
   type TrackingRunResult,
   type TrackingSessionMode,
-} from '@open-design/contracts/analytics';
-import type { ChatSessionMode } from '@open-design/contracts';
+} from '@storyforge-app/contracts/analytics';
+import type { ChatSessionMode } from '@storyforge-app/contracts';
 import type { ApiProtocol } from '../types';
 
 // Map the BYOK transport protocol to the tracking provider id. `aihubmix` is

@@ -76,7 +76,7 @@ export async function resolveProjectChildDirectory(projectRoot: string, relative
 }
 
 export async function folderLooksLikePlugin(folder: string) {
-  const names = ['open-design.json', 'SKILL.md', path.join('.claude-plugin', 'plugin.json')];
+  const names = ['storyforge.json', 'SKILL.md', path.join('.claude-plugin', 'plugin.json')];
   for (const name of names) {
     if (fs.existsSync(path.join(folder, name))) return true;
   }

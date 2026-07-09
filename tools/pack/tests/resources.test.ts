@@ -31,7 +31,7 @@ async function writeFakeOpenCodeCompanion(
 
 describe("domToPptxBundleResource", () => {
   it("derives the vendored bundle path from the workspace root, not the caller cwd", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-resource-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-tools-pack-resource-"));
     const workspaceRoot = join(root, "workspace");
     const callerCwd = join(root, "caller");
     const previousCwd = process.cwd();
@@ -54,7 +54,7 @@ describe("domToPptxBundleResource", () => {
 
 describe("copyBundledResourceTrees", () => {
   it("includes daemon resource trees", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-tools-pack-"));
     const workspaceRoot = join(root, "workspace");
     const resourceRoot = join(root, "resources");
 
@@ -83,7 +83,7 @@ describe("copyBundledResourceTrees", () => {
         "plugins",
         "registry",
         "community",
-        "open-design-marketplace.json",
+        "storyforge-marketplace.json",
       );
       await mkdir(join(workspaceRoot, "skills", "sample"), { recursive: true });
       // The skills/design-templates split (see specs/current/
@@ -123,7 +123,7 @@ describe("copyBundledResourceTrees", () => {
       await writeFile(designTemplatePath, "# Orbit General\n", "utf8");
       await writeFile(communityPetPath, "{\"name\":\"sample\"}\n", "utf8");
       await writeFile(
-        join(workspaceRoot, "plugins", "_official", "sample", "open-design.json"),
+        join(workspaceRoot, "plugins", "_official", "sample", "storyforge.json"),
         "{\"id\":\"sample\"}\n",
         "utf8",
       );
@@ -160,7 +160,7 @@ describe("copyBundledResourceTrees", () => {
       ).resolves.toBe("{\"name\":\"sample\"}\n");
       await expect(
         readFile(
-          join(resourceRoot, "plugins", "_official", "sample", "open-design.json"),
+          join(resourceRoot, "plugins", "_official", "sample", "storyforge.json"),
           "utf8",
         ),
       ).resolves.toBe("{\"id\":\"sample\"}\n");
@@ -171,7 +171,7 @@ describe("copyBundledResourceTrees", () => {
             "plugins",
             "registry",
             "community",
-            "open-design-marketplace.json",
+            "storyforge-marketplace.json",
           ),
           "utf8",
         ),
@@ -184,8 +184,8 @@ describe("copyBundledResourceTrees", () => {
 
 describe("copyOptionalVelaCliBinary", () => {
   it("copies the installed Vela CLI through the default npm resolver", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-vela-installed-"));
-    const resourceRoot = join(root, "resources", "open-design");
+    const root = await mkdtemp(join(tmpdir(), "storyforge-tools-pack-vela-installed-"));
+    const resourceRoot = join(root, "resources", "storyforge");
     const platform = process.platform === "win32" ? "win" : process.platform === "darwin" ? "mac" : "linux";
 
     try {
@@ -206,9 +206,9 @@ describe("copyOptionalVelaCliBinary", () => {
   });
 
   it("copies a configured Vela CLI binary into the POSIX resource bin", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-vela-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-tools-pack-vela-"));
     const source = join(root, "source", "vela");
-    const resourceRoot = join(root, "resources", "open-design");
+    const resourceRoot = join(root, "resources", "storyforge");
 
     try {
       await mkdir(join(root, "source"), { recursive: true });
@@ -241,9 +241,9 @@ describe("copyOptionalVelaCliBinary", () => {
   });
 
   it("fails strict mode when the OpenCode companion tree is missing", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-vela-strict-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-tools-pack-vela-strict-"));
     const source = join(root, "source", "vela");
-    const resourceRoot = join(root, "resources", "open-design");
+    const resourceRoot = join(root, "resources", "storyforge");
 
     try {
       await mkdir(join(root, "source"), { recursive: true });
@@ -263,9 +263,9 @@ describe("copyOptionalVelaCliBinary", () => {
   });
 
   it("copies the Vela CLI binary without a companion tree in non-strict mode", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-vela-nonstrict-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-tools-pack-vela-nonstrict-"));
     const source = join(root, "source", "vela");
-    const resourceRoot = join(root, "resources", "open-design");
+    const resourceRoot = join(root, "resources", "storyforge");
 
     try {
       await mkdir(join(root, "source"), { recursive: true });
@@ -289,9 +289,9 @@ describe("copyOptionalVelaCliBinary", () => {
   });
 
   it("copies a configured Vela CLI binary into the Windows resource bin", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-vela-win-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-tools-pack-vela-win-"));
     const source = join(root, "source", "vela.exe");
-    const resourceRoot = join(root, "resources", "open-design");
+    const resourceRoot = join(root, "resources", "storyforge");
 
     try {
       await mkdir(join(root, "source"), { recursive: true });
@@ -315,9 +315,9 @@ describe("copyOptionalVelaCliBinary", () => {
   });
 
   it("copies a Vela CLI binary resolved from the npm package", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-vela-npm-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-tools-pack-vela-npm-"));
     const source = join(root, "source", "vela");
-    const resourceRoot = join(root, "resources", "open-design");
+    const resourceRoot = join(root, "resources", "storyforge");
 
     try {
       await mkdir(join(root, "source"), { recursive: true });
@@ -348,8 +348,8 @@ describe("copyOptionalVelaCliBinary", () => {
   });
 
   it("skips copying when the npm resolver reports an unsupported non-strict platform", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-vela-skip-"));
-    const resourceRoot = join(root, "resources", "open-design");
+    const root = await mkdtemp(join(tmpdir(), "storyforge-tools-pack-vela-skip-"));
+    const resourceRoot = join(root, "resources", "storyforge");
 
     try {
       const copied = await copyOptionalVelaCliBinary({

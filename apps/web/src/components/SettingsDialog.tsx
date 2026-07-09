@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, Dispatch, SetStateAction } from 'react';
-import { Button, VisuallyHidden } from '@open-design/components';
-import type { AmrWalletSnapshot } from '@open-design/contracts';
-import { validateBaseUrl } from '@open-design/contracts/api/connectionTest';
+import { Button, VisuallyHidden } from '@storyforge-app/components';
+import type { AmrWalletSnapshot } from '@storyforge-app/contracts';
+import { validateBaseUrl } from '@storyforge-app/contracts/api/connectionTest';
 import {
   agentIdToTracking,
   byokProtocolToTracking,
   executionModeToTracking,
   settingsSectionToTracking,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 import { useAnalytics } from '../analytics/provider';
 import {
   amrHandoffDeviceId,
@@ -228,7 +228,7 @@ interface ByokProviderPreset {
 // sign-in coachmark when the user has not authorized AMR yet).
 export type SettingsHighlight = 'amr' | null;
 
-const OPEN_DESIGN_RELEASES_URL = 'https://github.com/nexu-io/open-design/releases';
+const OPEN_DESIGN_RELEASES_URL = 'https://github.com/nexu-io/storyforge/releases';
 
 type AboutUpdatePrimaryAction = 'check' | 'download' | 'install' | 'quit';
 type AboutUpdateTone = 'neutral' | 'success' | 'warning' | 'error';
@@ -784,7 +784,7 @@ function cleanAgentVersionLabel(
 }
 
 function displayAgentName(agent: Pick<AgentInfo, 'id' | 'name'>): string {
-  return agent.id === 'amr' ? 'Open Design' : agent.name;
+  return agent.id === 'amr' ? 'StoryForge' : agent.name;
 }
 
 const AGENT_CLI_ENV_FIELDS = [
@@ -7370,7 +7370,7 @@ function MediaProvidersSection({
 // Important: every snippet uses absolute paths to the daemon's current
 // Node-compatible runtime and built cli.js, fetched at runtime. macOS
 // and Linux ship a system /usr/bin/od (octal-dump) that shadows any
-// `od` we might add to PATH, and most Open Design users run from
+// `od` we might add to PATH, and most StoryForge users run from
 // source where `od` is not installed globally. The installer panel
 // must NOT reference bare `od`.
 type McpClientId =
@@ -7464,7 +7464,7 @@ function buildCodexEnvToml(info: McpInstallInfo): string {
   if (entries.length === 0) return '';
   return `
 
-[mcp_servers.open-design.env]
+[mcp_servers.storyforge.env]
 ${entries.map(([key, value]) => `${key} = ${JSON.stringify(value)}`).join('\n')}`;
 }
 
@@ -7476,13 +7476,13 @@ function buildSharedMcpJson(info: McpInstallInfo): string {
     .join('\n');
   return `{
   "mcpServers": {
-    "open-design": ${innerJson}
+    "storyforge": ${innerJson}
   }
 }`;
 }
 
 // One-click install toggle for Codex: queries the daemon for whether
-// `codex mcp get open-design` succeeds, and POSTs/DELETEs the install
+// `codex mcp get storyforge` succeeds, and POSTs/DELETEs the install
 // endpoint to call `codex mcp add/remove` on the user's behalf. The
 // copy-snippet path still works for users who prefer to paste manually
 // or whose Codex CLI is not on PATH (button shows a disabled hint in
@@ -7604,7 +7604,7 @@ function IntegrationsSection() {
       buildInstruction: () => t('settings.mcpInstructionCli'),
       buildSnippet: (info) => {
         const inner = JSON.stringify(buildMcpStdioServerConfig(info));
-        return `claude mcp add-json --scope user open-design '${inner}'`;
+        return `claude mcp add-json --scope user storyforge '${inner}'`;
       },
       buildSnippetLang: () => 'bash',
     },
@@ -7620,7 +7620,7 @@ function IntegrationsSection() {
         );
         return t('settings.mcpInstructionCodex', { path });
       },
-      buildSnippet: (info) => `[mcp_servers.open-design]\ncommand = ${JSON.stringify(info.command)}\nargs = ${JSON.stringify(info.args)}${buildCodexEnvToml(info)}`,
+      buildSnippet: (info) => `[mcp_servers.storyforge]\ncommand = ${JSON.stringify(info.command)}\nargs = ${JSON.stringify(info.args)}${buildCodexEnvToml(info)}`,
       buildSnippetLang: () => 'toml',
     },
     {
@@ -7636,7 +7636,7 @@ function IntegrationsSection() {
       buildDeeplink: (info) => {
         const inner = buildMcpStdioServerConfig(info);
         const encoded = utf8Btoa(JSON.stringify(inner));
-        return `cursor://anysphere.cursor-deeplink/mcp/install?name=open-design&config=${encoded}`;
+        return `cursor://anysphere.cursor-deeplink/mcp/install?name=storyforge&config=${encoded}`;
       },
       deeplinkLabel: () => t('settings.mcpDeeplinkInstallCursor'),
     },
@@ -7648,7 +7648,7 @@ function IntegrationsSection() {
         t('settings.mcpInstructionCopilot', {
           shortcut: commandPaletteShortcut(info.platform),
         }),
-      buildSnippet: (info) => `{\n  "servers": {\n    "open-design": {\n      "type": "stdio",\n      "command": ${JSON.stringify(info.command)},\n      "args": ${JSON.stringify(info.args)}${info.env && Object.keys(info.env).length > 0 ? `,\n      "env": ${JSON.stringify(info.env)}` : ''}\n    }\n  }\n}`,
+      buildSnippet: (info) => `{\n  "servers": {\n    "storyforge": {\n      "type": "stdio",\n      "command": ${JSON.stringify(info.command)},\n      "args": ${JSON.stringify(info.args)}${info.env && Object.keys(info.env).length > 0 ? `,\n      "env": ${JSON.stringify(info.env)}` : ''}\n    }\n  }\n}`,
       buildSnippetLang: () => 'json',
     },
     {
@@ -7667,7 +7667,7 @@ function IntegrationsSection() {
         t('settings.mcpInstructionZed', {
           shortcut: settingsShortcut(info.platform),
         }),
-      buildSnippet: (info) => `{\n  "context_servers": {\n    "open-design": {\n      "source": "custom",\n      "command": ${JSON.stringify(info.command)},\n      "args": ${JSON.stringify(info.args)}${info.env && Object.keys(info.env).length > 0 ? `,\n      "env": ${JSON.stringify(info.env)}` : ''}\n    }\n  }\n}`,
+      buildSnippet: (info) => `{\n  "context_servers": {\n    "storyforge": {\n      "source": "custom",\n      "command": ${JSON.stringify(info.command)},\n      "args": ${JSON.stringify(info.args)}${info.env && Object.keys(info.env).length > 0 ? `,\n      "env": ${JSON.stringify(info.env)}` : ''}\n    }\n  }\n}`,
       buildSnippetLang: () => 'json',
     },
     {
@@ -8123,7 +8123,7 @@ function AppearanceSection({
  * The toggle has two halves on opposite sides of the HTTP boundary:
  *
  *   * Browser-side: `useCritiqueTheaterEnabled` reads / writes the
- *     `open-design:config` localStorage blob; this is what gates
+ *     `storyforge:config` localStorage blob; this is what gates
  *     whether `<CritiqueTheaterMount>` actually renders.
  *   * Daemon-side: the rollout resolver in `server.ts` reads
  *     `project.metadata.critiqueTheaterEnabled`, so the daemon only

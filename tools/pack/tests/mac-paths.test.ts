@@ -31,14 +31,14 @@ describe("macAppBundleName", () => {
 
 describe("macAppExecutablePath", () => {
   it("joins the Contents/MacOS executable path under the bundle", () => {
-    const appPath = "/tmp/out/mac/Open Design.app";
+    const appPath = "/tmp/out/mac/StoryForge.app";
     expect(macAppExecutablePath(appPath)).toBe(join(appPath, "Contents", "MacOS", PRODUCT_NAME));
   });
 
   it("honors a custom executable name", () => {
-    const appPath = "/tmp/out/mac/Open Design.app";
-    expect(macAppExecutablePath(appPath, "open-design-beta")).toBe(
-      join(appPath, "Contents", "MacOS", "open-design-beta"),
+    const appPath = "/tmp/out/mac/StoryForge.app";
+    expect(macAppExecutablePath(appPath, "storyforge-beta")).toBe(
+      join(appPath, "Contents", "MacOS", "storyforge-beta"),
     );
   });
 });

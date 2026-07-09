@@ -12,8 +12,8 @@ import {
 
 const SPEC: McpLaunchSpec = {
   command: '/usr/local/bin/node',
-  args: ['/opt/open-design/cli.js', 'mcp', '--daemon-url', 'http://127.0.0.1:7456'],
-  env: { OD_DATA_DIR: '/home/u/.open-design' },
+  args: ['/opt/storyforge/cli.js', 'mcp', '--daemon-url', 'http://127.0.0.1:7456'],
+  env: { OD_DATA_DIR: '/home/u/.storyforge' },
 };
 
 const SPEC_NO_ENV: McpLaunchSpec = { ...SPEC, env: {} };
@@ -21,7 +21,7 @@ const SPEC_NO_ENV: McpLaunchSpec = { ...SPEC, env: {} };
 const ctx = (platform: NodeJS.Platform = 'linux') => ({
   home: '/home/u',
   platform,
-  serverName: 'open-design',
+  serverName: 'storyforge',
 });
 
 describe('agent slug guard', () => {
@@ -40,19 +40,19 @@ describe('CLI-driven agents', () => {
     expect(plan.bin).toBe('claude');
     expect(plan.addArgv).toEqual([
       'mcp', 'add', '--scope', 'user',
-      'open-design',
-      '-e', 'OD_DATA_DIR=/home/u/.open-design',
+      'storyforge',
+      '-e', 'OD_DATA_DIR=/home/u/.storyforge',
       '--',
       SPEC.command, ...SPEC.args,
     ]);
-    expect(plan.removeArgv).toEqual(['mcp', 'remove', '--scope', 'user', 'open-design']);
+    expect(plan.removeArgv).toEqual(['mcp', 'remove', '--scope', 'user', 'storyforge']);
   });
 
   it('codex uses --env and a -- separator', () => {
     const plan = planAgentInstall('codex', SPEC, ctx());
     if (plan.kind !== 'cli') throw new Error('expected cli');
     expect(plan.addArgv).toContain('--env');
-    expect(plan.addArgv).toContain('OD_DATA_DIR=/home/u/.open-design');
+    expect(plan.addArgv).toContain('OD_DATA_DIR=/home/u/.storyforge');
     expect(plan.addArgv.slice(-SPEC.args.length - 2)).toEqual(['--', SPEC.command, ...SPEC.args]);
   });
 
@@ -133,7 +133,7 @@ describe('applyJsonInstall', () => {
   it('creates the file structure from empty input', () => {
     const out = applyJsonInstall(null, plan);
     const parsed = JSON.parse(out);
-    expect(parsed.mcpServers['open-design'].command).toBe(SPEC.command);
+    expect(parsed.mcpServers['storyforge'].command).toBe(SPEC.command);
     expect(out.endsWith('\n')).toBe(true);
   });
 
@@ -145,7 +145,7 @@ describe('applyJsonInstall', () => {
     const out = JSON.parse(applyJsonInstall(existing, plan));
     expect(out.editor).toEqual({ theme: 'dark' });
     expect(out.mcpServers['other-server']).toEqual({ command: 'foo' });
-    expect(out.mcpServers['open-design'].type).toBe('stdio');
+    expect(out.mcpServers['storyforge'].type).toBe('stdio');
   });
 
   it('is idempotent — re-applying yields the same content', () => {
@@ -162,13 +162,13 @@ describe('applyJsonInstall', () => {
 describe('removeJsonInstall', () => {
   const plan = planAgentInstall('cursor', SPEC, ctx()) as JsonInstallPlan;
 
-  it('removes only the open-design entry', () => {
+  it('removes only the storyforge entry', () => {
     const existing = applyJsonInstall(
       JSON.stringify({ mcpServers: { other: { command: 'x' } } }),
       plan,
     );
     const out = JSON.parse(removeJsonInstall(existing, plan)!);
-    expect(out.mcpServers).not.toHaveProperty('open-design');
+    expect(out.mcpServers).not.toHaveProperty('storyforge');
     expect(out.mcpServers.other).toEqual({ command: 'x' });
   });
 

@@ -14,7 +14,7 @@ import type {
   BrandSummary,
   BrandVoice,
   DesignSystemPackageInfo,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import { designSystemStaticUrl, fetchProjectFileText, projectRawUrl } from '../providers/registry';
 import { parseDesignMd, type ParsedDesignMd } from './design-md-parse';
 

@@ -19,14 +19,14 @@ function stub(items: unknown[]) {
 const ISSUE = {
   number: 12,
   title: '[Tutorial]: My OD walkthrough',
-  html_url: 'https://github.com/nexu-io/open-design/issues/12',
+  html_url: 'https://github.com/nexu-io/storyforge/issues/12',
   user: { login: 'alice' },
   body: 'YouTube video URL\n\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ\n\nCategory\nTutorial',
 };
 const PR = {
   number: 34,
   title: 'content(landing): add my tutorial',
-  html_url: 'https://github.com/nexu-io/open-design/pull/34',
+  html_url: 'https://github.com/nexu-io/storyforge/pull/34',
   user: { login: 'bob' },
   pull_request: { url: 'x' },
 };
@@ -38,7 +38,7 @@ describe('github-submissions', () => {
 
   it('fetchSubmissionIssues keeps issues only and extracts the video URL', async () => {
     stub([ISSUE, PR]);
-    const issues = await fetchSubmissionIssues('tok', 'nexu-io/open-design');
+    const issues = await fetchSubmissionIssues('tok', 'nexu-io/storyforge');
     assert.equal(issues.length, 1);
     assert.equal(issues[0].number, 12);
     assert.equal(issues[0].author, 'alice');
@@ -47,7 +47,7 @@ describe('github-submissions', () => {
 
   it('fetchSubmissionIssues leaves videoUrl undefined when none in body', async () => {
     stub([{ ...ISSUE, body: 'no link here' }]);
-    const issues = await fetchSubmissionIssues('tok', 'nexu-io/open-design');
+    const issues = await fetchSubmissionIssues('tok', 'nexu-io/storyforge');
     assert.equal(issues[0].videoUrl, undefined);
   });
 
@@ -56,7 +56,7 @@ describe('github-submissions', () => {
       { ...ISSUE, number: 1, body: 'link: https://www.youtube.com/shorts/dQw4w9WgXcQ' },
       { ...ISSUE, number: 2, body: 'link: https://m.youtube.com/watch?v=abcdef12345' },
     ]);
-    const issues = await fetchSubmissionIssues('tok', 'nexu-io/open-design');
+    const issues = await fetchSubmissionIssues('tok', 'nexu-io/storyforge');
     assert.equal(issues.find((i) => i.number === 1)?.videoUrl, 'https://youtu.be/dQw4w9WgXcQ');
     assert.equal(issues.find((i) => i.number === 2)?.videoUrl, 'https://youtu.be/abcdef12345');
   });
@@ -68,7 +68,7 @@ describe('github-submissions', () => {
       'link: https://evil-youtube.com/watch?v=dQw4w9WgXcQ',
     ]) {
       stub([{ ...ISSUE, body }]);
-      const issues = await fetchSubmissionIssues('tok', 'nexu-io/open-design');
+      const issues = await fetchSubmissionIssues('tok', 'nexu-io/storyforge');
       assert.equal(issues[0].videoUrl, undefined, body);
     }
   });
@@ -76,7 +76,7 @@ describe('github-submissions', () => {
   it('propagates (does not swallow) a failed search so the caller can abort', async () => {
     globalThis.fetch = (async () =>
       new Response('rate limited', { status: 403 })) as typeof fetch;
-    await assert.rejects(() => fetchSubmissionIssues('tok', 'nexu-io/open-design'), /HTTP 403/);
+    await assert.rejects(() => fetchSubmissionIssues('tok', 'nexu-io/storyforge'), /HTTP 403/);
   });
 
   it('paginates: full first page then a partial page (no silent truncation)', async () => {
@@ -90,13 +90,13 @@ describe('github-submissions', () => {
         headers: { 'content-type': 'application/json' },
       });
     }) as typeof fetch;
-    const issues = await fetchSubmissionIssues('tok', 'nexu-io/open-design');
+    const issues = await fetchSubmissionIssues('tok', 'nexu-io/storyforge');
     assert.equal(issues.length, 101);
   });
 
   it('fetchContributionPRs keeps PRs only', async () => {
     stub([ISSUE, PR]);
-    const prs = await fetchContributionPRs('tok', 'nexu-io/open-design');
+    const prs = await fetchContributionPRs('tok', 'nexu-io/storyforge');
     assert.equal(prs.length, 1);
     assert.equal(prs[0].number, 34);
     assert.equal(prs[0].author, 'bob');

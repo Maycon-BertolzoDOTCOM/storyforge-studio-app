@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaterialView Pro — Marble Floor Example</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; }
+    .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.5rem; margin-bottom: 8px; }
+    .meta { color: #888; font-size: 0.85rem; margin-bottom: 24px; }
+    .result { background: #1a1a1a; border-radius: 16px; overflow: hidden; border: 1px solid #333; margin-bottom: 24px; }
+    .result img { width: 100%; }
+    .scores { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .score { background: #1a1a1a; border-radius: 12px; padding: 16px; border: 1px solid #333; }
+    .score .label { color: #888; font-size: 0.8rem; margin-bottom: 4px; }
+    .score .value { font-size: 1.5rem; font-weight: 600; color: #c9a227; }
+    .score .bar { height: 4px; background: #333; border-radius: 2px; margin-top: 8px; }
+    .score .bar-fill { height: 100%; background: linear-gradient(90deg, #c9a227, #8b6914); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>White Marble Floor</h1>
+    <p class="meta">Material: Marble | Color: White | Surface: Floor | Provider: wavespeed-ai</p>
+
+    <div class="result">
+      <div style="width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#f8f8f8,#e8e8e8,#d8d8d8);display:flex;align-items:center;justify-content:center;color:#999;">Simulated Result</div>
+    </div>
+
+    <div class="scores">
+      <div class="score">
+        <div class="label">Shadows</div>
+        <div class="value">0.92</div>
+        <div class="bar"><div class="bar-fill" style="width:92%"></div></div>
+      </div>
+      <div class="score">
+        <div class="label">Geometry</div>
+        <div class="value">0.88</div>
+        <div class="bar"><div class="bar-fill" style="width:88%"></div></div>
+      </div>
+      <div class="score">
+        <div class="label">Objects</div>
+        <div class="value">0.85</div>
+        <div class="bar"><div class="bar-fill" style="width:85%"></div></div>
+      </div>
+      <div class="score">
+        <div class="label">Perspective</div>
+        <div class="value">0.91</div>
+        <div class="bar"><div class="bar-fill" style="width:91%"></div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

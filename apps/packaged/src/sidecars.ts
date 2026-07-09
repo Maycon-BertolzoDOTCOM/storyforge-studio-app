@@ -14,13 +14,13 @@ import {
   type DaemonStatusSnapshot,
   type SidecarStamp,
   type WebStatusSnapshot,
-} from "@open-design/sidecar-proto";
+} from "@storyforge-app/sidecar-proto";
 import {
   createSidecarLaunchEnv,
   requestJsonIpc,
   resolveAppIpcPath,
   type SidecarRuntimeContext,
-} from "@open-design/sidecar";
+} from "@storyforge-app/sidecar";
 import {
   createProcessStampArgs,
   isProcessAlive,
@@ -29,7 +29,7 @@ import {
   stopProcesses,
   waitForProcessExit,
   wellKnownUserToolchainBins,
-} from "@open-design/platform";
+} from "@storyforge-app/platform";
 
 import type { PackagedWebOutputMode } from "./config.js";
 import type { PackagedNamespacePaths } from "./paths.js";
@@ -160,7 +160,7 @@ const DAEMON_MIGRATION_STATUS_TIMEOUT_MS = 30 * 60 * 1000;
  * not tear the daemon down before the migration can complete.
  *
  * @see apps/daemon/src/legacy-data-migrator.ts
- * @see https://github.com/nexu-io/open-design/issues/710
+ * @see https://github.com/nexu-io/storyforge/issues/710
  */
 export function resolveDaemonStatusTimeoutMs(
   env: NodeJS.ProcessEnv = process.env,
@@ -264,14 +264,14 @@ async function retireExistingSidecarEndpoint(ipcPath: string, logPath: string): 
   const pid = typeof status.pid === "number" ? status.pid : null;
   await appendSidecarLifecycleLog(
     logPath,
-    `[open-design packaged] existing sidecar endpoint detected ipc=${ipcPath} pid=${pid ?? "unknown"}; requesting shutdown before relaunch`,
+    `[storyforge packaged] existing sidecar endpoint detected ipc=${ipcPath} pid=${pid ?? "unknown"}; requesting shutdown before relaunch`,
   );
   try {
     await requestJsonIpc(ipcPath, { type: SIDECAR_MESSAGES.SHUTDOWN }, { timeoutMs: 800 });
   } catch (error) {
     await appendSidecarLifecycleLog(
       logPath,
-      `[open-design packaged] existing sidecar shutdown request failed ipc=${ipcPath} error=${error instanceof Error ? error.message : String(error)}`,
+      `[storyforge packaged] existing sidecar shutdown request failed ipc=${ipcPath} error=${error instanceof Error ? error.message : String(error)}`,
     );
   }
 
@@ -279,7 +279,7 @@ async function retireExistingSidecarEndpoint(ipcPath: string, logPath: string): 
     const exited = await waitForProcessExit(pid, 2500);
     await appendSidecarLifecycleLog(
       logPath,
-      `[open-design packaged] existing sidecar endpoint ${exited ? "exited" : "still-running"} ipc=${ipcPath} pid=${pid}`,
+      `[storyforge packaged] existing sidecar endpoint ${exited ? "exited" : "still-running"} ipc=${ipcPath} pid=${pid}`,
     );
   }
 }
@@ -293,7 +293,7 @@ function extractPort(url: string): string {
 // reach even when the inherited PATH from launchd / a desktop launcher is
 // stripped down to nothing. The user-toolchain portion of the search list
 // (Homebrew, npm globals, nvm/fnm/mise, cargo, ...) lives in
-// @open-design/platform's wellKnownUserToolchainBins so the daemon
+// @storyforge-app/platform's wellKnownUserToolchainBins so the daemon
 // resolver and this PATH builder cannot drift again. See issue #442.
 const PACKAGED_POSIX_SYSTEM_BINS = ["/usr/bin", "/bin", "/usr/sbin", "/sbin"] as const;
 
@@ -475,7 +475,7 @@ async function spawnSidecarChild(options: {
 
 async function closeManagedChild(child: ManagedSidecarChild): Promise<void> {
   const appendLifecycleLog = async (message: string): Promise<void> => appendSidecarLifecycleLog(child.logPath, message);
-  await appendLifecycleLog(`[open-design packaged] shutdown requested app=${child.app} pid=${child.child.pid ?? "unknown"}`);
+  await appendLifecycleLog(`[storyforge packaged] shutdown requested app=${child.app} pid=${child.child.pid ?? "unknown"}`);
   try {
     await requestJsonIpc(child.ipcPath, { type: SIDECAR_MESSAGES.SHUTDOWN }, { timeoutMs: 1200 });
   } catch {
@@ -483,11 +483,11 @@ async function closeManagedChild(child: ManagedSidecarChild): Promise<void> {
   }
 
   if (!(await waitForProcessExit(child.child.pid, 5000))) {
-    await appendLifecycleLog(`[open-design packaged] shutdown timeout app=${child.app} pid=${child.child.pid ?? "unknown"}; forcing stop`);
+    await appendLifecycleLog(`[storyforge packaged] shutdown timeout app=${child.app} pid=${child.child.pid ?? "unknown"}; forcing stop`);
     await stopProcesses([child.child.pid]);
   }
 
-  await appendLifecycleLog(`[open-design packaged] exited app=${child.app} pid=${child.child.pid ?? "unknown"} code=${child.child.exitCode ?? "unknown"} signal=${child.child.signalCode ?? "none"}`);
+  await appendLifecycleLog(`[storyforge packaged] exited app=${child.app} pid=${child.child.pid ?? "unknown"} code=${child.child.exitCode ?? "unknown"} signal=${child.child.signalCode ?? "none"}`);
   await child.logHandle.close().catch(() => undefined);
 }
 
@@ -544,7 +544,7 @@ export async function startPackagedSidecars(
     options.onPhase?.("daemon-spawning");
     const daemon = await spawnSidecarChild({
       app: APP_KEYS.DAEMON,
-      entryPath: options.daemonSidecarEntry ?? resolveSidecarEntry("@open-design/daemon", "sidecar"),
+      entryPath: options.daemonSidecarEntry ?? resolveSidecarEntry("@storyforge-app/daemon", "sidecar"),
       env: buildPackagedDaemonSpawnEnv(paths, {
         appVersion: options.appVersion,
         amrProfile: options.amrProfile,
@@ -578,7 +578,7 @@ export async function startPackagedSidecars(
     options.onPhase?.("web-spawning");
     const web = await spawnSidecarChild({
       app: APP_KEYS.WEB,
-      entryPath: options.webSidecarEntry ?? resolveSidecarEntry("@open-design/web", "sidecar"),
+      entryPath: options.webSidecarEntry ?? resolveSidecarEntry("@storyforge-app/web", "sidecar"),
       env: {
         [SIDECAR_ENV.DAEMON_PORT]: extractPort(daemonStatus.url),
         [SIDECAR_ENV.WEB_PORT]: "0",

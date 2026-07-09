@@ -37,7 +37,7 @@ function buildTrackerScript(pageName: string): string {
       try { if (window.posthog) window.posthog.capture(name, props || {}); } catch (e) {}
     };
 
-    var REPO = 'github.com/nexu-io/open-design';
+    var REPO = 'github.com/nexu-io/storyforge';
     var PAGE = ${JSON.stringify(pageName)};
 
     var localeNow = function () {

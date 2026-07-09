@@ -63,7 +63,7 @@ export interface PromptStackTelemetry {
 }
 
 export interface StructuredPromptStackInput {
-  type: 'open-design.prompt-stack';
+  type: 'storyforge.prompt-stack';
   redactionVersion: typeof PROMPT_STACK_REDACTION_VERSION;
   promptFingerprint: string;
   stackFingerprint: string;
@@ -369,7 +369,7 @@ export function structuredPromptStackInput(
   telemetry: PromptStackTelemetry,
 ): StructuredPromptStackInput {
   return {
-    type: 'open-design.prompt-stack',
+    type: 'storyforge.prompt-stack',
     redactionVersion: telemetry.redactionVersion,
     promptFingerprint: telemetry.promptFingerprint,
     stackFingerprint: telemetry.stackFingerprint,

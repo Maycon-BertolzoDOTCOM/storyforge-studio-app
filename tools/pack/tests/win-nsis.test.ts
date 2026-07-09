@@ -47,9 +47,9 @@ function makeConfig(namespaceRoot: string): ToolPackConfig {
 
 describe("writeNsisInclude", () => {
   it("escapes double quotes and newlines in the local-data root", async () => {
-    const root = await mkdtemp(join(tmpdir(), "open-design-win-nsis-"));
+    const root = await mkdtemp(join(tmpdir(), "storyforge-win-nsis-"));
     try {
-      const includePath = join(root, "include", "open-design.nsh");
+      const includePath = join(root, "include", "storyforge.nsh");
       const paths = { nsisIncludePath: includePath } as WinPaths;
       const config = makeConfig('C:\\Open "Design"\nbeta');
 

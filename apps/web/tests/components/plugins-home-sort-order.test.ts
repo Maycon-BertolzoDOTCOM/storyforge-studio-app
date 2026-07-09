@@ -5,7 +5,7 @@
 // the picked order is remembered per browser.
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { InstalledPluginRecord } from '@open-design/contracts';
+import type { InstalledPluginRecord } from '@storyforge-app/contracts';
 import {
   DEFAULT_PLUGIN_SORT_ORDER,
   readStoredSortOrder,
@@ -98,7 +98,7 @@ describe('sort-order persistence', () => {
   });
 
   it('falls back to the default on an unknown stored value', () => {
-    window.localStorage.setItem('open-design:plugins-sort-order', 'bogus');
+    window.localStorage.setItem('storyforge:plugins-sort-order', 'bogus');
     expect(readStoredSortOrder()).toBe('hot');
   });
 });

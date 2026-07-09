@@ -1,13 +1,13 @@
-// Loader for `plugins/_official/<bucket>/<slug>/open-design.json` —
+// Loader for `plugins/_official/<bucket>/<slug>/storyforge.json` —
 // the bundled-plugin catalogue the daemon registers on startup and
 // the in-app Plugins home displays. Authoritative source of truth for
 // the marketing site's `/plugins/...` routes; mirroring it keeps the
 // landing-page counts in lockstep with what visitors see when they
-// open Open Design.
+// open StoryForge.
 //
 // Why a parallel loader instead of extending `catalog.ts`:
 //   - Catalog reads SKILL.md frontmatter through Astro Content
-//     Collections; bundled plugins ship `open-design.json` (a
+//     Collections; bundled plugins ship `storyforge.json` (a
 //     manifest, not Markdown), so the data shape is different and
 //     forcing one loader to handle both invites schema confusion.
 //   - The manifest's `od.preview.poster` is already a CDN URL — no
@@ -58,7 +58,7 @@ function communityRoot(): string | null {
 // points at the public R2 origin so plugin cards + detail pages get a real
 // preview (with hover-autoplay) even when the manifest carries no authored
 // poster/video. Authored `od.preview.video` always wins over the baked clip.
-const PLUGIN_PREVIEWS_BASE_URL = 'https://repo-assets.open-design.ai/plugin-previews';
+const PLUGIN_PREVIEWS_BASE_URL = 'https://repo-assets.storyforge.ai/plugin-previews';
 
 const BAKED_PREVIEW_MANIFEST_ROOTS = [
   path.resolve(process.cwd(), 'data/plugin-previews/manifest.json'),
@@ -318,7 +318,7 @@ export function resolveBundledDescription(
 }
 
 function REPO_FOR_BUCKET(bucket: BundledBucket): string {
-  return `https://github.com/nexu-io/open-design/tree/main/plugins/_official/${bucket}`;
+  return `https://github.com/nexu-io/storyforge/tree/main/plugins/_official/${bucket}`;
 }
 
 const PREVIEW_OUT_CANDIDATES = [
@@ -464,7 +464,7 @@ export function getBundledPlugins(): ReadonlyArray<BundledPluginRecord> {
       const full = path.join(dir, name);
       if (!statSync(full).isDirectory()) continue;
       const record = loadOne({
-        manifestPath: path.join(root, bucket, name, 'open-design.json'),
+        manifestPath: path.join(root, bucket, name, 'storyforge.json'),
         slugDir: path.join(root, bucket, name),
         slug: name,
         bucket,
@@ -509,7 +509,7 @@ export function getDetailPlugins(): ReadonlyArray<BundledPluginRecord> {
         if (name.startsWith('_') || name.startsWith('.')) continue;
         if (!statSync(path.join(dir, name)).isDirectory()) continue;
         const record = loadOne({
-          manifestPath: path.join(dir, name, 'open-design.json'),
+          manifestPath: path.join(dir, name, 'storyforge.json'),
           slugDir: path.join(dir, name),
           slug: name,
           bucket,
@@ -527,12 +527,12 @@ export function getDetailPlugins(): ReadonlyArray<BundledPluginRecord> {
       const dir = path.join(community, name);
       if (!statSync(dir).isDirectory()) continue;
       const record = loadOne({
-        manifestPath: path.join(dir, 'open-design.json'),
+        manifestPath: path.join(dir, 'storyforge.json'),
         slugDir: dir,
         slug: name,
         bucket: 'community',
         routeId: `community/${name}`,
-        sourceUrl: `https://github.com/nexu-io/open-design/tree/main/plugins/community/${name}`,
+        sourceUrl: `https://github.com/nexu-io/storyforge/tree/main/plugins/community/${name}`,
       });
       if (record) out.push(record);
     }

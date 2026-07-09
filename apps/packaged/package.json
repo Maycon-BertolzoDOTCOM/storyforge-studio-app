@@ -1,5 +1,5 @@
 {
-  "name": "@open-design/packaged",
+  "name": "@storyforge-app/packaged",
   "version": "0.12.1",
   "private": true,
   "type": "module",
@@ -21,17 +21,17 @@
   "scripts": {
     "build": "node ./esbuild.config.mjs && tsc -p tsconfig.json --emitDeclarationOnly",
     "test": "vitest run -c vitest.config.ts",
-    "typecheck": "pnpm --filter @open-design/desktop build && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tests.json --noEmit"
+    "typecheck": "pnpm --filter @storyforge-app/desktop build && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tests.json --noEmit"
   },
   "dependencies": {
-    "@open-design/daemon": "workspace:*",
-    "@open-design/desktop": "workspace:*",
-    "@open-design/launcher-proto": "workspace:*",
-    "@open-design/platform": "workspace:*",
-    "@open-design/release": "workspace:*",
-    "@open-design/sidecar": "workspace:*",
-    "@open-design/sidecar-proto": "workspace:*",
-    "@open-design/web": "workspace:*"
+    "@storyforge-app/daemon": "workspace:*",
+    "@storyforge-app/desktop": "workspace:*",
+    "@storyforge-app/launcher-proto": "workspace:*",
+    "@storyforge-app/platform": "workspace:*",
+    "@storyforge-app/release": "workspace:*",
+    "@storyforge-app/sidecar": "workspace:*",
+    "@storyforge-app/sidecar-proto": "workspace:*",
+    "@storyforge-app/web": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.12.2",

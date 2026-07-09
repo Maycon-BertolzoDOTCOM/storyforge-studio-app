@@ -35,7 +35,7 @@ import {
   reportChatRunFeedback,
   streamViaDaemon,
 } from '../providers/daemon';
-import { normalizeCustomReason } from '@open-design/contracts/analytics';
+import { normalizeCustomReason } from '@storyforge-app/contracts/analytics';
 import {
   deletePreviewComment,
   fetchConnectorStatuses,
@@ -59,19 +59,19 @@ import {
   type ByokChatProviderConfig,
   type ByokChatProtocol,
   type ResearchOptions,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import {
   anonymizeArtifactId,
   artifactKindToTracking,
   projectKindFromMetadataToTracking,
   projectKindToTracking,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 import type {
   TrackingArtifactKind,
   TrackingDesignSystemApplyTargetKind,
   TrackingDesignSystemOrigin,
   TrackingDesignSystemStatusValue,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 import { useAnalytics } from '../analytics/provider';
 import {
   trackArtifactHeaderClick,
@@ -108,7 +108,7 @@ import {
   extractBrandFromHtml,
   finalizeBrandProject,
 } from '../runtime/brands';
-import { isOpenDesignHostAvailable } from '@open-design/host';
+import { isOpenDesignHostAvailable } from '@storyforge-app/host';
 import {
   getBrandBrowser,
   BRAND_BROWSER_TAB_ID,
@@ -163,7 +163,7 @@ import type {
   InstalledPluginRecord,
   RunContextSelection,
   WorkspaceContextItem,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import type {
   AgentEvent,
   AgentInfo,
@@ -439,7 +439,7 @@ let liveArtifactEventSequence = 0;
 // local literal to respect the web↔daemon boundary.
 const BRAND_KIT_FILE = 'brand.html';
 const BRAND_EMPTY_TRANSCRIPT_RETRY_DELAYS_MS = [120, 500, 1_200, 2_000] as const;
-const CHAT_PANEL_WIDTH_STORAGE_KEY = 'open-design.project.chatPanelWidth';
+const CHAT_PANEL_WIDTH_STORAGE_KEY = 'storyforge.project.chatPanelWidth';
 const DEFAULT_CHAT_PANEL_WIDTH = 460;
 const MIN_CHAT_PANEL_WIDTH = 345;
 const MAX_CHAT_PANEL_WIDTH = 720;
@@ -606,7 +606,7 @@ function buildCreateDesignSystemFromProjectPrompt(input: {
       ]
     : ['- Active design system: (none)'];
   return [
-    'Create this project as a complete Open Design design system workspace.',
+    'Create this project as a complete StoryForge design system workspace.',
     '',
     'Autonomy requirement:',
     '- Do not ask setup or clarification questions during design-system generation.',
@@ -695,7 +695,7 @@ function historyWithWorkspaceContext(
     '',
     '',
     '<active-workspace-context>',
-    'Open Design selected or inferred these workspace contexts for this turn. Treat absolute paths as reference context unless the user explicitly asks to edit them.',
+    'StoryForge selected or inferred these workspace contexts for this turn. Treat absolute paths as reference context unless the user explicitly asks to edit them.',
     ...items.map((item, index) => {
       const details = [
         item.path ? `path: ${item.path}` : null,
@@ -6151,7 +6151,7 @@ export function ProjectView({
         return { message: outcome.message };
       }
       const conversationId = activeConversationId;
-      const shareAction = action === 'publish' ? 'publish-github' : 'contribute-open-design';
+      const shareAction = action === 'publish' ? 'publish-github' : 'contribute-storyforge';
       setActivePluginActionPaths((prev) => new Set(prev).add(relativePath));
       let taskStart;
       try {
@@ -6371,7 +6371,7 @@ export function ProjectView({
     ],
   );
 
-  // "Share to Open Design" — kicks off the bundled `od-share-to-community`
+  // "Share to StoryForge" — kicks off the bundled `od-share-to-community`
   // scenario in the active conversation. We just inject the trigger prompt
   // through the standard chat-send path; the agent then loads SKILL.md and
   // drives the rest. Keep this preparing state alive for the resulting chat
@@ -7951,9 +7951,9 @@ export function ProjectView({
 
   // Wire the Critique Theater drop-in mount into the project workspace.
   // The hook reads the M1 Settings toggle out of the existing
-  // `open-design:config` localStorage blob and stays in sync with the
+  // `storyforge:config` localStorage blob and stays in sync with the
   // platform `storage` event (cross-tab) plus the same-tab
-  // `open-design:critique-theater-toggle` CustomEvent. The mount itself
+  // `storyforge:critique-theater-toggle` CustomEvent. The mount itself
   // returns `null` until the daemon emits a `critique.run_started` for
   // the active project, so the visual surface is unchanged for users
   // who have not opted in. The daemon-side gate
@@ -8803,13 +8803,13 @@ function latestDesignSystemActivityEvents(messages: ChatMessage[]): AgentEvent[]
 }
 
 function pluginWorkflowTitle(action: PluginFolderAgentAction): string {
-  return action === 'publish' ? 'Publish repo' : 'Open Design PR';
+  return action === 'publish' ? 'Publish repo' : 'StoryForge PR';
 }
 
 function pluginWorkflowCliCommand(action: PluginFolderAgentAction, relativePath: string): string {
   return action === 'publish'
     ? `od plugin publish-repo ${relativePath}`
-    : `od plugin open-design-pr ${relativePath}`;
+    : `od plugin storyforge-pr ${relativePath}`;
 }
 
 function pluginWorkflowPlannedSteps(action: PluginFolderAgentAction): string[] {
@@ -8822,7 +8822,7 @@ function pluginWorkflowPlannedSteps(action: PluginFolderAgentAction): string[] {
     ];
   }
   return [
-    'Ensure the Open Design fork exists',
+    'Ensure the StoryForge fork exists',
     'Clone the fork and prepare a branch',
     'Copy the plugin into plugins/community',
     'Push the branch and open the PR form',

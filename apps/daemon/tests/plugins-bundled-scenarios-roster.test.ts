@@ -27,7 +27,7 @@ const CANONICAL = new Map<string, { taskKind: string; pipelineStages: string[] }
 
 // Non-canonical scenarios. These ride on a canonical taskKind but
 // don't win the pipeline-fallback for it. The kind → scenario map in
-// `@open-design/contracts/scenario-defaults` is what routes UX
+// `@storyforge-app/contracts/scenario-defaults` is what routes UX
 // project kinds (image / video / audio) onto these plugins. Export
 // starters sit here too: they are user-facing plugins for downstream
 // handoff, but they must not become the canonical tune-collab fallback.
@@ -53,7 +53,7 @@ describe('plugins/_official/scenarios roster', () => {
 
   for (const [folder, expected] of CANONICAL) {
     it(`${folder} declares od.kind='scenario' + the canonical pipeline shape`, async () => {
-      const manifestPath = path.join(scenariosRoot, folder, 'open-design.json');
+      const manifestPath = path.join(scenariosRoot, folder, 'storyforge.json');
       const skillPath = path.join(scenariosRoot, folder, 'SKILL.md');
       expect((await stat(manifestPath)).isFile()).toBe(true);
       expect((await stat(skillPath)).isFile()).toBe(true);
@@ -68,7 +68,7 @@ describe('plugins/_official/scenarios roster', () => {
 
   for (const [folder, expected] of SIBLINGS) {
     it(`${folder} declares od.kind='scenario' + a non-empty pipeline + the documented taskKind`, async () => {
-      const manifestPath = path.join(scenariosRoot, folder, 'open-design.json');
+      const manifestPath = path.join(scenariosRoot, folder, 'storyforge.json');
       const skillPath = path.join(scenariosRoot, folder, 'SKILL.md');
       expect((await stat(manifestPath)).isFile()).toBe(true);
       expect((await stat(skillPath)).isFile()).toBe(true);
@@ -86,7 +86,7 @@ describe('plugins/_official/scenarios roster', () => {
   }
 
   it('od-default is hidden and asks for task type through a GenUI surface', async () => {
-    const manifestPath = path.join(scenariosRoot, 'od-default', 'open-design.json');
+    const manifestPath = path.join(scenariosRoot, 'od-default', 'storyforge.json');
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
     expect(manifest.od.hidden).toBe(true);
     expect(manifest.od.context?.craft).toEqual(
@@ -105,7 +105,7 @@ describe('plugins/_official/scenarios roster', () => {
   });
 
   it('od-new-generation declares the default craft rails for anti-slop HTML output', async () => {
-    const manifestPath = path.join(scenariosRoot, 'od-new-generation', 'open-design.json');
+    const manifestPath = path.join(scenariosRoot, 'od-new-generation', 'storyforge.json');
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
     expect(manifest.od.context?.craft).toEqual(
       expect.arrayContaining(['typography', 'color', 'anti-ai-slop']),

@@ -20,7 +20,7 @@ import type {
   LibraryAssetKind,
   LibraryStorage,
   LibrarySourceKind,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import {
   addLibraryAssetSource,
   findLibraryAssetByHash,

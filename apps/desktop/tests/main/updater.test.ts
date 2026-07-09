@@ -13,13 +13,13 @@ import {
   LAUNCHER_AFTER_QUIT_TIMEOUT_MS_ARG,
   LAUNCHER_SCHEMA_VERSION,
   resolveLauncherPaths,
-} from "@open-design/launcher-proto";
+} from "@storyforge-app/launcher-proto";
 import {
   DESKTOP_UPDATE_CHANNELS,
   DESKTOP_UPDATE_STATES,
   SIDECAR_SOURCES,
-} from "@open-design/sidecar-proto";
-import type { ReleaseChannel } from "@open-design/release";
+} from "@storyforge-app/sidecar-proto";
+import type { ReleaseChannel } from "@storyforge-app/release";
 
 import {
   compareVersions,
@@ -102,14 +102,14 @@ async function createUpdaterFixture(options: {
   const artifactExt = platform === "win" ? "exe" : "dmg";
   const arch = platform === "win" ? "x64" : "arm64";
   const artifactName = platform === "win"
-    ? `open-design-${version}-win-x64-setup.exe`
-    : `open-design-${version}-mac-arm64.dmg`;
+    ? `storyforge-${version}-win-x64-setup.exe`
+    : `storyforge-${version}-mac-arm64.dmg`;
   const artifactPath = `/artifact.${artifactExt}`;
   const artifactBody = Buffer.from(options.artifactBody ?? "open design updater fixture");
   const digest = createHash("sha256").update(artifactBody).digest("hex");
   const payloadName = platform === "win"
-    ? `open-design-${version}-win-x64-payload.7z`
-    : `open-design-${version}-mac-arm64-payload.zip`;
+    ? `storyforge-${version}-win-x64-payload.7z`
+    : `storyforge-${version}-mac-arm64-payload.zip`;
   const payloadPath = platform === "win" ? "/payload.7z" : "/payload.zip";
   const payloadBody = Buffer.from(options.payloadBody ?? "open design updater payload fixture");
   const payloadDigest = createHash("sha256").update(payloadBody).digest("hex");
@@ -259,10 +259,10 @@ function metadataResponse(version: string): Response {
         enabled: true,
         artifacts: {
           dmg: {
-            name: `open-design-${version}-mac-arm64.dmg`,
+            name: `storyforge-${version}-mac-arm64.dmg`,
             sha256: "0".repeat(64),
             size: 1,
-            url: `https://example.invalid/open-design-${version}-mac-arm64.dmg`,
+            url: `https://example.invalid/storyforge-${version}-mac-arm64.dmg`,
           },
         },
       },
@@ -319,7 +319,7 @@ describe("desktop updater", () => {
 
       await updater.checkForUpdates({ autoDownload: false });
 
-      expect(logger.info).toHaveBeenCalledWith("[open-design updater] lifecycle", expect.objectContaining({
+      expect(logger.info).toHaveBeenCalledWith("[storyforge updater] lifecycle", expect.objectContaining({
         enabled: true,
         event: "session-start",
         metadataUrl: fixture.metadataUrl,
@@ -327,7 +327,7 @@ describe("desktop updater", () => {
         sessionId: "2026-06-09T07:50:51.000Z-12345",
         source: SIDECAR_SOURCES.PACKAGED,
       }));
-      expect(logger.info).toHaveBeenCalledWith("[open-design updater] lifecycle", expect.objectContaining({
+      expect(logger.info).toHaveBeenCalledWith("[storyforge updater] lifecycle", expect.objectContaining({
         event: "check-start",
         metadataUrl: fixture.metadataUrl,
         namespace: "release-beta",
@@ -442,7 +442,7 @@ describe("desktop updater", () => {
       version: "1.0.0-beta.3",
     });
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
-    const launcherLaunchPath = join(root, "installed", "Open Design Beta.exe");
+    const launcherLaunchPath = join(root, "installed", "StoryForge Beta.exe");
     try {
       await mkdir(join(root, "installed"), { recursive: true });
       await writeFile(launcherLaunchPath, "");
@@ -499,7 +499,7 @@ describe("desktop updater", () => {
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
     const launcherRoot = root;
     const versionRoot = join(root, "launcher", "channels", "beta", "namespaces", "release-beta-win", "versions");
-    const launcherLaunchPath = join(root, "installed", "Open Design Beta.exe");
+    const launcherLaunchPath = join(root, "installed", "StoryForge Beta.exe");
     const launches: Array<{ appPid: number; launchPath: string; root: string }> = [];
     let extractCount = 0;
     try {
@@ -535,15 +535,15 @@ describe("desktop updater", () => {
       }, {
         extractLauncherPayloadArchive: async ({ destinationRoot }) => {
           extractCount += 1;
-          await mkdir(join(destinationRoot, "payload", "resources", "open-design"), { recursive: true });
-          await writeFile(join(destinationRoot, "payload", "Open Design.exe"), "");
+          await mkdir(join(destinationRoot, "payload", "resources", "storyforge"), { recursive: true });
+          await writeFile(join(destinationRoot, "payload", "StoryForge.exe"), "");
           await writeFile(
             join(destinationRoot, "manifest.json"),
             `${JSON.stringify({
               channel: "beta",
               entry: {
                 cwd: "payload",
-                executable: "payload/Open Design.exe",
+                executable: "payload/StoryForge.exe",
               },
               namespace: "release-beta-win",
               payloadRoot: "payload",
@@ -552,7 +552,7 @@ describe("desktop updater", () => {
               version: "1.0.0-beta.2",
             })}\n`,
           );
-          await writeFile(join(destinationRoot, "payload", "resources", "open-design-config.json"), "{}\n");
+          await writeFile(join(destinationRoot, "payload", "resources", "storyforge-config.json"), "{}\n");
         },
         launchAppAfterQuit: async (input) => {
           launches.push({
@@ -562,7 +562,7 @@ describe("desktop updater", () => {
           });
           return { helperLogPath: join(root, "updates", "helpers", "open-app-after-quit-test.log") };
         },
-        processExecPath: "C:\\Program Files\\Open Design Beta\\Open Design Beta.exe",
+        processExecPath: "C:\\Program Files\\StoryForge Beta\\StoryForge Beta.exe",
         processPid: 4242,
       });
 
@@ -570,7 +570,7 @@ describe("desktop updater", () => {
 
       expect(checked.state).toBe(DESKTOP_UPDATE_STATES.DOWNLOADED);
       expect(checked.artifact?.type).toBe("payload");
-      expect(checked.artifact?.name).toBe("open-design-1.0.0-beta.2-win-x64-payload.7z");
+      expect(checked.artifact?.name).toBe("storyforge-1.0.0-beta.2-win-x64-payload.7z");
       expect(checked.capabilities.canApplyInPlace).toBe(true);
       expect(checked.capabilities.canOpenInstaller).toBe(false);
       expect(checked.capabilities.requiresManualInstall).toBe(false);
@@ -627,7 +627,7 @@ describe("desktop updater", () => {
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
     const launcherRoot = root;
     const versionRoot = join(root, "launcher", "channels", "beta", "namespaces", "release-beta-win", "versions");
-    const launcherLaunchPath = join(root, "installed", "Open Design Beta.exe");
+    const launcherLaunchPath = join(root, "installed", "StoryForge Beta.exe");
     const launches: Array<{ appPid: number; launchPath: string; root: string }> = [];
     let extractCount = 0;
     try {
@@ -662,15 +662,15 @@ describe("desktop updater", () => {
       }, {
         extractLauncherPayloadArchive: async ({ destinationRoot }) => {
           extractCount += 1;
-          await mkdir(join(destinationRoot, "payload", "resources", "open-design"), { recursive: true });
-          await writeFile(join(destinationRoot, "payload", "Open Design.exe"), "");
+          await mkdir(join(destinationRoot, "payload", "resources", "storyforge"), { recursive: true });
+          await writeFile(join(destinationRoot, "payload", "StoryForge.exe"), "");
           await writeFile(
             join(destinationRoot, "manifest.json"),
             `${JSON.stringify({
               channel: "beta",
               entry: {
                 cwd: "payload",
-                executable: "payload/Open Design.exe",
+                executable: "payload/StoryForge.exe",
               },
               namespace: "release-beta-win",
               payloadRoot: "payload",
@@ -679,7 +679,7 @@ describe("desktop updater", () => {
               version: "1.0.0-beta.2",
             })}\n`,
           );
-          await writeFile(join(destinationRoot, "payload", "resources", "open-design-config.json"), "{}\n");
+          await writeFile(join(destinationRoot, "payload", "resources", "storyforge-config.json"), "{}\n");
         },
         launchAppAfterQuit: async (input) => {
           launches.push({
@@ -689,7 +689,7 @@ describe("desktop updater", () => {
           });
           return { helperLogPath: join(root, "updates", "helpers", "open-app-after-quit-test.log") };
         },
-        processExecPath: "C:\\Program Files\\Open Design Beta\\Open Design Beta.exe",
+        processExecPath: "C:\\Program Files\\StoryForge Beta\\StoryForge Beta.exe",
         processPid: 4242,
       });
 
@@ -726,7 +726,7 @@ describe("desktop updater", () => {
     });
     const namespaceRoot = join(root, "launcher", "channels", "beta", "namespaces", "release-beta-win");
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
-    const launcherLaunchPath = join(root, "installed", "Open Design Beta.exe");
+    const launcherLaunchPath = join(root, "installed", "StoryForge Beta.exe");
     try {
       await mkdir(join(root, "installed"), { recursive: true });
       await writeFile(launcherLaunchPath, "");
@@ -758,14 +758,14 @@ describe("desktop updater", () => {
       }, {
         extractLauncherPayloadArchive: async ({ destinationRoot }) => {
           await mkdir(join(destinationRoot, "payload", "resources"), { recursive: true });
-          await writeFile(join(destinationRoot, "payload", "Open Design.exe"), "");
+          await writeFile(join(destinationRoot, "payload", "StoryForge.exe"), "");
           await writeFile(
             join(destinationRoot, "manifest.json"),
             `${JSON.stringify({
               channel: "beta",
               entry: {
                 cwd: "payload",
-                executable: "payload/Open Design.exe",
+                executable: "payload/StoryForge.exe",
               },
               namespace: "release-beta-win",
               payloadRoot: "payload",
@@ -781,7 +781,7 @@ describe("desktop updater", () => {
 
       expect(checked.state).toBe(DESKTOP_UPDATE_STATES.ERROR);
       expect(checked.error?.code).toBe("launcher-payload-prepare-failed");
-      expect(checked.error?.message).toContain("open-design-config.json");
+      expect(checked.error?.message).toContain("storyforge-config.json");
       expect(existsSync(join(namespaceRoot, "versions", "1.0.0-beta.2"))).toBe(false);
       expect(JSON.parse(await readFile(launcherRuntimePath, "utf8"))).toMatchObject({
         active: { generation: 0, version: "1.0.0-beta.1" },
@@ -804,7 +804,7 @@ describe("desktop updater", () => {
       version: "1.0.0-beta.2",
     });
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
-    const launcherLaunchPath = join(root, "missing", "Open Design Beta.exe");
+    const launcherLaunchPath = join(root, "missing", "StoryForge Beta.exe");
     try {
       await mkdir(join(root, "launcher"), { recursive: true });
       await mkdir(join(root, "launcher", "channels", "beta", "namespaces", "release-beta-win", "versions", "1.0.0-beta.1"), { recursive: true });
@@ -832,7 +832,7 @@ describe("desktop updater", () => {
         namespace: "release-beta-win",
         source: SIDECAR_SOURCES.PACKAGED,
       }, {
-        processExecPath: "C:\\Users\\runneradmin\\AppData\\Roaming\\Open Design Beta\\launcher\\channels\\beta\\namespaces\\release-beta-win\\versions\\1.0.0-beta.1\\payload\\Open Design.exe",
+        processExecPath: "C:\\Users\\runneradmin\\AppData\\Roaming\\StoryForge Beta\\launcher\\channels\\beta\\namespaces\\release-beta-win\\versions\\1.0.0-beta.1\\payload\\StoryForge.exe",
       });
 
       const checked = await updater.checkForUpdates();
@@ -858,7 +858,7 @@ describe("desktop updater", () => {
     });
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
     const launcherRoot = root;
-    const launcherLaunchPath = join(root, "installed", "Open Design Beta.app");
+    const launcherLaunchPath = join(root, "installed", "StoryForge Beta.app");
     const launches: Array<{ appPid: number; launchPath: string; root: string }> = [];
     try {
       await mkdir(launcherLaunchPath, { recursive: true });
@@ -890,17 +890,17 @@ describe("desktop updater", () => {
         source: SIDECAR_SOURCES.PACKAGED,
       }, {
         extractLauncherPayloadArchive: async ({ destinationRoot }) => {
-          await mkdir(join(destinationRoot, "payload", "Open Design Beta.app", "Contents", "MacOS"), { recursive: true });
-          await mkdir(join(destinationRoot, "payload", "Open Design Beta.app", "Contents", "Resources", "open-design"), { recursive: true });
-          await writeFile(join(destinationRoot, "payload", "Open Design Beta.app", "Contents", "MacOS", "Open Design Beta"), "");
-          await writeFile(join(destinationRoot, "payload", "Open Design Beta.app", "Contents", "Resources", "open-design-config.json"), "{}\n");
+          await mkdir(join(destinationRoot, "payload", "StoryForge Beta.app", "Contents", "MacOS"), { recursive: true });
+          await mkdir(join(destinationRoot, "payload", "StoryForge Beta.app", "Contents", "Resources", "storyforge"), { recursive: true });
+          await writeFile(join(destinationRoot, "payload", "StoryForge Beta.app", "Contents", "MacOS", "StoryForge Beta"), "");
+          await writeFile(join(destinationRoot, "payload", "StoryForge Beta.app", "Contents", "Resources", "storyforge-config.json"), "{}\n");
           await writeFile(
             join(destinationRoot, "manifest.json"),
             `${JSON.stringify({
               channel: "beta",
               entry: {
-                cwd: "payload/Open Design Beta.app",
-                executable: "payload/Open Design Beta.app/Contents/MacOS/Open Design Beta",
+                cwd: "payload/StoryForge Beta.app",
+                executable: "payload/StoryForge Beta.app/Contents/MacOS/StoryForge Beta",
               },
               namespace: "release-beta",
               payloadRoot: "payload",
@@ -918,7 +918,7 @@ describe("desktop updater", () => {
           });
           return {};
         },
-        processExecPath: join(root, "launcher", "channels", "beta", "namespaces", "release-beta", "versions", "1.0.0-beta.2", "payload", "Open Design Beta.app", "Contents", "MacOS", "Open Design Beta"),
+        processExecPath: join(root, "launcher", "channels", "beta", "namespaces", "release-beta", "versions", "1.0.0-beta.2", "payload", "StoryForge Beta.app", "Contents", "MacOS", "StoryForge Beta"),
         processPid: 4243,
       });
 
@@ -958,7 +958,7 @@ describe("desktop updater", () => {
     });
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
     const launcherRoot = root;
-    const launcherLaunchPath = join(root, "installed", "Open Design.exe");
+    const launcherLaunchPath = join(root, "installed", "StoryForge.exe");
     const launches: Array<{ appPid: number; launchPath: string; root: string }> = [];
     try {
       await mkdir(join(root, "installed"), { recursive: true });
@@ -991,16 +991,16 @@ describe("desktop updater", () => {
         source: SIDECAR_SOURCES.PACKAGED,
       }, {
         extractLauncherPayloadArchive: async ({ destinationRoot }) => {
-          await mkdir(join(destinationRoot, "payload", "resources", "open-design"), { recursive: true });
-          await writeFile(join(destinationRoot, "payload", "Open Design.exe"), "");
-          await writeFile(join(destinationRoot, "payload", "resources", "open-design-config.json"), "{}\n");
+          await mkdir(join(destinationRoot, "payload", "resources", "storyforge"), { recursive: true });
+          await writeFile(join(destinationRoot, "payload", "StoryForge.exe"), "");
+          await writeFile(join(destinationRoot, "payload", "resources", "storyforge-config.json"), "{}\n");
           await writeFile(
             join(destinationRoot, "manifest.json"),
             `${JSON.stringify({
               channel: "beta",
               entry: {
                 cwd: "payload",
-                executable: "payload/Open Design.exe",
+                executable: "payload/StoryForge.exe",
               },
               namespace: "release-beta-win",
               payloadRoot: "payload",
@@ -1018,7 +1018,7 @@ describe("desktop updater", () => {
           });
           return {};
         },
-        processExecPath: "C:\\Users\\runneradmin\\AppData\\Roaming\\Open Design Beta\\launcher\\channels\\beta\\namespaces\\release-beta-win\\versions\\1.0.0-beta.2\\payload\\Open Design.exe",
+        processExecPath: "C:\\Users\\runneradmin\\AppData\\Roaming\\StoryForge Beta\\launcher\\channels\\beta\\namespaces\\release-beta-win\\versions\\1.0.0-beta.2\\payload\\StoryForge.exe",
         processPid: 4244,
       });
 
@@ -1058,7 +1058,7 @@ describe("desktop updater", () => {
     });
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
     const launcherRoot = root;
-    const launcherLaunchPath = join(root, "installed", "Open Design.exe");
+    const launcherLaunchPath = join(root, "installed", "StoryForge.exe");
     const launches: Array<{ appPid: number; launchPath: string; root: string }> = [];
     try {
       await mkdir(join(root, "installed"), { recursive: true });
@@ -1091,16 +1091,16 @@ describe("desktop updater", () => {
         source: SIDECAR_SOURCES.PACKAGED,
       }, {
         extractLauncherPayloadArchive: async ({ destinationRoot }) => {
-          await mkdir(join(destinationRoot, "payload", "resources", "open-design"), { recursive: true });
-          await writeFile(join(destinationRoot, "payload", "Open Design.exe"), "");
-          await writeFile(join(destinationRoot, "payload", "resources", "open-design-config.json"), "{}\n");
+          await mkdir(join(destinationRoot, "payload", "resources", "storyforge"), { recursive: true });
+          await writeFile(join(destinationRoot, "payload", "StoryForge.exe"), "");
+          await writeFile(join(destinationRoot, "payload", "resources", "storyforge-config.json"), "{}\n");
           await writeFile(
             join(destinationRoot, "manifest.json"),
             `${JSON.stringify({
               channel: "beta",
               entry: {
                 cwd: "payload",
-                executable: "payload/Open Design.exe",
+                executable: "payload/StoryForge.exe",
               },
               namespace: "release-beta-win",
               payloadRoot: "payload",
@@ -1129,7 +1129,7 @@ describe("desktop updater", () => {
 
       expect(installed.state).toBe(DESKTOP_UPDATE_STATES.ERROR);
       expect(installed.error?.code).toBe("payload-relaunch-failed");
-      expect(installed.error?.message).toContain("Open Design.exe");
+      expect(installed.error?.message).toContain("StoryForge.exe");
       expect(launches).toEqual([]);
     } finally {
       await fixture.close();
@@ -1149,7 +1149,7 @@ describe("desktop updater", () => {
     });
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
     const launcherRoot = root;
-    const launcherLaunchPath = join(root, "installed", "Open Design.exe");
+    const launcherLaunchPath = join(root, "installed", "StoryForge.exe");
     const spawned: Array<{ args: string[]; command: string; options: unknown }> = [];
     const unref = vi.fn();
     try {
@@ -1183,16 +1183,16 @@ describe("desktop updater", () => {
         source: SIDECAR_SOURCES.PACKAGED,
       }, {
         extractLauncherPayloadArchive: async ({ destinationRoot }) => {
-          await mkdir(join(destinationRoot, "payload", "resources", "open-design"), { recursive: true });
-          await writeFile(join(destinationRoot, "payload", "Open Design.exe"), "");
-          await writeFile(join(destinationRoot, "payload", "resources", "open-design-config.json"), "{}\n");
+          await mkdir(join(destinationRoot, "payload", "resources", "storyforge"), { recursive: true });
+          await writeFile(join(destinationRoot, "payload", "StoryForge.exe"), "");
+          await writeFile(join(destinationRoot, "payload", "resources", "storyforge-config.json"), "{}\n");
           await writeFile(
             join(destinationRoot, "manifest.json"),
             `${JSON.stringify({
               channel: "beta",
               entry: {
                 cwd: "payload",
-                executable: "payload/Open Design.exe",
+                executable: "payload/StoryForge.exe",
               },
               namespace: "release-beta-win",
               payloadRoot: "payload",
@@ -1246,7 +1246,7 @@ describe("desktop updater", () => {
     const namespaceRoot = join(root, "launcher", "channels", "beta", "namespaces", "release-beta-win");
     const launcherRuntimePath = join(root, "launcher", "runtime.json");
     const existingVersionRoot = join(namespaceRoot, "versions", "1.0.0-beta.2");
-    const launcherLaunchPath = join(root, "installed", "Open Design Beta.exe");
+    const launcherLaunchPath = join(root, "installed", "StoryForge Beta.exe");
     try {
       await mkdir(join(root, "installed"), { recursive: true });
       await writeFile(launcherLaunchPath, "");
@@ -1279,12 +1279,12 @@ describe("desktop updater", () => {
       }, {
         extractLauncherPayloadArchive: async ({ destinationRoot }) => {
           await mkdir(join(destinationRoot, "payload"), { recursive: true });
-          await writeFile(join(destinationRoot, "payload", "Open Design.exe"), "");
+          await writeFile(join(destinationRoot, "payload", "StoryForge.exe"), "");
           await writeFile(
             join(destinationRoot, "manifest.json"),
             `${JSON.stringify({
               channel: "beta",
-              entry: { cwd: "payload", executable: "payload/Open Design.exe" },
+              entry: { cwd: "payload", executable: "payload/StoryForge.exe" },
               namespace: "release-beta-win",
               payloadRoot: "payload",
               platform: "win32",
@@ -1667,8 +1667,8 @@ describe("desktop updater", () => {
     const root = makeRoot();
     const fixture = await createUpdaterFixture();
     try {
-      await writeFile(join(root, ".open-design-updater-root.json"), JSON.stringify({
-        owner: "open-design-updater",
+      await writeFile(join(root, ".storyforge-updater-root.json"), JSON.stringify({
+        owner: "storyforge-updater",
         version: 1,
       }));
       await writeFile(join(root, "state.json"), "{}");
@@ -2053,7 +2053,7 @@ describe("desktop updater", () => {
         checkInitialDelayMs: 5_000,
         checkIntervalMs: 15 * 60 * 1000,
         currentVersion: "1.0.0",
-        downloadRoot: "/tmp/open-design-updates",
+        downloadRoot: "/tmp/storyforge-updates",
         enabled: true,
         metadataUrl: "https://example.invalid/metadata.json",
         mode: "package-launcher" as const,
@@ -2241,10 +2241,10 @@ describe("desktop updater", () => {
         incoming: {
           arch: "x64",
           artifact: {
-            name: "open-design-1.0.1-win-x64-setup.exe",
+            name: "storyforge-1.0.1-win-x64-setup.exe",
             platformKey: "win",
             type: "installer",
-            url: "https://fixture.test/open-design-1.0.1-win-x64-setup.exe",
+            url: "https://fixture.test/storyforge-1.0.1-win-x64-setup.exe",
           },
           channel: "stable",
           cycleId,
@@ -2483,7 +2483,7 @@ describe("desktop updater", () => {
         removedAt: "2026-06-09T07:50:51.000Z",
         state: "cleanup-removed",
       });
-      expect(logger.info).toHaveBeenCalledWith("[open-design updater] lifecycle", expect.objectContaining({
+      expect(logger.info).toHaveBeenCalledWith("[storyforge updater] lifecycle", expect.objectContaining({
         event: "launcher-lifecycle",
         removed: 1,
         retained: 1,
@@ -2667,7 +2667,7 @@ describe("desktop updater", () => {
       const checked = await updater.checkForUpdates();
       expect(checked.state).toBe(DESKTOP_UPDATE_STATES.ERROR);
       expect(checked.error?.code).toBe("update-root-not-owned");
-      expect(existsSync(join(realRoot, ".open-design-updater-root.json"))).toBe(false);
+      expect(existsSync(join(realRoot, ".storyforge-updater-root.json"))).toBe(false);
     } finally {
       await fixture.close();
       rmSync(linkParent, { force: true, recursive: true });

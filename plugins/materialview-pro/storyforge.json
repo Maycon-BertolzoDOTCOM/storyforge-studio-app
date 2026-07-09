@@ -1,0 +1,103 @@
+{
+  "$schema": "https://storyforge.dev/schemas/storyforge.plugin.v1.json",
+  "specVersion": "1.0.0",
+  "name": "materialview-pro",
+  "title": "MaterialView Pro",
+  "version": "1.0.0",
+  "description": "Simulate materials on surfaces using AI. Upload an image, apply marble/wood/ceramic textures, and get photorealistic results with invariant validation.",
+  "author": {
+    "name": "Maycon Bertolzo",
+    "url": "https://github.com/Maycon-BertolzoDOTCOM"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Maycon-BertolzoDOTCOM/MaterialView-Pro",
+  "icon": "./icon.svg",
+  "tags": ["simulation", "materials", "ai", "image-generation", "design"],
+  "od": {
+    "kind": "skill",
+    "taskKind": "new-generation",
+    "mode": "prototyping",
+    "platform": "web",
+    "scenario": "material-simulation",
+    "engineRequirements": { "od": ">=0.10.0" },
+    "preview": {
+      "type": "html",
+      "entry": "./preview/index.html",
+      "poster": "./preview/poster.png",
+      "motion": "scroll"
+    },
+    "useCase": {
+      "query": "Simulate {{material}} on a {{surface}}.",
+      "exampleOutputs": [
+        { "path": "./examples/output.html", "title": "Marble Floor Simulation" }
+      ]
+    },
+    "context": {
+      "mcp": [
+        {
+          "name": "materialview",
+          "url": "http://localhost:4000",
+          "transport": "http"
+        }
+      ],
+      "atoms": ["file-write", "critique-theater"]
+    },
+    "pipeline": {
+      "stages": [
+        {
+          "id": "analyze",
+          "atoms": ["plan"],
+          "onFailure": "abort"
+        },
+        {
+          "id": "simulate",
+          "atoms": ["file-write"],
+          "repeat": false
+        },
+        {
+          "id": "validate",
+          "atoms": ["critique-theater"],
+          "onFailure": "skip"
+        }
+      ]
+    },
+    "inputs": [
+      {
+        "name": "image",
+        "label": "Source Image",
+        "type": "file",
+        "required": true,
+        "accept": "image/*"
+      },
+      {
+        "name": "material_type",
+        "label": "Material Type",
+        "type": "select",
+        "options": ["marble", "wood", "ceramic", "granite", "concrete", "metal", "glass"],
+        "required": true
+      },
+      {
+        "name": "material_color",
+        "label": "Material Color",
+        "type": "string",
+        "required": true,
+        "placeholder": "e.g. white, dark, beige"
+      },
+      {
+        "name": "surface_type",
+        "label": "Surface Type",
+        "type": "select",
+        "options": ["floor", "wall", "ceiling", "furniture", "car-body"],
+        "default": "floor"
+      },
+      {
+        "name": "dimensions",
+        "label": "Tile Dimensions",
+        "type": "select",
+        "options": ["30x30cm", "60x60cm", "90x90cm"],
+        "default": "60x60cm"
+      }
+    ],
+    "capabilities": ["mcp", "image-generation"]
+  }
+}

@@ -22,7 +22,7 @@ import type {
   PluginShareAction,
   ProjectPluginFolderInstallRequest,
   TerminalSession,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import { randomUUID } from '../utils/uuid';
 import type {
   ChatMessage,
@@ -33,8 +33,8 @@ import type {
   ProjectTemplate,
 } from '../types';
 
-export type { PluginInstallOutcome } from '@open-design/contracts';
-export type { PluginShareAction } from '@open-design/contracts';
+export type { PluginInstallOutcome } from '@storyforge-app/contracts';
+export type { PluginShareAction } from '@storyforge-app/contracts';
 
 export async function listProjects(options?: { throwOnError?: boolean }): Promise<Project[]> {
   try {
@@ -100,7 +100,7 @@ export async function createProject(input: {
 }): Promise<{ project: Project; conversationId: string; appliedPluginSnapshotId?: string }> {
   try {
     // `randomUUID` falls back to `crypto.getRandomValues` / `Math.random`
-    // when `crypto.randomUUID` is unavailable. Open Design served over
+    // when `crypto.randomUUID` is unavailable. StoryForge served over
     // plain HTTP on a LAN IP (Docker / unRAID self-hosting) is a
     // non-secure context, where `crypto.randomUUID` is undefined and
     // calling it directly throws — the surrounding try/catch then turns
@@ -626,7 +626,7 @@ export async function killTerminal(
 
 // ---------- tabs ----------
 
-const PROJECT_TABS_CACHE_PREFIX = 'open-design:project-tabs:v1:';
+const PROJECT_TABS_CACHE_PREFIX = 'storyforge:project-tabs:v1:';
 
 function tabsCacheKey(projectId: string): string {
   return `${PROJECT_TABS_CACHE_PREFIX}${projectId}`;
@@ -902,7 +902,7 @@ export async function installGeneratedPluginFolder(
     );
     const outcome = await readPluginInstallOutcome(resp);
     if (outcome.ok && typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('open-design:plugins-changed'));
+      window.dispatchEvent(new CustomEvent('storyforge:plugins-changed'));
     }
     return outcome;
   } catch (err) {
@@ -925,7 +925,7 @@ export interface PluginShareOutcome {
 
 export interface PluginShareTaskStart {
   taskId: string;
-  action: 'publish-github' | 'contribute-open-design';
+  action: 'publish-github' | 'contribute-storyforge';
   path: string;
   status: 'queued' | 'running' | 'done' | 'failed';
   startedAt: number;
@@ -945,7 +945,7 @@ export interface PluginShareTaskError {
 
 export interface PluginShareTaskSnapshot {
   taskId: string;
-  action: 'publish-github' | 'contribute-open-design';
+  action: 'publish-github' | 'contribute-storyforge';
   path: string;
   status: 'queued' | 'running' | 'done' | 'failed';
   startedAt: number;
@@ -967,13 +967,13 @@ export async function contributeGeneratedPluginToOpenDesign(
   projectId: string,
   relativePath: string,
 ): Promise<PluginShareOutcome> {
-  return postGeneratedPluginShareAction(projectId, relativePath, 'contribute-open-design');
+  return postGeneratedPluginShareAction(projectId, relativePath, 'contribute-storyforge');
 }
 
 export async function startGeneratedPluginShareTask(
   projectId: string,
   relativePath: string,
-  action: 'publish-github' | 'contribute-open-design',
+  action: 'publish-github' | 'contribute-storyforge',
 ): Promise<PluginShareTaskStart> {
   const resp = await fetch(
     `/api/projects/${encodeURIComponent(projectId)}/plugins/share-tasks`,
@@ -1083,7 +1083,7 @@ export async function createPluginShareProject(
 async function postGeneratedPluginShareAction(
   projectId: string,
   relativePath: string,
-  action: 'publish-github' | 'contribute-open-design',
+  action: 'publish-github' | 'contribute-storyforge',
 ): Promise<PluginShareOutcome> {
   try {
     const resp = await fetch(

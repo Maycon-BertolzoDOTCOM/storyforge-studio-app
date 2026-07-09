@@ -323,7 +323,7 @@ describe("DesignFilesPanel selection", () => {
       const { container } = renderPanel([
         file({
           name: "alpha.html",
-          localPath: "/tmp/open-design/projects/test-project/alpha.html",
+          localPath: "/tmp/storyforge/projects/test-project/alpha.html",
         }),
       ]);
 
@@ -334,7 +334,7 @@ describe("DesignFilesPanel selection", () => {
 
       await waitFor(() => {
         expect(writeText).toHaveBeenCalledWith(
-          "/tmp/open-design/projects/test-project/alpha.html",
+          "/tmp/storyforge/projects/test-project/alpha.html",
         );
       });
       expect(

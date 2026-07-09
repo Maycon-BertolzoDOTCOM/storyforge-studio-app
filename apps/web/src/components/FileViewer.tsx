@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ClipboardEvent as ReactClipboardEvent, type CSSProperties, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-import { Button, Input, Select } from '@open-design/components';
+import { Button, Input, Select } from '@storyforge-app/components';
 import { APP_CHROME_FILE_ACTIONS_ID, APP_CHROME_FILE_ACTIONS_SELECTOR } from './AppChromeHeader';
 import {
   buildSocialSharePayload,
@@ -8,14 +8,14 @@ import {
   type ProjectFileVersion,
   type SocialShareRequest,
   type SocialShareResponse,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import {
   anonymizeArtifactId,
   artifactKindToTracking,
   type TrackingFileVersionSource,
   type TrackingProjectKind,
   type TrackingDeployProvider,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 import { useAnalytics } from '../analytics/provider';
 import { exportErrorCode } from '../analytics/export-error-code';
 import { trackIframeLoad } from '../observability/iframe-error';
@@ -272,7 +272,7 @@ function previewViewportIcon(viewport: PreviewViewportId): string {
   return 'computer-line';
 }
 
-const EXPORT_READY_NUDGE_STORAGE_PREFIX = 'open-design:export-ready-nudge:';
+const EXPORT_READY_NUDGE_STORAGE_PREFIX = 'storyforge:export-ready-nudge:';
 const COMMENT_SIDE_DOCK_WIDTH = 320;
 const COMMENT_SIDE_DOCK_RAIL_WIDTH = 42;
 const COMMENT_SIDE_DOCK_GAP = 12;
@@ -3664,7 +3664,7 @@ export function CommentSidePanel({
   );
 }
 
-const COMMENT_SIDE_DRAG_MIME = 'application/x-open-design-preview-comment';
+const COMMENT_SIDE_DRAG_MIME = 'application/x-storyforge-preview-comment';
 
 type CommentSideDropEdge = 'before' | 'after';
 
@@ -9017,7 +9017,7 @@ function HtmlViewer({
     await waitForAnimationFrame();
     // Prefer the daemon's off-screen render (desktop only): viewport-independent
     // and, rendering the artifact alone in a hidden window, it can never capture
-    // Open Design's own UI. `wholeDeck` (Export as image) stitches every slide
+    // StoryForge's own UI. `wholeDeck` (Export as image) stitches every slide
     // top-to-bottom into one long image — matching the slide count the viewer
     // reports; otherwise (Copy screenshot, Mark/Draw capture) it grabs the
     // CURRENT slide, mirroring what's on screen. An ordinary page is its

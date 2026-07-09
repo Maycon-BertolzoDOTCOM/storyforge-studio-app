@@ -14,11 +14,11 @@
 import type {
   TrackingFileSizeBucket,
   TrackingFileType,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 import {
   fileSizeBucketToTracking,
   fileTypeToTracking,
-} from '@open-design/contracts/analytics';
+} from '@storyforge-app/contracts/analytics';
 
 export interface UploadCohort {
   file_count: number;

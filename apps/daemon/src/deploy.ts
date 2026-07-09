@@ -74,7 +74,7 @@ export class DeployError extends Error {
 }
 
 export function deployConfigPath(providerId: DeployProviderId = VERCEL_PROVIDER_ID) {
-  const base = process.env.OD_USER_STATE_DIR || path.join(os.homedir(), '.open-design');
+  const base = process.env.OD_USER_STATE_DIR || path.join(os.homedir(), '.storyforge');
   return path.join(base, providerId === CLOUDFLARE_PAGES_PROVIDER_ID ? 'cloudflare-pages.json' : 'vercel.json');
 }
 
@@ -1482,7 +1482,7 @@ export function injectDeployHookScript(html: string, scriptUrl: unknown) {
 
   const tag =
     `<script src="${escapeHtmlAttribute(normalized)}" defer ` +
-    'data-open-design-deploy-hook="true" data-closeable="true"></script>';
+    'data-storyforge-deploy-hook="true" data-closeable="true"></script>';
   if (/<\/body\s*>/i.test(html)) {
     return html.replace(/<\/body\s*>/i, `${tag}</body>`);
   }

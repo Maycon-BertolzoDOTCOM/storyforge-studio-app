@@ -5,7 +5,7 @@ export interface GithubRepoMeta {
   versionLabel: string;
 }
 
-const REPO_API = 'https://api.github.com/repos/nexu-io/open-design';
+const REPO_API = 'https://api.github.com/repos/nexu-io/storyforge';
 const FALLBACK_META: GithubRepoMeta = {
   starsLabel: '40K+',
   // Build-time fallback when the GitHub releases API is unavailable / rate
@@ -35,7 +35,7 @@ function formatVersion(release: unknown): string | null {
   };
   const fromTag = (tag: unknown) => {
     if (typeof tag !== 'string') return null;
-    const cleaned = tag.replace(/^open-design[-_]?v?/i, '').trim();
+    const cleaned = tag.replace(/^storyforge[-_]?v?/i, '').trim();
     return cleaned ? `v${cleaned.replace(/^v/, '')}` : null;
   };
   return fromName(record.name) ?? fromTag(record.tag_name);
@@ -80,7 +80,7 @@ export function getGithubRepoMeta(): Promise<GithubRepoMeta> {
  * Mirrors the asset-name conventions used by header-enhancer.astro.
  * ------------------------------------------------------------------ */
 
-const REPO_RELEASES = 'https://github.com/nexu-io/open-design/releases';
+const REPO_RELEASES = 'https://github.com/nexu-io/storyforge/releases';
 
 export interface ReleaseAsset {
   name: string;
@@ -104,7 +104,7 @@ export interface LatestRelease {
   version: string;
   /** Display label, e.g. "v0.9.0". */
   versionLabel: string;
-  /** Raw git tag, e.g. "open-design-v0.9.0". */
+  /** Raw git tag, e.g. "storyforge-v0.9.0". */
   tagName: string | null;
   /** ISO date string, or null if unknown. */
   publishedAt: string | null;

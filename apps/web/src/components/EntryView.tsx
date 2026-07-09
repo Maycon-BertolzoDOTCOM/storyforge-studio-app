@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
-import type { ChatSessionMode, ConnectorDetail } from '@open-design/contracts';
-import type { OpenDesignHostProjectImportSuccess } from '@open-design/host';
+import type { ChatSessionMode, ConnectorDetail } from '@storyforge-app/contracts';
+import type { OpenDesignHostProjectImportSuccess } from '@storyforge-app/host';
 import {
   DEFAULT_AUDIO_MODEL,
   DEFAULT_IMAGE_MODEL,

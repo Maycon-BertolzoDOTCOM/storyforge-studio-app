@@ -2,7 +2,7 @@ import type { PreviewAnnotationStyle } from '../types';
 
 export type BrowserViewportId = 'desktop' | 'tablet' | 'mobile';
 
-export const BROWSER_PAGE_ARCHIVE_SCHEMA = 'open-design.browser-page-archive.v1';
+export const BROWSER_PAGE_ARCHIVE_SCHEMA = 'storyforge.browser-page-archive.v1';
 export const BROWSER_PAGE_ARCHIVE_INDEX_FILE = 'browser/latest-page-snapshot.json';
 
 export type BrowserPageArchiveResourceKind =
@@ -340,7 +340,7 @@ export function browserElementPickerScript(filePath: string): string {
   }
   const filePath = ${JSON.stringify(filePath)};
   const style = document.createElement('style');
-  style.setAttribute('data-open-design-browser-picker', 'true');
+  style.setAttribute('data-storyforge-browser-picker', 'true');
   style.textContent = [
     '* { cursor: crosshair !important; }',
     '.__open_design_browser_pick_hover__ { outline: 2px solid #1677ff !important; outline-offset: 2px !important; }',

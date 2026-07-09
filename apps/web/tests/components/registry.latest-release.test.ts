@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { OpenDesignGithubLatestReleaseResponse } from '@open-design/contracts';
+import type { OpenDesignGithubLatestReleaseResponse } from '@storyforge-app/contracts';
 
 import { fetchLatestGithubReleaseInfo } from '../../src/providers/registry';
 
@@ -15,9 +15,9 @@ describe('fetchLatestGithubReleaseInfo', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        repo: 'nexu-io/open-design',
+        repo: 'nexu-io/storyforge',
         tag_name: 'v0.8.0-prerelease.3',
-        html_url: 'https://github.com/nexu-io/open-design/releases/tag/v0.8.0-prerelease.3',
+        html_url: 'https://github.com/nexu-io/storyforge/releases/tag/v0.8.0-prerelease.3',
         fetchedAt: Date.parse('2026-05-22T00:00:00.000Z'),
         stale: false,
       } satisfies OpenDesignGithubLatestReleaseResponse),
@@ -25,10 +25,10 @@ describe('fetchLatestGithubReleaseInfo', () => {
 
     const result = await fetchLatestGithubReleaseInfo();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/github/open-design/releases/latest');
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/github/storyforge/releases/latest');
     expect(result).toEqual({
       tagName: 'v0.8.0-prerelease.3',
-      htmlUrl: 'https://github.com/nexu-io/open-design/releases/tag/v0.8.0-prerelease.3',
+      htmlUrl: 'https://github.com/nexu-io/storyforge/releases/tag/v0.8.0-prerelease.3',
       stale: false,
     });
   });

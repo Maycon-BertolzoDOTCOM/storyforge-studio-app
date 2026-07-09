@@ -23,7 +23,7 @@ import {
   type RegisterDesktopAuthResult,
   type SidecarStamp,
   type WebStatusSnapshot,
-} from "@open-design/sidecar-proto";
+} from "@storyforge-app/sidecar-proto";
 import { dirname, join } from "node:path";
 
 import {
@@ -35,8 +35,8 @@ import {
   resolveRuntimeNamespaceRoot,
   type JsonIpcServerHandle,
   type SidecarRuntimeContext,
-} from "@open-design/sidecar";
-import { readProcessStamp } from "@open-design/platform";
+} from "@storyforge-app/sidecar";
+import { readProcessStamp } from "@storyforge-app/platform";
 
 import { createDesktopRuntime, type DesktopRuntime } from "./runtime.js";
 import { attachDesktopProcessErrorFilter } from "./uncaught-exception.js";
@@ -482,7 +482,7 @@ function installDesktopMenu(
           {
             label: "Documentation",
             click() {
-              void shell.openExternal("https://github.com/nexu-io/open-design#readme");
+              void shell.openExternal("https://github.com/nexu-io/storyforge#readme");
             },
           },
           { type: "separator" },
@@ -495,7 +495,7 @@ function installDesktopMenu(
           {
             label: "Report Issue",
             click() {
-              void shell.openExternal("https://github.com/nexu-io/open-design/issues/new");
+              void shell.openExternal("https://github.com/nexu-io/storyforge/issues/new");
             },
           },
           {
@@ -515,7 +515,7 @@ function installDesktopMenu(
   rebuild();
   const registered = globalShortcut.register(developMenuAccelerator, toggleDevelopMenu);
   if (!registered) {
-    console.warn("[open-design desktop] develop menu shortcut unavailable", { accelerator: developMenuAccelerator });
+    console.warn("[storyforge desktop] develop menu shortcut unavailable", { accelerator: developMenuAccelerator });
   }
   return () => {
     if (registered) {
@@ -639,7 +639,7 @@ export async function runDesktopMain(
   const registered = await registerDesktopAuthWithDaemon(runtime, desktopAuthSecret);
   if (!registered) {
     console.warn(
-      "[open-design desktop] initial import-token handshake with daemon did not complete; " +
+      "[storyforge desktop] initial import-token handshake with daemon did not complete; " +
         "first folder-import attempt will lazily retry registration before failing",
     );
   }
@@ -744,14 +744,14 @@ export async function runDesktopMain(
     void shutdown().finally(() => process.exit(0));
   }
 
-  console.info("[open-design desktop] starting desktop IPC server", { ipc: runtime.ipc });
+  console.info("[storyforge desktop] starting desktop IPC server", { ipc: runtime.ipc });
   ipcServer = await createJsonIpcServer({
     socketPath: runtime.ipc,
     handler: async (message: unknown) => {
       const request = normalizeDesktopSidecarMessage(message);
       const startedAt = Date.now();
       const input = "input" in request ? summarizeDesktopIpcInput(request.input) : null;
-      console.info("[open-design desktop] desktop IPC request start", { input, type: request.type });
+      console.info("[storyforge desktop] desktop IPC request start", { input, type: request.type });
       try {
         const activeDesktop = desktop;
         switch (request.type) {
@@ -788,23 +788,23 @@ export async function runDesktopMain(
             return await updater.handle((request.input as DesktopUpdateInput).action);
         }
       } catch (error) {
-        console.error("[open-design desktop] desktop IPC request failed", {
+        console.error("[storyforge desktop] desktop IPC request failed", {
           durationMs: Date.now() - startedAt,
           error: error instanceof Error ? error.message : String(error),
           type: request.type,
         });
         throw error;
       } finally {
-        console.info("[open-design desktop] desktop IPC request end", {
+        console.info("[storyforge desktop] desktop IPC request end", {
           durationMs: Date.now() - startedAt,
           type: request.type,
         });
       }
     },
   });
-  console.info("[open-design desktop] desktop IPC server listening", { ipc: runtime.ipc });
+  console.info("[storyforge desktop] desktop IPC server listening", { ipc: runtime.ipc });
 
-  console.info("[open-design desktop] creating desktop runtime");
+  console.info("[storyforge desktop] creating desktop runtime");
   desktop = await createDesktopRuntime({
     desktopAuthSecret,
     discoverUrl: options.discoverWebUrl ?? createWebDiscovery(runtime),
@@ -824,7 +824,7 @@ export async function runDesktopMain(
     updater,
     windowTitle: options.windowTitle,
   });
-  console.info("[open-design desktop] desktop runtime created");
+  console.info("[storyforge desktop] desktop runtime created");
   options.onDesktopReady?.({ show: () => desktop?.show() });
   disposeMenu = installDesktopMenu(runtime, options);
   removeDiagnosticsIpc = registerDesktopDiagnosticsIpc({

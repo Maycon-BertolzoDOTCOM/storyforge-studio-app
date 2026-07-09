@@ -8,10 +8,10 @@ import { onRequest } from "../functions/contact-sales.ts";
 // handler still resolves to its JSON response.
 async function call(
   payload: unknown,
-  origin = "https://open-design.ai",
+  origin = "https://storyforge.ai",
 ): Promise<{ status: number; body: { ok: boolean; error?: string } }> {
   const waited: Promise<unknown>[] = [];
-  const request = new Request("https://open-design.ai/contact-sales", {
+  const request = new Request("https://storyforge.ai/contact-sales", {
     method: "POST",
     headers: { "content-type": "application/json", origin },
     body: JSON.stringify(payload),

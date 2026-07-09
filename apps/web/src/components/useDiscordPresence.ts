@@ -5,10 +5,10 @@
 // the upstream request fails.
 
 import { useEffect, useState } from 'react';
-import type { OpenDesignDiscordPresenceResponse } from '@open-design/contracts';
+import type { OpenDesignDiscordPresenceResponse } from '@storyforge-app/contracts';
 
 const API = '/api/community/discord';
-const LS_KEY = 'open-design:discord-presence';
+const LS_KEY = 'storyforge:discord-presence';
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 type CachedPresence = {

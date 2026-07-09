@@ -1,4 +1,4 @@
-import { Button, Select } from '@open-design/components';
+import { Button, Select } from '@storyforge-app/components';
 import { useT } from '../i18n';
 import type { AgentInfo, ExecMode } from '../types';
 import { isVisibleLocalCliAgent } from '../utils/visibleAgents';

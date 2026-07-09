@@ -4,7 +4,7 @@ import { amrRechargeUrlForProfile, resolveRunFailureUi } from '../../src/runtime
 describe('amrRechargeUrlForProfile', () => {
   it('matches the selected AMR profile wallet origin', () => {
     expect(amrRechargeUrlForProfile('prod')).toBe(
-      'https://open-design.ai/amr/wallet?source=open_design',
+      'https://storyforge.ai/amr/wallet?source=open_design',
     );
     expect(amrRechargeUrlForProfile('test')).toBe(
       'https://vela.powerformer.net/wallet?source=open_design',
@@ -13,7 +13,7 @@ describe('amrRechargeUrlForProfile', () => {
       'http://localhost:5173/wallet?source=open_design',
     );
     expect(amrRechargeUrlForProfile(' unknown ')).toBe(
-      'https://open-design.ai/amr/wallet?source=open_design',
+      'https://storyforge.ai/amr/wallet?source=open_design',
     );
   });
 });
@@ -62,7 +62,7 @@ describe('resolveRunFailureUi', () => {
     });
   });
 
-  // PRD "需要登录" — non-AMR agents. Open Design can't sign in for them (their
+  // PRD "需要登录" — non-AMR agents. StoryForge can't sign in for them (their
   // login lives in the user's own terminal), so the card shows the {agent}
   // sign-in copy, a plain Retry primary, and promotes AMR via the switch card.
   it('shows sign-in copy + retry + AMR promotion for non-AMR AGENT_AUTH_REQUIRED / UNAUTHORIZED', () => {

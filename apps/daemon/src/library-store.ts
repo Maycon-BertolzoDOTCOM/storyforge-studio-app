@@ -21,7 +21,7 @@ import type {
   LibraryTask,
   LibraryTaskError,
   LibraryTaskStatus,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 
 type SqliteDb = Database.Database;
 

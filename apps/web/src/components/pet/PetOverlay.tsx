@@ -16,7 +16,7 @@ interface Props {
   persistentBubble?: boolean;
 }
 
-const STORAGE_KEY = 'open-design:pet-position';
+const STORAGE_KEY = 'storyforge:pet-position';
 
 export interface PetTaskSummary {
   projectId: string;

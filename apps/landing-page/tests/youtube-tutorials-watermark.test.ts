@@ -24,7 +24,7 @@ describe('lastSuccessfulRunStart', () => {
 
   it('uses run_started_at, not created_at, for a queued run', async () => {
     process.env.GITHUB_TOKEN = 'tok';
-    process.env.GITHUB_REPOSITORY = 'nexu-io/open-design';
+    process.env.GITHUB_REPOSITORY = 'nexu-io/storyforge';
     process.env.GITHUB_REF_NAME = 'main';
     process.env.GITHUB_RUN_ID = '999';
     // Latest prior run sat in the queue for ~12 min: created_at != run_started_at.
@@ -38,7 +38,7 @@ describe('lastSuccessfulRunStart', () => {
 
   it('excludes the current run and falls back to created_at when run_started_at is absent', async () => {
     process.env.GITHUB_TOKEN = 'tok';
-    process.env.GITHUB_REPOSITORY = 'nexu-io/open-design';
+    process.env.GITHUB_REPOSITORY = 'nexu-io/storyforge';
     process.env.GITHUB_RUN_ID = '200';
     stubRunsResponse([
       { id: 100, created_at: '2026-06-09T02:30:00Z' },

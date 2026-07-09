@@ -29,7 +29,7 @@ import type {
   ResearchOptions,
   RunContextSelection,
   SseErrorPayload,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 import type { StreamHandlers } from './anthropic';
 
 /**
@@ -81,7 +81,7 @@ export function latestUserPromptFromHistory(history: ChatMessage[]): string {
 function truncateForTranscript(content: string): string {
   if (content.length <= MAX_TRANSCRIPT_MESSAGE_CHARS) return content;
   const omitted = content.length - MAX_TRANSCRIPT_MESSAGE_CHARS;
-  return `${content.slice(0, MAX_TRANSCRIPT_MESSAGE_CHARS)}\n\n[Open Design truncated ${omitted} chars from this prior message before sending it to the agent. Full content remains in persisted history.]`;
+  return `${content.slice(0, MAX_TRANSCRIPT_MESSAGE_CHARS)}\n\n[StoryForge truncated ${omitted} chars from this prior message before sending it to the agent. Full content remains in persisted history.]`;
 }
 
 function escapeTranscriptRoleDelimiters(content: string): string {
@@ -140,7 +140,7 @@ function buildPriorRunContextWarning(history: ChatMessage[]): string | null {
 
   return [
     '## context warning',
-    `Open Design detected ${notes.join(', ')}.`,
+    `StoryForge detected ${notes.join(', ')}.`,
     'Keep this turn compact: summarize prior tool output, read large references from temp files, and quote only task-relevant lines.',
   ].join('\n');
 }
@@ -333,7 +333,7 @@ export interface DaemonReattachOptions {
   onRunEventId?: (eventId: string) => void;
 }
 
-export const RUNS_CHANGED_EVENT = 'open-design:runs-changed';
+export const RUNS_CHANGED_EVENT = 'storyforge:runs-changed';
 export const GENERIC_DAEMON_DISCONNECT_MESSAGE =
   'daemon stream disconnected before run completed';
 export const GENERIC_DAEMON_DISCONNECT_CODE = 'DAEMON_STREAM_DISCONNECTED';
@@ -394,7 +394,7 @@ function shouldSuppressLifecycleExitFallback(
 }
 
 const AMR_OPENCODE_INCOMPLETE_MESSAGE =
-  'Open Design started, but the run did not complete. Please retry or check the run details for the session stream error.';
+  'StoryForge started, but the run did not complete. Please retry or check the run details for the session stream error.';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -478,10 +478,10 @@ function formatOpenCodeSessionError(value: unknown): string | null {
     return message;
   }
   if (statusCode === 404) {
-    return 'The model service returned 404 Not Found for the configured runtime endpoint. Check the Open Design link URL or model route.';
+    return 'The model service returned 404 Not Found for the configured runtime endpoint. Check the StoryForge link URL or model route.';
   }
   if (statusCode === 401 || statusCode === 403) {
-    return 'Open Design authentication failed. Please sign in again or refresh the runtime key.';
+    return 'StoryForge authentication failed. Please sign in again or refresh the runtime key.';
   }
   if (statusCode === 429) {
     return 'The model service rejected the request due to quota or rate limits. Retry later or check quota and rate limits.';

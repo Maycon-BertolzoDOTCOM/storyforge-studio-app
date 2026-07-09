@@ -13,7 +13,7 @@ import type {
   Routine,
   RoutineRun,
   RoutineRunCrystallizeResponse,
-} from '@open-design/contracts';
+} from '@storyforge-app/contracts';
 
 import { Icon, type IconName } from './Icon';
 import { navigate } from '../router';

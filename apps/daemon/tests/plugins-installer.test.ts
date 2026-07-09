@@ -12,7 +12,7 @@ import { migratePlugins } from '../src/plugins/persistence.js';
 import { installFromLocalFolder, installPlugin, uninstallPlugin } from '../src/plugins/installer.js';
 import { listInstalledPlugins } from '../src/plugins/registry.js';
 import { addMarketplace, resolvePluginInMarketplaces } from '../src/plugins/marketplaces.js';
-import type { InstalledPluginRecord } from '@open-design/contracts';
+import type { InstalledPluginRecord } from '@storyforge-app/contracts';
 
 let tmpRoot: string;
 let pluginsRoot: string;
@@ -25,7 +25,7 @@ beforeEach(async () => {
   sourceFolder = path.join(tmpRoot, 'source-plugin');
   await mkdir(sourceFolder, { recursive: true });
   await writeFile(
-    path.join(sourceFolder, 'open-design.json'),
+    path.join(sourceFolder, 'storyforge.json'),
     JSON.stringify({
       name: 'sample-plugin',
       version: '1.0.0',
@@ -127,7 +127,7 @@ describe('installFromLocalFolder', () => {
       ],
     });
     const added = await addMarketplace(db, {
-      url: 'https://example.com/open-design-marketplace.json',
+      url: 'https://example.com/storyforge-marketplace.json',
       trust: 'official',
       fetcher: async () => ({
         ok: true,

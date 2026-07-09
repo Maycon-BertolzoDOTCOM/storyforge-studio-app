@@ -70,8 +70,8 @@ test('posthog: hero direct download (rewritten to .dmg) → direct + placement=h
   // After the enhancer rewrites the hero CTA, its href is a direct .dmg asset.
   click(
     makeLink({
-      href: 'https://github.com/nexu-io/open-design/releases/download/v1/od-mac-arm64.dmg',
-      pathname: '/nexu-io/open-design/releases/download/v1/od-mac-arm64.dmg',
+      href: 'https://github.com/nexu-io/storyforge/releases/download/v1/od-mac-arm64.dmg',
+      pathname: '/nexu-io/storyforge/releases/download/v1/od-mac-arm64.dmg',
       attrs: { 'data-download-placement': 'hero' },
       text: '下载桌面端',
     }),
@@ -87,8 +87,8 @@ test('posthog: cta-band direct download → direct + placement=cta', () => {
   const { captures, click } = runPosthogTracker();
   click(
     makeLink({
-      href: 'https://github.com/nexu-io/open-design/releases/download/v1/od-mac-arm64.dmg',
-      pathname: '/nexu-io/open-design/releases/download/v1/od-mac-arm64.dmg',
+      href: 'https://github.com/nexu-io/storyforge/releases/download/v1/od-mac-arm64.dmg',
+      pathname: '/nexu-io/storyforge/releases/download/v1/od-mac-arm64.dmg',
       attrs: { 'data-download-placement': 'cta' },
       text: '下载桌面端',
     }),
@@ -103,7 +103,7 @@ test('posthog: nav /download/ button → download_page + placement=nav', () => {
   const { captures, click } = runPosthogTracker();
   click(
     makeLink({
-      href: 'https://open-design.dev/zh/download/',
+      href: 'https://storyforge.dev/zh/download/',
       pathname: '/zh/download/',
       attrs: { 'data-download-page': '', 'data-download-placement': 'nav' },
       text: '下载',
@@ -117,7 +117,7 @@ test('posthog: nav /download/ button → download_page + placement=nav', () => {
 
 test('posthog: bare /download/ link (no attr) still matched by path', () => {
   const { captures, click } = runPosthogTracker();
-  click(makeLink({ href: 'https://open-design.dev/download/', pathname: '/download/', text: 'Download desktop' }));
+  click(makeLink({ href: 'https://storyforge.dev/download/', pathname: '/download/', text: 'Download desktop' }));
   const dl = captures.find((c) => c.name === 'ui_click' && c.props.element === 'download_desktop');
   assert.ok(dl, 'expected a download_desktop click event for a bare /download/ link');
   assert.equal(dl!.props.download_target, 'download_page');
@@ -125,7 +125,7 @@ test('posthog: bare /download/ link (no attr) still matched by path', () => {
 
 test('posthog: unrelated /downloads-guide/ is NOT a download event', () => {
   const { captures, click } = runPosthogTracker();
-  click(makeLink({ href: 'https://open-design.dev/downloads-guide/', pathname: '/downloads-guide/', text: 'guide' }));
+  click(makeLink({ href: 'https://storyforge.dev/downloads-guide/', pathname: '/downloads-guide/', text: 'guide' }));
   const dl = captures.find((c) => c.name === 'ui_click' && c.props.element === 'download_desktop');
   assert.equal(dl, undefined, '/downloads-guide/ must not be treated as a download');
 });
@@ -134,7 +134,7 @@ test('posthog: page_name is parameterized per page (not hardcoded landing_home)'
   const { captures, click } = runPosthogTracker('download');
   const pv = captures.find((c) => c.name === 'page_view');
   assert.equal(pv!.props.page_name, 'download', 'page_view must report the real page');
-  click(makeLink({ href: 'https://open-design.dev/download/', pathname: '/download/', text: 'Download' }));
+  click(makeLink({ href: 'https://storyforge.dev/download/', pathname: '/download/', text: 'Download' }));
   const ev = captures.find((c) => c.name === 'ui_click');
   assert.equal(ev!.props.page_name, 'download', 'ui_click must report the real page');
 });

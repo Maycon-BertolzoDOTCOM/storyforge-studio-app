@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { InstalledPluginRecord, PluginSourceKind, TrustTier } from '@open-design/contracts';
+import type { InstalledPluginRecord, PluginSourceKind, TrustTier } from '@storyforge-app/contracts';
 import { PluginsView } from '../../src/components/PluginsView';
 import {
   addPluginMarketplace,
@@ -68,7 +68,7 @@ function makePlugin(
   };
   if (sourceKind === 'bundled') {
     record.sourceMarketplaceId = 'official';
-    record.sourceMarketplaceEntryName = `open-design/${id}`;
+    record.sourceMarketplaceEntryName = `storyforge/${id}`;
     record.sourceMarketplaceEntryVersion = record.version;
     record.marketplaceTrust = 'official';
   }
@@ -94,7 +94,7 @@ beforeEach(() => {
   mockedListMarketplaces.mockResolvedValue([
     {
       id: 'catalog-1',
-      url: 'https://example.com/open-design-marketplace.json',
+      url: 'https://example.com/storyforge-marketplace.json',
       trust: 'official',
       manifest: {
         name: 'Example Catalog',
@@ -109,10 +109,10 @@ beforeEach(() => {
             tags: ['deck'],
           },
           {
-            name: 'open-design/official-plugin',
+            name: 'storyforge/official-plugin',
             title: 'Official Plugin',
             title_i18n: { 'zh-CN': '官方看板' },
-            source: 'github:nexu-io/open-design@main/plugins/_official/examples/official-plugin',
+            source: 'github:nexu-io/storyforge@main/plugins/_official/examples/official-plugin',
             version: '1.0.0',
             description: 'Bundled official plugin.',
             description_i18n: { 'zh-CN': '内置官方插件。' },
@@ -227,17 +227,17 @@ describe('PluginsView', () => {
     mockedListMarketplaces.mockResolvedValue([
       {
         id: 'official',
-        url: 'https://open-design.ai/marketplace/open-design-marketplace.json',
+        url: 'https://storyforge.ai/marketplace/storyforge-marketplace.json',
         trust: 'official',
         manifest: {
-          name: 'Open Design Official',
+          name: 'StoryForge Official',
           version: '1.0.0',
           plugins: [
             {
-              name: 'open-design/official-plugin',
+              name: 'storyforge/official-plugin',
               title: 'Official Plugin',
               title_i18n: { 'zh-CN': '官方看板' },
-              source: 'github:nexu-io/open-design@main/plugins/_official/examples/official-plugin',
+              source: 'github:nexu-io/storyforge@main/plugins/_official/examples/official-plugin',
               version: '1.0.0',
               description: 'Bundled official plugin.',
               description_i18n: { 'zh-CN': '内置官方插件。' },
@@ -259,7 +259,7 @@ describe('PluginsView', () => {
     expect(await screen.findByText('官方看板')).toBeTruthy();
     expect(screen.queryByText('Remote Plugin')).toBeNull();
 
-    fireEvent.click(screen.getByTestId('plugins-available-install-open-design/official-plugin'));
+    fireEvent.click(screen.getByTestId('plugins-available-install-storyforge/official-plugin'));
 
     expect(onUsePlugin).toHaveBeenCalledWith(expect.objectContaining({
       id: 'official-plugin',
@@ -273,14 +273,14 @@ describe('PluginsView', () => {
     mockedListMarketplaces.mockResolvedValue([
       {
         id: 'team-catalog',
-        url: 'https://team.example.com/open-design-marketplace.json',
+        url: 'https://team.example.com/storyforge-marketplace.json',
         trust: 'restricted',
         manifest: {
           name: 'Team Catalog',
           version: '1.0.0',
           plugins: [
             {
-              name: 'open-design/official-plugin',
+              name: 'storyforge/official-plugin',
               title: 'Team Official Plugin',
               source: 'github:team/official-plugin',
               version: '2.0.0',
@@ -297,12 +297,12 @@ describe('PluginsView', () => {
     fireEvent.click(await screen.findByTestId('plugins-tab-available'));
     expect(await screen.findByText('Team Official Plugin')).toBeTruthy();
 
-    const install = screen.getByTestId('plugins-available-install-open-design/official-plugin');
+    const install = screen.getByTestId('plugins-available-install-storyforge/official-plugin');
     expect(install.textContent).toBe('Install');
     fireEvent.click(install);
 
     await waitFor(() =>
-      expect(mockedInstallPluginSource).toHaveBeenCalledWith('open-design/official-plugin'),
+      expect(mockedInstallPluginSource).toHaveBeenCalledWith('storyforge/official-plugin'),
     );
     expect(onUsePlugin).not.toHaveBeenCalled();
   });
@@ -374,7 +374,7 @@ describe('PluginsView', () => {
     fireEvent.click(await screen.findByTestId('plugins-import-button'));
     expect(screen.getByRole('dialog', { name: 'Import a plugin' })).toBeTruthy();
     expect(screen.queryByText('Create from template')).toBeNull();
-    const source = 'github:nexu-io/open-design@garnet-hemisphere/plugins/community/registry-starter';
+    const source = 'github:nexu-io/storyforge@garnet-hemisphere/plugins/community/registry-starter';
     fireEvent.change(screen.getByLabelText('GitHub, archive, or marketplace source'), {
       target: { value: source },
     });
@@ -434,7 +434,7 @@ describe('PluginsView', () => {
     mockedListMarketplaces.mockResolvedValue([
       {
         id: 'official',
-        url: 'https://example.com/open-design-marketplace.json',
+        url: 'https://example.com/storyforge-marketplace.json',
         trust: 'official',
         manifest: {
           name: 'Official Registry',
@@ -504,7 +504,7 @@ describe('PluginsView', () => {
     mockedListMarketplaces.mockResolvedValue([
       {
         id: 'official',
-        url: 'https://example.com/open-design-marketplace.json',
+        url: 'https://example.com/storyforge-marketplace.json',
         trust: 'official',
         manifest: {
           name: 'Official Registry',
@@ -552,7 +552,7 @@ describe('PluginsView', () => {
     mockedListMarketplaces.mockResolvedValue([
       {
         id: 'catalog-1',
-        url: 'https://example.com/open-design-marketplace.json',
+        url: 'https://example.com/storyforge-marketplace.json',
         trust: 'official',
         manifest: {
           name: 'Example Catalog',
@@ -569,7 +569,7 @@ describe('PluginsView', () => {
       },
       {
         id: 'catalog-2',
-        url: 'https://team.example.com/open-design-marketplace.json',
+        url: 'https://team.example.com/storyforge-marketplace.json',
         trust: 'restricted',
         manifest: {
           name: 'Team Catalog',
@@ -619,7 +619,7 @@ describe('PluginsView', () => {
       'Marketplace Plugin',
     );
     marketplacePlugin.sourceMarketplaceId = 'official';
-    marketplacePlugin.sourceMarketplaceEntryName = 'open-design/official-plugin';
+    marketplacePlugin.sourceMarketplaceEntryName = 'storyforge/official-plugin';
     marketplacePlugin.sourceMarketplaceEntryVersion = '1.0.0';
     marketplacePlugin.marketplaceTrust = 'official';
     marketplacePlugin.manifest.od = { ...marketplacePlugin.manifest.od, hidden: true };
@@ -629,15 +629,15 @@ describe('PluginsView', () => {
     mockedListMarketplaces.mockResolvedValue([
       {
         id: 'official',
-        url: 'https://open-design.ai/marketplace/open-design-marketplace.json',
+        url: 'https://storyforge.ai/marketplace/storyforge-marketplace.json',
         trust: 'official',
         manifest: {
-          name: 'Open Design Official',
+          name: 'StoryForge Official',
           version: '0.1.0',
           plugins: [{
-            name: 'open-design/official-plugin',
+            name: 'storyforge/official-plugin',
             title: 'Official Plugin',
-            source: 'github:nexu-io/open-design@main/plugins/_official/scenarios/official-plugin',
+            source: 'github:nexu-io/storyforge@main/plugins/_official/scenarios/official-plugin',
             version: '1.0.0',
             description: 'Bundled official starter.',
             tags: ['official'],
@@ -660,7 +660,7 @@ describe('PluginsView', () => {
     render(<PluginsView />);
 
     const sourceUrl =
-      'https://raw.githubusercontent.com/nexu-io/open-design/main/plugins/registry/community/open-design-marketplace.json';
+      'https://raw.githubusercontent.com/nexu-io/storyforge/main/plugins/registry/community/storyforge-marketplace.json';
     fireEvent.click(await screen.findByTestId('plugins-tab-sources'));
     fireEvent.change(screen.getByLabelText('Source URL'), {
       target: { value: sourceUrl },
@@ -704,7 +704,7 @@ describe('PluginsView', () => {
 
     fireEvent.click(await screen.findByTestId('plugins-import-button'));
     fireEvent.click(screen.getByRole('button', { name: /upload folder/i }));
-    const folderFile = new File(['{}'], 'open-design.json', { type: 'application/json' });
+    const folderFile = new File(['{}'], 'storyforge.json', { type: 'application/json' });
     fireEvent.change(screen.getByTestId('plugins-folder-input'), {
       target: { files: [folderFile] },
     });
@@ -722,14 +722,14 @@ describe('PluginsView', () => {
         'bundled',
         'bundled',
         'Publish Plugin to GitHub',
-        'Creates a public GitHub repository for a local Open Design plugin using the GitHub CLI.',
+        'Creates a public GitHub repository for a local StoryForge plugin using the GitHub CLI.',
       ),
       makePlugin(
-        'od-plugin-contribute-open-design',
+        'od-plugin-contribute-storyforge',
         'bundled',
         'bundled',
-        'Contribute Plugin to Open Design',
-        'Opens a pull request that adds a local Open Design plugin to the Open Design community catalog.',
+        'Contribute Plugin to StoryForge',
+        'Opens a pull request that adds a local StoryForge plugin to the StoryForge community catalog.',
       ),
     ]);
     const onCreatePluginShareProject = vi.fn(async (): Promise<PluginShareProjectOutcome> => ({
